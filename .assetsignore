@@ -1,0 +1,7 @@
+# Cloudflare Assets Ignore
+_worker.js
+_worker.js.bak
+server.ps1
+start-server.bat
+wrangler.toml
+wrangler.jsonc
