@@ -31,6 +31,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/custom.css">
   
   <!-- Inlined Master CSS for 100% Guaranteed Load & Zero 404s -->
   <style id="vuo-master-styles">
@@ -296,9 +297,31 @@ body {
   border-color: #0284c7;
 }
 
-/* Critical Utility CSS for 100% Guaranteed Visibility & Non-blocking Hidden States */
-.hidden {
+/* Modal & dialog hidden states - safe override that doesn't break responsive classes */
+.hidden:not([class*="sm:"]):not([class*="md:"]):not([class*="lg:"]):not([class*="xl:"]):not([class*="2xl:"]) {
   display: none !important;
+}
+
+@media (min-width: 640px) {
+  .sm\:flex { display: flex !important; }
+  .sm\:block { display: block !important; }
+  .sm\:inline { display: inline !important; }
+  .sm\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 768px) {
+  .md\:flex { display: flex !important; }
+  .md\:block { display: block !important; }
+  .md\:inline { display: inline !important; }
+  .md\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 1024px) {
+  .lg\:flex { display: flex !important; }
+  .lg\:block { display: block !important; }
+  .lg\:inline { display: inline !important; }
+  .lg\:inline-flex { display: inline-flex !important; }
+  .lg\:hidden { display: none !important; }
 }
 
 /* Modal Backdrop & Overlays: Never block clicks when hidden */
@@ -521,8 +544,15 @@ body {
     /* Strict Horizontal Overflow & Smooth Desktop Scrolling */
     html, body {
       overflow-x: hidden !important;
+      width: 100% !important;
       max-width: 100vw !important;
+      position: relative;
       scroll-behavior: smooth;
+    }
+    header {
+      width: 100% !important;
+      max-width: 100vw !important;
+      overflow-x: clip !important;
     }
 
     /* Robust Nav Dropdown - Prevents Horizontal Overflow on Laptops */
@@ -544,6 +574,30 @@ body {
       .nav-dropdown-menu {
         left: 50%;
         transform: translateX(-35%);
+      }
+    }
+
+    /* Responsive Header Navigation Utilities */
+    @media (max-width: 1023px) {
+      .vuo-header-nav {
+        display: none !important;
+      }
+      .vuo-header-cta {
+        display: none !important;
+      }
+      .vuo-mobile-toggle {
+        display: flex !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      .vuo-header-nav {
+        display: flex !important;
+      }
+      .vuo-header-cta {
+        display: flex !important;
+      }
+      .vuo-mobile-toggle {
+        display: none !important;
       }
     }
   </style>
@@ -574,23 +628,26 @@ body {
   <!-- ==================== 1. TOP HEADER & NAVIGATION ==================== -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs text-slate-800">
     <!-- Top Micro Bar (Contact & Language) -->
-    <div class="bg-slate-900 px-4 py-1.5 border-b border-slate-800 text-[11px] flex justify-between items-center text-slate-300">
-      <div class="flex items-center gap-3">
-        <a href="tel:+919937037131" class="flex items-center gap-1 hover:text-sky-400 transition-colors"><i class="fa-solid fa-phone text-sky-400"></i> Contact: +91 9937037131</a>
+    <div class="bg-slate-900 px-3 sm:px-4 py-1.5 border-b border-slate-800 text-[11px] flex justify-between items-center text-slate-300 w-full overflow-hidden">
+      <div class="flex items-center gap-2 sm:gap-3 truncate">
+        <a href="tel:+919937037131" class="flex items-center gap-1 hover:text-sky-400 transition-colors shrink-0">
+          <i class="fa-solid fa-phone text-sky-400"></i>
+          <span class="hidden sm:inline">Contact: </span><span>+91 9937037131</span>
+        </a>
         <span class="hidden md:inline text-slate-600">|</span>
-        <a href="https://wa.me/919937037131" target="_blank" class="hidden md:inline flex items-center gap-1 hover:text-emerald-400 transition-colors"><i class="fa-brands fa-whatsapp text-emerald-400"></i> WhatsApp: +91 9937037131</a>
+        <a href="https://wa.me/919937037131" target="_blank" class="hidden md:inline flex items-center gap-1 hover:text-emerald-400 transition-colors"><i class="fa-brands fa-whatsapp text-emerald-400"></i> WhatsApp</a>
         <span class="hidden md:inline text-slate-600">|</span>
-        <a href="mailto:jdjagannath@gmail.com" class="hidden md:inline flex items-center gap-1 hover:text-purple-300 transition-colors"><i class="fa-solid fa-envelope text-purple-400"></i> jdjagannath@gmail.com</a>
+        <a href="mailto:jdjagannath@gmail.com" class="hidden md:inline flex items-center gap-1 hover:text-purple-300 transition-colors"><i class="fa-solid fa-envelope text-purple-400"></i> Email</a>
         <span class="hidden lg:inline text-slate-600">|</span>
-        <span class="hidden lg:inline flex items-center gap-1"><i class="fa-solid fa-location-dot text-amber-400"></i> Satyabadi, Puri, Odisha</span>
+        <span class="hidden lg:inline flex items-center gap-1"><i class="fa-solid fa-location-dot text-amber-400"></i> Puri, Odisha</span>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
         <!-- Language Switcher -->
         <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-          <button id="langToggleEn" class="px-2.5 py-0.5 text-xs font-bold rounded bg-sky-500 text-white shadow-sm transition-all">English</button>
-          <button id="langToggleOr" class="px-2.5 py-0.5 text-xs font-semibold rounded text-slate-300 hover:text-white font-odia transition-all">ଓଡ଼ିଆ</button>
+          <button id="langToggleEn" class="px-2 py-0.5 text-xs font-bold rounded bg-sky-500 text-white shadow-sm transition-all">English</button>
+          <button id="langToggleOr" class="px-2 py-0.5 text-xs font-semibold rounded text-slate-300 hover:text-white font-odia transition-all">ଓଡ଼ିଆ</button>
         </div>
-        <a href="#admin" onclick="if(window.location.hash==='#admin'){ if(typeof VUO_APP!=='undefined'){ VUO_APP.handleRoute('admin'); } }" class="nav-link hover:text-sky-400 transition-colors flex items-center gap-1 font-medium text-slate-300">
+        <a href="#admin" onclick="if(window.location.hash==='#admin'){ if(typeof VUO_APP!=='undefined'){ VUO_APP.handleRoute('admin'); } }" class="hidden sm:flex nav-link hover:text-sky-400 transition-colors items-center gap-1 font-medium text-slate-300">
           <i class="fa-solid fa-lock text-[10px]"></i> <span data-i18n="nav_admin">Admin Panel</span>
         </a>
       </div>
@@ -602,8 +659,8 @@ body {
         
         <!-- Prominent Brand Logo & Title -->
         <a href="#home" class="flex items-center group py-1 shrink-0">
-          <div class="h-10 sm:h-12 md:h-14 lg:h-11 xl:h-16 w-auto flex items-center transition-transform group-hover:scale-105">
-            <div class="h-full w-auto max-w-[160px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[175px] xl:max-w-[340px] flex items-center drop-shadow-md"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 115" width="100%" height="100%">
+          <div class="flex items-center transition-transform group-hover:scale-105">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 115" class="h-8 sm:h-10 md:h-12 lg:h-10 xl:h-14 w-auto max-w-[170px] sm:max-w-[220px] lg:max-w-[170px] xl:max-w-[320px] drop-shadow-md">
   <defs>
     <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0369a1" />
@@ -677,12 +734,12 @@ body {
       </text>
     </g>
   </g>
-</svg></div>
+</svg>
           </div>
         </a>
 
         <!-- Desktop Navigation Links -->
-        <nav class="hidden lg:flex items-center gap-0.5 xl:gap-1.5 text-[11px] xl:text-xs font-black text-slate-800 shrink-0">
+        <nav class="vuo-header-nav flex items-center gap-0.5 xl:gap-1.5 text-[11px] xl:text-xs font-black text-slate-800 shrink-0">
           <a href="#home" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl text-slate-800 hover:text-blue-700 hover:bg-blue-50/90 font-black flex items-center gap-1 border border-slate-200/80 hover:border-blue-300 shadow-2xs transition-all">
             <i class="fa-solid fa-house text-blue-600"></i>
             <span>Home</span>
@@ -909,7 +966,7 @@ body {
         </nav>
 
         <!-- Right Side Actions: Join External Link -->
-        <div class="hidden lg:flex items-center gap-2 shrink-0">
+        <div class="vuo-header-cta flex items-center gap-2 shrink-0">
           <!-- Verified VLE Greeting Badge -->
           <div id="vleUserGreetingPill" class="hidden"></div>
           <!-- Join as a VLE External Link (Opens vleunionodisha.in in new window) -->
@@ -921,20 +978,18 @@ body {
         </div>
 
         <!-- Mobile Menu Toggle Button (Visible on screens smaller than lg) -->
-        <div class="flex items-center gap-2 lg:hidden">
-          <a href="https://vleunionodisha.in" target="_blank" class="px-3 py-1.5 text-xs font-black rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-xs">
-            JOIN VLE
-          </a>
-          <button id="mobileMenuBtn" class="p-2 text-slate-700 hover:text-sky-600 focus:outline-none">
-            <i class="fa-solid fa-bars text-xl"></i>
+        <div class="vuo-mobile-toggle flex items-center shrink-0">
+          <button id="mobileMenuBtn" onclick="const d=document.getElementById('mobileDrawer'); d.style.display='flex'; d.classList.remove('hidden')" class="p-2 text-slate-700 hover:text-sky-600 focus:outline-none flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-100" aria-label="Open Mobile Menu">
+            <i class="fa-solid fa-bars text-xl text-slate-800"></i>
           </button>
         </div>
 
       </div>
     </div>
+  </header>
 
-    <!-- Mobile Drawer -->
-    <div id="mobileDrawer" class="hidden fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col p-6 space-y-4 text-white overflow-y-auto">
+  <!-- Mobile Drawer -->
+  <div id="mobileDrawer" class="hidden fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col p-6 space-y-4 text-white overflow-y-auto">
       <div class="flex justify-between items-center pb-4 border-b border-slate-800">
         <div class="flex items-center gap-2">
           <div class="h-12 w-auto max-w-[220px] flex items-center drop-shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 115" width="100%" height="100%">
@@ -1013,7 +1068,7 @@ body {
   </g>
 </svg></div>
         </div>
-        <button id="closeMobileDrawer" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        <button id="closeMobileDrawer" onclick="const d=document.getElementById('mobileDrawer'); d.style.display='none'; d.classList.add('hidden')" class="text-slate-400 hover:text-white text-2xl cursor-pointer" aria-label="Close Mobile Menu">&times;</button>
       </div>
 
       <nav class="flex flex-col space-y-2.5 text-sm font-bold">
@@ -1061,15 +1116,14 @@ body {
         <a href="#admin" onclick="if(window.location.hash==='#admin'){ if(typeof VUO_APP!=='undefined'){ VUO_APP.handleRoute('admin'); } }" class="mobile-nav-link block w-full py-2 text-center text-slate-400 text-xs">Admin Access</a>
       </div>
     </div>
-  </header>
 
   <!-- ==================== 2. BREAKING NEWS / ANNOUNCEMENT TICKER ==================== -->
-  <div class="bg-vuo-900 border-b border-slate-800 py-1.5 px-4 overflow-hidden relative flex items-center z-20">
+  <div class="bg-vuo-900 border-b border-slate-800 py-1.5 px-3 sm:px-4 overflow-hidden relative flex items-center z-20 w-full max-w-full">
     <div class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded shadow-sm shrink-0 z-10">
       <i class="fa-solid fa-bullhorn text-xs"></i>
       <span>UPDATES</span>
     </div>
-    <div class="overflow-hidden w-full ml-3 flex-grow">
+    <div class="overflow-hidden w-full ml-2 sm:ml-3 flex-grow min-w-0">
       <div id="newsTickerTrack" class="ticker-track">
         <!-- Injected via JavaScript -->
       </div>
@@ -1077,6 +1131,53 @@ body {
     <button onclick="openWelcomePopup()" class="ml-2 shrink-0 px-2.5 py-0.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 text-[10px] font-black rounded-full flex items-center gap-1 shadow-xs transition-all cursor-pointer">
       <i class="fa-solid fa-bullhorn text-[9px]"></i> <span>Notice</span>
     </button>
+  </div>
+
+  <!-- ==================== 2.1 ALWAYS-VISIBLE QUICK ACCESS CATEGORY BAR ==================== -->
+  <div class="w-full max-w-full overflow-x-auto bg-white/95 border-b border-slate-200/90 shadow-2xs py-2 px-3 sm:px-4 no-scrollbar z-20">
+    <div class="max-w-[1440px] mx-auto flex items-center justify-start gap-2 sm:gap-2.5 text-xs font-black whitespace-nowrap w-max">
+      <a href="#home" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-800 hover:text-sky-700 border border-slate-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-house text-sky-600"></i>
+        <span>Home</span>
+      </a>
+      <a href="#forms" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-file-pdf text-rose-600"></i>
+        <span>Offline PDF Forms</span>
+        <span class="bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">24+</span>
+      </a>
+      <a href="#training" class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-circle-play text-purple-600"></i>
+        <span>Training Videos</span>
+        <span class="bg-purple-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">38</span>
+      </a>
+      <a href="#passphoto" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-camera text-sky-600"></i>
+        <span>Pass Photo AI</span>
+      </a>
+      <a href="#billmaker" class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-receipt text-amber-600"></i>
+        <span>CSC Bill Maker</span>
+      </a>
+      <a href="#pdftools" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-toolbox text-indigo-600"></i>
+        <span>Tools Suite</span>
+        <span class="bg-indigo-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">16+</span>
+      </a>
+      <a href="#links" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-link text-blue-600"></i>
+        <span>Important Links</span>
+        <span class="bg-blue-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">60+</span>
+      </a>
+      <a href="#leads" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-bolt text-emerald-600"></i>
+        <span>VLE Leads</span>
+        <span class="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">13+</span>
+      </a>
+      <a href="#contact" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 flex items-center gap-1.5 transition-all shadow-2xs">
+        <i class="fa-solid fa-headset text-teal-600"></i>
+        <span>Contact</span>
+      </a>
+    </div>
   </div>
 
   <!-- ==================== 3. MAIN CONTENT VIEWS ==================== -->

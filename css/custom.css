@@ -22,10 +22,50 @@ body {
   color: #1e293b;
 }
 
-/* Ensure hidden always overrides any flex or grid display */
-.hidden {
+/* Modal & dialog hidden states - safe override that doesn't break responsive classes */
+.hidden:not([class*="sm:"]):not([class*="md:"]):not([class*="lg:"]):not([class*="xl:"]):not([class*="2xl:"]) {
   display: none !important;
 }
+
+/* Explicit responsive utilities ensuring desktop/tablet visibility regardless of CSS precedence */
+@media (min-width: 640px) {
+  .sm\:flex { display: flex !important; }
+  .sm\:block { display: block !important; }
+  .sm\:inline { display: inline !important; }
+  .sm\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 768px) {
+  .md\:flex { display: flex !important; }
+  .md\:block { display: block !important; }
+  .md\:inline { display: inline !important; }
+  .md\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 1024px) {
+  .lg\:flex { display: flex !important; }
+  .lg\:block { display: block !important; }
+  .lg\:inline { display: inline !important; }
+  .lg\:inline-flex { display: inline-flex !important; }
+  .lg\:hidden { display: none !important; }
+  .vuo-header-nav { display: flex !important; }
+  .vuo-header-cta { display: flex !important; }
+  .vuo-mobile-toggle { display: none !important; }
+}
+
+@media (max-width: 1023px) {
+  .vuo-header-nav { display: none !important; }
+  .vuo-header-cta { display: none !important; }
+  .vuo-mobile-toggle { display: flex !important; }
+}
+
+@media (min-width: 1280px) {
+  .xl\:flex { display: flex !important; }
+  .xl\:block { display: block !important; }
+  .xl\:inline { display: inline !important; }
+  .xl\:inline-flex { display: inline-flex !important; }
+}
+
 
 .font-odia {
   font-family: 'Noto Sans Odia', 'Inter', sans-serif;
