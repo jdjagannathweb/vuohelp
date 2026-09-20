@@ -1,18 +1,5 @@
 [
     {
-        "id":  "ACT-1789908009570-927",
-        "name":  "JAGANNATH",
-        "mobile":  "9777021600",
-        "district":  "Puri",
-        "type":  "visit",
-        "action":  "ðŸŒ Re-visited Portal / Website Opened",
-        "item":  "CSC Portal Homepage",
-        "category":  "visit",
-        "timestamp":  1789908009571,
-        "dateStr":  "20/09/2026 06:10 PM",
-        "device":  "Computer"
-    },
-    {
         "id":  "ACT-1789889575378-819",
         "name":  "JAGANNATH",
         "mobile":  "9777021600",
