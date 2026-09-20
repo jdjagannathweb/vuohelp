@@ -1,5 +1,5 @@
 $port = 3000
-$root = if ($PSScriptRoot) { $PSScriptRoot } else { "C:\Users\Jagannath\Desktop\vuo-csc-help" }
+$root = if ($PSScriptRoot) { $PSScriptRoot } else { "C:\Users\Jagannath\.gemini\antigravity\scratch\vuo-csc-help" }
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")

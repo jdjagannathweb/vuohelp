@@ -1,5 +1,44 @@
 [
     {
+        "id":  "ACT-1789908009570-927",
+        "name":  "JAGANNATH",
+        "mobile":  "9777021600",
+        "district":  "Puri",
+        "type":  "visit",
+        "action":  "ðŸŒ Re-visited Portal / Website Opened",
+        "item":  "CSC Portal Homepage",
+        "category":  "visit",
+        "timestamp":  1789908009571,
+        "dateStr":  "20/09/2026 06:10 PM",
+        "device":  "Computer"
+    },
+    {
+        "id":  "ACT-1789889575378-819",
+        "name":  "JAGANNATH",
+        "mobile":  "9777021600",
+        "district":  "Puri",
+        "type":  "visit",
+        "action":  "ðŸŒ Re-visited Portal / Website Opened",
+        "item":  "CSC Portal Homepage",
+        "category":  "visit",
+        "timestamp":  1789889575378,
+        "dateStr":  "20/09/2026 01:02 PM",
+        "device":  "Computer"
+    },
+    {
+        "id":  "ACT-1789889506529-493",
+        "name":  "JAGANNATH",
+        "mobile":  "9777021600",
+        "district":  "Puri",
+        "type":  "download",
+        "action":  "Signed \u0026 Stamped PDF Document",
+        "item":  "Signed \u0026 Stamped PDF Document",
+        "category":  "pdf",
+        "timestamp":  1789889506529,
+        "dateStr":  "20/09/2026 01:01 PM",
+        "device":  "Computer"
+    },
+    {
         "id":  "ACT-1789886936225-336",
         "name":  "JAGANNATH",
         "mobile":  "9777021600",
