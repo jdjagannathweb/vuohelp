@@ -98,9 +98,8 @@ const VUO_SEARCH = {
     const q = query.toLowerCase().trim();
     const resultsContainer = document.getElementById('globalSearchResults');
     if (!resultsContainer) return;
-
     const tools = [
-      { name: "Pass Photo Maker", nameOdia: "ପାସ ଫଟୋ ମେକର", hash: "#passphoto", type: "Tool", icon: "📷", desc: "Create A4 passport sheets & adjust photo backgrounds" },
+      { name: "Gemini AI Passport Photo Studio", nameOdia: "ଜେମିନି AI ପାସପୋର୍ଟ ଷ୍ଟୁଡିଓ", hash: "#passphoto", type: "Tool", icon: "✨", desc: "Professional 35x45mm passport photo maker with Gemini AI prompt & A4 print sheet" },
       { name: "Image Compressor", nameOdia: "ଫଟୋ କମ୍ପ୍ରେସ୍", hash: "#imagetools", type: "Tool", icon: "🖼️", desc: "Compress image file size for portal limits" },
       { name: "Signature Resizer", nameOdia: "ସାଇନ (Signature) ରିସାଇଜ୍", hash: "#imagetools", type: "Tool", icon: "✍️", desc: "PAN and government portal signature optimizer" },
       { name: "CSC Bill Maker", nameOdia: "CSC ବିଲ୍ ମେକର", hash: "#billmaker", type: "Tool", icon: "🧾", desc: "Generate professional customer receipts with shop details" },
@@ -127,7 +126,9 @@ const VUO_SEARCH = {
       { name: "Custom QR Code Generator", nameOdia: "QR କୋଡ୍ ଜେନେରେଟର", hash: "#csctools-qrcode", type: "Tool", icon: "📱", desc: "Create UPI Payment QR, Web URL & Mobile QR standees" },
       { name: "CSC Advertisement Poster Maker", nameOdia: "ପୋଷ୍ଟର ମେକର", hash: "#csctools-poster", type: "Tool", icon: "📢", desc: "Subhadra Yojana, PAN & AEPS banking banner maker with VLE details" },
       { name: "Word to PDF Converter", nameOdia: "ୱାର୍ଡ ଟୁ PDF", hash: "#pdftools-wordtopdf", type: "Tool", icon: "📝", desc: "Convert Docx and text files to clean A4 PDF documents" },
-      { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdftools-pdfeditor", type: "Tool", icon: "✒️", desc: "Stamp official verified seals & annotations on PDF" }
+      { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdfeditor", type: "Tool", icon: "✒️", desc: "Interactive visual PDF editor, stamps & signatures" },
+      { name: "WhatsApp Image Resizer & Darkness Clear", nameOdia: "ହ୍ୱାଟ୍ସଆପ୍ ଡକ୍ୟୁମେଣ୍ଟ ରିସାଇଜର ଓ ଡାର୍କନେସ କ୍ଲିଅର", hash: "#whatsappresizer", type: "Tool", icon: "🟢", desc: "4-Corner perspective warp, clear darkness for printing & save ink" },
+      { name: "Image to PDF (<200KB Portal Mode)", nameOdia: "ଇମେଜ୍ ଟୁ PDF (<୨୦୦ KB)", hash: "#imgtopdf", type: "Tool", icon: "📑", desc: "Multi-image to PDF with Odisha e-District & Subhadra <200KB preset" }
     ];
 
     const links = VUO_LINKS.getAllLinks().map(l => ({
@@ -218,7 +219,9 @@ function openWelcomePopup() {
   const btnEl = document.getElementById('welcomePopupActionBtn');
 
   if (badgeEl) {
-    const bText = popupSettings.badgeText || '📢 OFFICIAL NOTIFICATION';
+    let bText = popupSettings.badgeText || 'OFFICIAL NOTIFICATION';
+    bText = bText.replace(/^[^\w\s\u0900-\u0DFF]+/, '').trim();
+    if (!bText || bText.includes('ð')) bText = 'OFFICIAL NOTIFICATION';
     badgeEl.innerHTML = `<i class="fa-solid fa-bullhorn text-xs"></i> <span>${bText}</span>`;
   }
   if (titleEl) {
@@ -257,10 +260,16 @@ function openWelcomePopup() {
 
   applyPopupImage(popupSettings.imageUrl);
 
-  // Fallback to IndexedDB if image in localStorage was truncated
-  if ((!popupSettings.imageUrl || popupSettings.imageUrl.length < 30) && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
-    window.VUO_IDB.getPdfBlob('vuo_popup_settings').then(entry => {
-      if (entry && entry.data && entry.data.imageUrl) {
+  // Fallback to IndexedDB if image in localStorage was truncated or stored in IDB
+  if ((!popupSettings.imageUrl || popupSettings.imageUrl === 'indexeddb' || popupSettings.imageUrl.length < 30) && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
+    window.VUO_IDB.getPdfBlob('vuo_popup_image').then(entry => {
+      if (entry && entry.data) {
+        applyPopupImage(entry.data);
+      } else {
+        return window.VUO_IDB.getPdfBlob('vuo_popup_settings');
+      }
+    }).then(entry => {
+      if (entry && entry.data && entry.data.imageUrl && entry.data.imageUrl !== 'indexeddb') {
         applyPopupImage(entry.data.imageUrl);
       }
     }).catch(err => console.warn(err));
@@ -296,10 +305,27 @@ function closeWelcomePopup() {
 }
 
 function initWelcomePopup() {
-  // If running on HTTP server, sync latest published popup settings in background
+  const today = new Date().toDateString();
+  const isSuppressed = localStorage.getItem('vle_popup_suppressed_date') === today;
+  const isClosedThisSession = sessionStorage.getItem('vuo_popup_closed') === '1';
+
+  // Helper to trigger popup display if enabled
+  const tryDisplayPopup = () => {
+    if (isSuppressed || isClosedThisSession) return;
+    const pop = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
+    if (pop.enabled !== false) {
+      setTimeout(() => {
+        if (sessionStorage.getItem('vuo_popup_closed') !== '1') {
+          openWelcomePopup();
+        }
+      }, 700);
+    }
+  };
+
+  // If running on HTTP/HTTPS server, sync latest published popup settings in background
   if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-    fetch('api/popup-settings')
-      .then(res => res.ok ? res.json() : null)
+    fetch('popup_settings.json?t=' + Date.now())
+      .then(res => res.ok ? res.json() : fetch('api/popup-settings').then(r => r.ok ? r.json() : null))
       .then(serverSettings => {
         if (serverSettings && serverSettings.title) {
           const local = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
@@ -308,7 +334,12 @@ function initWelcomePopup() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        tryDisplayPopup();
+      });
+  } else {
+    tryDisplayPopup();
   }
 }
 
@@ -786,6 +817,16 @@ const VUO_APP = {
       subTab = cleanHash.replace('pvcprint-', '');
     } else if (cleanHash === 'pvcprint') {
       viewName = 'pvcprint';
+    } else if (cleanHash === 'whatsappresizer' || cleanHash === 'whatsapp-resizer' || cleanHash === 'whatsapp') {
+      viewName = 'whatsappresizer';
+    } else if (cleanHash === 'geminipassport' || cleanHash === 'gemini') {
+      viewName = 'passphoto';
+    } else if (cleanHash === 'pdfeditor') {
+      viewName = 'pdftools';
+      subTab = 'pdfEditor';
+    } else if (cleanHash === 'imgtopdf' || cleanHash === 'imagetopdf') {
+      viewName = 'pdftools';
+      subTab = 'imgToPdf';
     }
 
     // Hide all view containers
@@ -828,8 +869,22 @@ const VUO_APP = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Initialize specific view modules and switch sub-tabs on route entry
-    if (viewName === 'passphoto') {
+    if (viewName === 'whatsappresizer') {
+      if (typeof VUO_WHATSAPP_RESIZER !== 'undefined') {
+        VUO_WHATSAPP_RESIZER.init();
+      }
+    } else if (viewName === 'passphoto') {
       VUO_PASSPHOTO.init();
+      if (cleanHash === 'geminipassport' || cleanHash === 'gemini') {
+        setTimeout(() => {
+          const geminiPanel = document.getElementById('passPhotoGeminiPanel');
+          if (geminiPanel && geminiPanel.classList.contains('hidden')) {
+            VUO_PASSPHOTO.toggleGeminiAssistant();
+          }
+          const studioCard = document.getElementById('geminiPassportStudioCard') || geminiPanel;
+          if (studioCard) studioCard.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
     } else if (viewName === 'imagetools') {
       VUO_IMAGETOOLS.init();
       if (subTab) {

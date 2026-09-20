@@ -77,21 +77,11 @@ const VUO_GATE = {
   },
 
   updateUserGreetingBadge() {
-    const profile = this.getProfile();
     const greetContainer = document.getElementById('vleUserGreetingPill');
-    if (!greetContainer) return;
-
-    if (profile && profile.name) {
-      greetContainer.innerHTML = `
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Namaskar, <strong>${profile.name.split(' ')[0]}</strong> (${profile.district})</span>
-          <button type="button" onclick="VUO_GATE.openProfileModal()" class="text-emerald-800 hover:text-emerald-950 ml-1 text-[10px] underline cursor-pointer" title="Edit my details">Edit</button>
-        </div>
-      `;
-      greetContainer.classList.remove('hidden');
-    } else {
+    if (greetContainer) {
+      greetContainer.innerHTML = '';
       greetContainer.classList.add('hidden');
+      greetContainer.style.display = 'none';
     }
   },
 

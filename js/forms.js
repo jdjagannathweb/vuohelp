@@ -1,3 +1,51 @@
+
+window.VUO_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1F7z-O5uxfMarZyJH8rsrEryuxVQEC6lX?usp=sharing";
+window.VUO_DRIVE_FORMS_MAP = {
+  "5-18.pdf": "13LMfLqFqRSzMTbQB3Y6Mt5BYaQHhBJLx",
+  "18 +.pdf": "1IiscSfKD-uxjCV4JkAwtas8HryhFYO-W",
+  "AC Open Form For BC BOI 2.pdf": "1fEdsMdYzL2axlvJUEVBI0hSJhTzlh1pC",
+  "AC Open Form For BC BOI.pdf": "1trlqpueUK1efXhe9Pmy8LFemdNVrtgk8",
+  "ANGANWADI 1.pdf": "1OV0kZf_nrJ_cpV4aeSx9mZOjn1aVKr8Z",
+  "ANGANWADI 2.pdf": "1pQF7PVnfWF4PLfWRarTam4VH_VnBRPMd",
+  "bhaga chasi.pdf": "18yfgLEtT-thH5WfikuVb7iUOrKD3kk6z",
+  "Diclaration of sale vehicle.pdf": "1uvP5eGPQCBgDIvlfKK3HdOkmCxUNmr5m",
+  "fasal bima.pdf": "1d25aOsyYBarYBNeeOa-IeK9Db9KIXSq7",
+  "FORM LEBOUR CARD.pdf": "1EberSvR9Ya_ZGHwzO6-3VTpRnNeFSgnl",
+  "Form15G.pdf": "1tg6nQdb7YWUPr_-datQm7ckNr_NFlWSQ",
+  "Form121.pdf": "1O7fQ5StJK_O2VYT0QJ7kNB4Y5wVRUiNe",
+  "hf based adress form.pdf": "1-gV0FWpzqjRUEGqk1i61nAPs8lHSefjG",
+  "ligal hire form.pdf": "1yLHn9eXjP42gjTLrZZDRpSbmfW6f1i6m",
+  "monthly form.pdf": "13GQ2MbVtQJaw9Rt4YMFA_MzZwMS5fXmS",
+  "ri form bhata.pdf": "1gjOzoectJT9KFxVFqkrfw8ukOurZStJF",
+  "SAHAMATI PATRA PADDY.pdf": "1ENdUnapJLC68-Dyu8-0sRu1hm4Ycp90q",
+  "SELF DECLARATION FOR CEWS.pdf": "1FRwaHUVYBtoRbooA35SVsUyGwUpwCpQG",
+  "SELF DECLARATION FOR ISSUE OF INCOME CERTIFICATE.pdf": "1ITQantiHaVjEleKDlQJ6P5LOg8VazYd3",
+  "SELF DECLARATION FOR ISSUE OF O.B.C CERTIFICATE.pdf": "161cJdMVhBLrtbOdnqaAlJZAnW1KA_Wlo",
+  "SELF DECLARATION FOR ISSUE OF RESIDENCE CERTIFICATE.pdf": "1g2CRDMnSVvWSt5v_aGdmASZ8Rd9oDHKg",
+  "SELF DECLARATION FOR ISSUE OF S.C_S.T. CERTIFICATE.pdf": "1axwrRD9w9OJBPoT0oCYk1l9T1XJpZ00O",
+  "SELF DECLARATION FOR ISSUE OF S.E.B.C CERTIFICATE.pdf": "1hv7XBOQoqBBJq5-wtbjTNySkJ4xSMP2f",
+  "self genelogy PADDY.pdf": "1Bz3FwmBaiw36w4layvt8Fuk3kuaEft2r",
+  "UIDAI Standard Form.pdf": "1OcLaulvpNz2VJZbtBSBnPUL9_uD5wppb"
+};
+
+window.vuoResolveDriveFormUrl = function(form) {
+  if (!form) return form;
+  if (form.downloadUrl && form.downloadUrl.startsWith('http') && form.previewUrl && form.previewUrl.startsWith('http')) {
+    return form;
+  }
+  const raw = form.fileUrl || form.url || '';
+  const fname = decodeURIComponent(raw.split('/').pop() || '').trim();
+  if (window.VUO_DRIVE_FORMS_MAP && window.VUO_DRIVE_FORMS_MAP[fname]) {
+    const fid = window.VUO_DRIVE_FORMS_MAP[fname];
+    form.isDrive = true;
+    form.storageType = 'google_drive';
+    form.previewUrl = `https://drive.google.com/file/d/${fid}/preview`;
+    form.downloadUrl = `https://drive.usercontent.google.com/download?id=${fid}&export=download`;
+    form.fileUrl = `https://drive.google.com/file/d/${fid}/view?usp=sharing`;
+  }
+  return form;
+};
+
 /**
  * VUO CSC HELP - CSC Offline PDF Forms & Formats Hub
  * Allows VLEs to search, preview, and download official Odisha & Central application PDFs.
@@ -199,7 +247,7 @@ const VUO_FORMS = {
         }
       });
       
-      const merged = Array.from(formsMap.values());
+      const merged = Array.from(formsMap.values()).map(f => (typeof window.vuoResolveDriveFormUrl === 'function') ? window.vuoResolveDriveFormUrl(f) : f);
       return merged;
     } catch (e) {
       console.warn("getAllForms error:", e);

@@ -56,13 +56,36 @@ const VUO_DB = {
     if (!this.storage) {
       throw new Error("Firebase Storage not available");
     }
-    if (onProgress) onProgress("Uploading to Google Firebase Cloud Storage...");
+    if (onProgress) onProgress("Checking Firebase Cloud Storage...");
     const cleanName = (file.name || 'form.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
     const safePath = `csc_forms/${Date.now()}_${cleanName}`;
     const storageRef = this.storage.ref().child(safePath);
-    const snapshot = await storageRef.put(file);
-    const downloadUrl = await snapshot.ref.getDownloadURL();
+
+    const uploadTask = storageRef.put(file);
+    const uploadPromise = uploadTask.then(snapshot => snapshot.ref.getDownloadURL());
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        try { uploadTask.cancel(); } catch (_) {}
+        reject(new Error("Firebase Storage connection timeout (404/unavailable)"));
+      }, 2000);
+    });
+
+    const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
     console.log("☁️ File uploaded to Firebase Storage:", downloadUrl);
+    return downloadUrl;
+  },
+
+  async uploadImageToStorage(fileOrBlob, onProgress) {
+    if (!this.storage) {
+      throw new Error("Firebase Storage not available");
+    }
+    if (onProgress) onProgress("Uploading notice photo to Firebase Cloud Storage...");
+    const cleanName = (fileOrBlob.name || 'notice_poster.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safePath = `notice_posters/${Date.now()}_${cleanName}`;
+    const storageRef = this.storage.ref().child(safePath);
+    const snapshot = await storageRef.put(fileOrBlob);
+    const downloadUrl = await snapshot.ref.getDownloadURL();
+    console.log("☁️ Notice photo uploaded to Firebase Storage:", downloadUrl);
     return downloadUrl;
   },
 

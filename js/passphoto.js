@@ -14,11 +14,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   suitScale: 1.0, // Scale multiplier for suit shoulder width (0.75 to 1.35) // 'none', 'suit_black', 'suit_navy', 'suit_grey', 'women_blazer', 'shirt_white'
   copies: 6,
   addBorder: true,
-  brightness: 100,
-  contrast: 100,
-  sharpness: 25, // 0 to 100%
+  brightness: 106,
+  contrast: 108,
+  sharpness: 40, // 0 to 100%
   clarity: 15, // 0 to 100%
-  autoEnhance: false,
+  autoEnhance: true,
   viewMode: 'fit', // 'fit' (entire A4 visible) or 'zoom' (100% actual pixels)
   studioMode: 'single', // 'single' or 'couple' (husband & wife)
   wifeCropper: null,
@@ -38,6 +38,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   },
 
   init() {
+    try { this.updateGeminiStudioUi(); } catch(e) {}
     if (this.geminiApiKey && (this.geminiApiKey.startsWith('AQ.Ab8RN6') || !this.geminiApiKey.startsWith('AIza'))) {
       this.geminiApiKey = '';
       try { localStorage.removeItem('vuo_gemini_api_key'); } catch(e) {}
@@ -280,7 +281,111 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       });
     }
 
-    // Manual enhancer sliders removed - All studio styling is driven by Gemini AI Prompt
+    // Ultra-HD Facial Sharpness Slider
+    const sharpnessSlider = document.getElementById('passPhotoSharpness');
+    if (sharpnessSlider) {
+      sharpnessSlider.addEventListener('input', (e) => {
+        this.sharpness = parseInt(e.target.value, 10) || 0;
+        const valEl = document.getElementById('passPhotoSharpnessVal');
+        if (valEl) valEl.textContent = `${this.sharpness}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Studio Soft-Box Lighting (Brightness) Slider
+    const brightnessSlider = document.getElementById('passPhotoBrightness');
+    if (brightnessSlider) {
+      brightnessSlider.addEventListener('input', (e) => {
+        this.brightness = parseInt(e.target.value, 10) || 100;
+        const valEl = document.getElementById('passPhotoBrightnessVal');
+        if (valEl) valEl.textContent = `${this.brightness}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Portrait Depth & Contrast Slider
+    const contrastSlider = document.getElementById('passPhotoContrast');
+    if (contrastSlider) {
+      contrastSlider.addEventListener('input', (e) => {
+        this.contrast = parseInt(e.target.value, 10) || 100;
+        const valEl = document.getElementById('passPhotoContrastVal');
+        if (valEl) valEl.textContent = `${this.contrast}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Auto-Enhance Skin & Dynamic Range
+    const autoEnhanceCheck = document.getElementById('passPhotoAutoEnhance');
+    if (autoEnhanceCheck) {
+      autoEnhanceCheck.addEventListener('change', (e) => {
+        this.autoEnhance = e.target.checked;
+        this.generateSheet();
+      });
+    }
+  },
+
+  setEnhancePreset(type) {
+    ['studio', 'bright', 'sharp', 'reset'].forEach(p => {
+      const btn = document.getElementById(`preset_btn_${p}`);
+      if (btn) {
+        btn.className = 'px-2 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-[11px] font-bold hover:bg-slate-50 transition shadow-2xs flex flex-col items-center gap-0.5 cursor-pointer';
+      }
+    });
+    const activeBtn = document.getElementById(`preset_btn_${type}`);
+    if (activeBtn) {
+      activeBtn.className = 'px-2 py-2 rounded-xl border border-sky-300 bg-sky-50 text-sky-800 text-[11px] font-black hover:bg-sky-100 transition shadow-2xs flex flex-col items-center gap-0.5 ring-2 ring-sky-500 cursor-pointer';
+    }
+
+    if (type === 'studio') {
+      this.brightness = 106;
+      this.contrast = 108;
+      this.sharpness = 40;
+      this.autoEnhance = true;
+    } else if (type === 'bright') {
+      this.brightness = 118;
+      this.contrast = 105;
+      this.sharpness = 35;
+      this.autoEnhance = true;
+    } else if (type === 'sharp') {
+      this.brightness = 104;
+      this.contrast = 112;
+      this.sharpness = 65;
+      this.autoEnhance = true;
+    } else if (type === 'reset') {
+      this.brightness = 100;
+      this.contrast = 100;
+      this.sharpness = 0;
+      this.autoEnhance = false;
+    }
+
+    const sInput = document.getElementById('passPhotoSharpness');
+    if (sInput) sInput.value = this.sharpness;
+    const sVal = document.getElementById('passPhotoSharpnessVal');
+    if (sVal) sVal.textContent = `${this.sharpness}%`;
+
+    const bInput = document.getElementById('passPhotoBrightness');
+    if (bInput) bInput.value = this.brightness;
+    const bVal = document.getElementById('passPhotoBrightnessVal');
+    if (bVal) bVal.textContent = `${this.brightness}%`;
+
+    const cInput = document.getElementById('passPhotoContrast');
+    if (cInput) cInput.value = this.contrast;
+    const cVal = document.getElementById('passPhotoContrastVal');
+    if (cVal) cVal.textContent = `${this.contrast}%`;
+
+    const aInput = document.getElementById('passPhotoAutoEnhance');
+    if (aInput) aInput.checked = this.autoEnhance;
+
+    this.generateSheet();
+    if (typeof showToast === 'function') {
+      const msgs = {
+        studio: "🌟 Studio HD Enhancer Applied (Balanced Bright & Sharp)",
+        bright: "💡 Shadow Lifter Applied (Clears Dark Shadows)",
+        sharp: "🔍 Ultra-Sharp Applied (Enhances Blurry Eyes & Features)",
+        reset: "🔄 Reset to Raw Original Photo"
+      };
+      showToast(msgs[type] || "Enhancement applied", "info");
+    }
   },
 
   loadFile(file) {
@@ -431,10 +536,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   resetCrop() {
     if (this.cropper) {
       this.cropper.reset();
-      this.brightness = 100;
-      this.contrast = 100;
-      this.sharpness = 0;
-      this.generateSheet();
+      this.setEnhancePreset('reset');
     }
   },
 
@@ -1964,19 +2066,80 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       return (k.startsWith('AQ.Ab8RN6') || !k.startsWith('AIza')) ? '' : k;
     } catch(e) { return ''; }
   })(),
-  defaultGeminiPrompt: `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`,
+  defaultGeminiPrompt: `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`,
   geminiPrompt: (function() {
     try {
-      return localStorage.getItem('vuo_gemini_prompt') || `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`;
+      const saved = localStorage.getItem('vuo_gemini_prompt');
+      if (saved && saved.includes('35x45mm')) return saved;
+      return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
     } catch(e) {
-      return `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`;
+      return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
     }
   })(),
+  geminiAttire: 'same',
+  geminiBg: 'blue',
   lastGeminiRecommendation: null,
   _aiSegmenter: null,
   _cachedAiMask: null,
   _cachedWifeAiMask: null,
   _isSegmenting: false,
+
+  buildGeminiPassportPrompt() {
+    const attireMap = {
+      same: 'in a same dress',
+      suit: 'in a formal dark navy blue suit with a clean collared white shirt and dark tie',
+      shirt: 'in a crisp formal white collared dress shirt',
+      blazer: 'in a sharp professional formal dark blazer',
+      saree: 'in a neat formal traditional saree with visible shoulders'
+    };
+    const bgMap = {
+      blue: 'solid neutral light blue (#87CEEB)',
+      white: 'solid clean plain white (#FFFFFF)',
+      gray: 'solid neutral light gray'
+    };
+
+    const dressDesc = attireMap[this.geminiAttire] || attireMap.same;
+    const bgDesc = bgMap[this.geminiBg] || bgMap.blue;
+
+    return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a ${bgDesc}. Dress the person ${dressDesc} with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
+  },
+
+  updateGeminiStudioUi() {
+    const prompt = this.buildGeminiPassportPrompt();
+    this.geminiPrompt = prompt;
+
+    const promptInput = document.getElementById('geminiPromptInput');
+    if (promptInput) promptInput.value = prompt;
+
+    const promptDisplay = document.getElementById('geminiMasterPromptText');
+    if (promptDisplay) promptDisplay.textContent = `"${prompt}"`;
+
+    // Highlight active Dress button
+    const attireBtns = document.querySelectorAll('.gemini-attire-btn');
+    attireBtns.forEach(btn => {
+      const attireVal = btn.getAttribute('data-attire');
+      if (attireVal === this.geminiAttire) {
+        btn.className = 'gemini-attire-btn px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 text-[11px] font-bold text-slate-950 shadow-md shadow-amber-500/30 ring-2 ring-amber-300 scale-105 transition-all cursor-pointer';
+      } else {
+        btn.className = 'gemini-attire-btn px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 text-[11px] text-indigo-200 border border-indigo-500/30 transition-all cursor-pointer';
+      }
+    });
+
+    // Highlight active Background button
+    const bgBtns = document.querySelectorAll('.gemini-bg-btn');
+    bgBtns.forEach(btn => {
+      const bgVal = btn.getAttribute('data-bg');
+      if (bgVal === this.geminiBg) {
+        btn.className = 'gemini-bg-btn px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-400 to-blue-500 text-[11px] font-bold text-white shadow-md shadow-sky-500/30 ring-2 ring-sky-300 scale-105 transition-all cursor-pointer';
+      } else {
+        btn.className = 'gemini-bg-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-600 transition-all cursor-pointer';
+      }
+    });
+
+    try {
+      localStorage.setItem('vuo_gemini_prompt', prompt);
+    } catch (e) {}
+  },
 
   toggleGeminiAssistant() {
     const panel = document.getElementById('passPhotoGeminiPanel');
@@ -1993,6 +2156,99 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       }
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  },
+
+  copyGeminiPrompt(isQuiet = false) {
+    const promptInput = document.getElementById('geminiPromptInput');
+    const promptDisplay = document.getElementById('geminiMasterPromptText');
+    const textToCopy = (promptInput && promptInput.value.trim()) || 
+                       (promptDisplay && promptDisplay.textContent.trim().replace(/^["']|["']$/g, '')) || 
+                       this.geminiPrompt || 
+                       this.buildGeminiPassportPrompt();
+
+    // 1. Guaranteed synchronous execCommand copy fallback (works directly on click on all devices)
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = textToCopy;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '-9999px';
+      ta.setAttribute('readonly', '');
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (err) {
+      console.warn('execCommand copy fallback error:', err);
+    }
+
+    // 2. Modern navigator.clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        navigator.clipboard.writeText(textToCopy).catch(e => console.warn('writeText caught:', e));
+      } catch (e) {}
+    }
+
+    // Immediate in-place visual feedback on buttons and prompt text box
+    const masterBtn = document.getElementById('geminiMasterCopyBtn');
+    const masterBtnText = document.getElementById('geminiMasterCopyBtnText');
+    const smallBtn = document.getElementById('geminiSmallCopyBtn');
+    const promptBox = document.getElementById('geminiMasterPromptText');
+
+    if (masterBtnText) {
+      masterBtnText.textContent = '✅ PROMPT COPIED!';
+    }
+    if (masterBtn) {
+      masterBtn.classList.remove('from-amber-400', 'to-orange-500', 'shadow-amber-500/25');
+      masterBtn.classList.add('from-emerald-400', 'to-teal-500', 'shadow-emerald-500/25', 'ring-2', 'ring-emerald-300');
+    }
+
+    if (smallBtn) {
+      smallBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-300 font-bold">Copied!</span>';
+    }
+
+    if (promptBox) {
+      promptBox.classList.add('ring-2', 'ring-emerald-400/80', 'bg-emerald-950/40');
+    }
+
+    if (this._copyTimer) clearTimeout(this._copyTimer);
+    this._copyTimer = setTimeout(() => {
+      if (masterBtnText) {
+        masterBtnText.textContent = '📋 Copy Gemini Master Prompt';
+      }
+      if (masterBtn) {
+        masterBtn.classList.remove('from-emerald-400', 'to-teal-500', 'shadow-emerald-500/25', 'ring-2', 'ring-emerald-300');
+        masterBtn.classList.add('from-amber-400', 'to-orange-500', 'shadow-amber-500/25');
+      }
+      if (smallBtn) {
+        smallBtn.innerHTML = '<i class="fa-regular fa-copy"></i> <span>Click to Copy</span>';
+      }
+      if (promptBox) {
+        promptBox.classList.remove('ring-2', 'ring-emerald-400/80', 'bg-emerald-950/40');
+      }
+    }, 2500);
+
+    if (typeof showToast === 'function') {
+      showToast('📋 Gemini AI Passport Prompt copied to clipboard!', 'success');
+    }
+  },
+
+  openGeminiAiStudio() {
+    window.open('https://gemini.google.com/app', '_blank');
+  },
+
+  setGeminiAttire(dressType) {
+    this.geminiAttire = dressType || 'same';
+    this.updateGeminiStudioUi();
+    this.copyGeminiPrompt(true);
+  },
+
+  setGeminiBg(bgType) {
+    this.geminiBg = bgType || 'blue';
+    this.updateGeminiStudioUi();
+    this.copyGeminiPrompt(true);
   },
 
   saveGeminiApiKey() {
@@ -2577,10 +2833,12 @@ if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       try { VUO_PASSPHOTO.bindEvents(); } catch(e) {}
+      try { VUO_PASSPHOTO.updateGeminiStudioUi(); } catch(e) {}
     });
   } else {
     setTimeout(() => {
       try { VUO_PASSPHOTO.bindEvents(); } catch(e) {}
+      try { VUO_PASSPHOTO.updateGeminiStudioUi(); } catch(e) {}
     }, 50);
   }
 }

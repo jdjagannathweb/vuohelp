@@ -516,3 +516,194 @@ body {
   color: #9a3412;
 }
 
+/* ==========================================================================
+   Pi7 Style Interactive PDF Text Layer & Live In-Place Editor
+   ========================================================================== */
+#pdfEditorCanvasWrapper {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+#pdfEditorTextLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.pdf-text-node {
+  position: absolute;
+  box-sizing: border-box;
+  color: transparent;
+  cursor: text;
+  line-height: 1;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 2px;
+  z-index: 10;
+  pointer-events: auto;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.pdf-text-node:hover {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+  border: 1px dashed rgba(2, 132, 199, 0.6) !important;
+  cursor: pointer;
+}
+
+.pdf-text-node.is-replaced {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.pdf-text-node.is-replaced:hover {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+  border: 1px dashed rgba(2, 132, 199, 0.6) !important;
+}
+
+.pdf-inline-editor {
+  position: absolute;
+  z-index: 60;
+  box-sizing: border-box;
+  padding: 0 4px;
+  margin: 0;
+  border: 1.5px solid #0284c7;
+  border-radius: 3px;
+  background-color: transparent;
+  color: #0f172a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 600;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+  line-height: 1.2;
+}
+
+.pdf-inline-editor:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.pdf-custom-text-node {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.pdf-custom-text-node:hover {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  border: 1px dashed rgba(37, 99, 235, 0.6) !important;
+}
+
+/* Pi7 Style Floating Text Formatting Bar */
+.pdf-floating-format-bar {
+  position: absolute;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25), 0 2px 6px -1px rgba(15, 23, 42, 0.1);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  color: #1e293b;
+  user-select: none;
+  animation: formatBarFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+@keyframes formatBarFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pdf-format-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.pdf-format-btn:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.pdf-format-btn.is-active {
+  background: #0284c7;
+  border-color: #0369a1;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.3);
+}
+
+.pdf-format-select {
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+}
+
+.pdf-format-size-input {
+  width: 38px;
+  height: 24px;
+  text-align: center;
+  padding: 0 2px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  outline: none;
+}
+
+.pdf-format-color-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.pdf-format-color-chip:hover {
+  transform: scale(1.15);
+}
+
+.pdf-format-color-chip.is-active {
+  box-shadow: 0 0 0 2px #0284c7;
+  transform: scale(1.1);
+}
+
+.pdf-format-divider {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+  margin: 0 2px;
+}

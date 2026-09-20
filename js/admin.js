@@ -230,6 +230,8 @@ const VUO_ADMIN = {
         statusEl.classList.remove('hidden');
       }
 
+      this._pendingPopupImageFile = file;
+
       try {
         const res = await this.compressNoticeImage(file);
         const preview = document.getElementById('adminPopupPosterPreview');
@@ -245,11 +247,16 @@ const VUO_ADMIN = {
 
         this._pendingPopupImageBlob = res.dataUrl;
 
+        // Immediately cache image in IndexedDB to avoid localStorage quota issues
+        if (window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
+          window.VUO_IDB.savePdfBlob('vuo_popup_image', res.dataUrl, file.name || 'notice_image');
+        }
+
         if (statusEl) {
           statusEl.innerHTML = `<span class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> ${res.width}×${res.height} px HD Ready (${res.sizeKb} KB)</span>`;
           statusEl.classList.remove('hidden');
         }
-        showToast(`Full photo optimized successfully (${res.width}×${res.height}px)!`, "success");
+        showToast(`Notice photo optimized successfully (${res.width}×${res.height}px)!`, "success");
       } catch (err) {
         console.error("Notice photo processing error:", err);
         showToast("Error processing photo. Please try another image.", "error");
@@ -558,6 +565,7 @@ const VUO_ADMIN = {
 
   setFormUploadMode(mode) {
     this._formUploadMode = mode;
+    window._vuoFormUploadMode = mode;
     const urlBtn = document.getElementById('adminFormModeUrlBtn');
     const fileBtn = document.getElementById('adminFormModeFileBtn');
     const urlBox = document.getElementById('adminFormUrlBox');
@@ -595,6 +603,9 @@ const VUO_ADMIN = {
   },
 
   async handleAddPdfForm() {
+    if (typeof window.vuoSubmitPdfForm === 'function') {
+      return window.vuoSubmitPdfForm();
+    }
     const titleInput = document.getElementById('adminFormTitle');
     let title = titleInput ? titleInput.value.trim() : '';
     const titleOdia = document.getElementById('adminFormTitleOdia').value.trim();
@@ -678,7 +689,6 @@ const VUO_ADMIN = {
             if (progressText) progressText.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> ${msg}`;
             if (progressBar) progressBar.style.width = '70%';
             if (progressPercent) progressPercent.textContent = '70%';
-            showToast(msg, "info");
           });
 
           if (cloudRes && cloudRes.url && cloudRes.url.startsWith('http')) {
@@ -689,13 +699,24 @@ const VUO_ADMIN = {
             if (progressBar) progressBar.style.width = '100%';
             if (progressPercent) progressPercent.textContent = '100%';
             if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Cloud Upload Success!`;
+          } else {
+            fileUrl = `forms/${selectedFile.name}`;
+            downloadUrl = '';
+            previewUrl = '';
+            storageType = 'indexeddb';
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressPercent) progressPercent.textContent = '100%';
+            if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Saved to Offline High-Capacity DB!`;
           }
         } catch (cloudErr) {
           console.warn("Cloud upload attempt finished:", cloudErr);
+          if (progressBar) progressBar.style.width = '100%';
+          if (progressPercent) progressPercent.textContent = '100%';
+          if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Saved to Offline High-Capacity DB!`;
         } finally {
           setTimeout(() => {
             if (progressBox) progressBox.classList.add('hidden');
-          }, 1500);
+          }, 1200);
         }
       }
 
@@ -703,19 +724,20 @@ const VUO_ADMIN = {
         fileUrl = `forms/${selectedFile.name}`;
       }
 
-      // 3. Local server background write if available
+      // 3. Local server write if running on local server
       try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            await fetch('/api/upload-form', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileName: selectedFile.name, base64Data: e.target.result })
-            });
-          } catch (_) {}
-        };
-        reader.readAsDataURL(selectedFile);
+        const toBase64 = (f) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(f);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = error => reject(error);
+        });
+        const b64 = await toBase64(selectedFile);
+        await fetch('/api/upload-form', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: selectedFile.name, base64Data: b64 })
+        });
       } catch (_) {}
     }
 
@@ -1168,6 +1190,21 @@ const VUO_ADMIN = {
     const buttonLink = document.getElementById('adminPopupButtonLink') ? document.getElementById('adminPopupButtonLink').value.trim() : '#passphoto';
     let imageUrl = document.getElementById('adminPopupPosterUrl') ? document.getElementById('adminPopupPosterUrl').value.trim() : '';
 
+    // If a new photo file was chosen, upload to Firebase Storage if available
+    if (this._pendingPopupImageFile && typeof VUO_DB !== 'undefined' && VUO_DB.storage) {
+      try {
+        showToast("Uploading notice photo to Firebase Cloud Storage...", "info");
+        const fireUrl = await VUO_DB.uploadImageToStorage(this._pendingPopupImageFile);
+        if (fireUrl) {
+          imageUrl = fireUrl;
+          const urlInput = document.getElementById('adminPopupPosterUrl');
+          if (urlInput) urlInput.value = fireUrl;
+        }
+      } catch (fbErr) {
+        console.warn("Firebase notice image upload fallback:", fbErr);
+      }
+    }
+
     // If title is blank, provide a sensible default so save is never blocked
     if (!title) {
       title = imageUrl ? "Official Notice / ଅଫିସିଆଲ୍ ନୋଟିସ୍" : "Official Digital Updates — VLE HELP DESK";
@@ -1188,11 +1225,20 @@ const VUO_ADMIN = {
       updatedAtTimestamp: Date.now()
     };
 
+    // If imageUrl is data URL, save high-res copy in IndexedDB
+    if (imageUrl && imageUrl.startsWith('data:image') && window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
+      window.VUO_IDB.savePdfBlob('vuo_popup_image', imageUrl, 'notice_image');
+    }
+
     // 1. Channel A: Save to Local Storage & IndexedDB (Immediate local responsiveness)
     try {
       localStorage.setItem('vuo_popup', JSON.stringify(popupObj));
     } catch (e) {
-      console.warn("localStorage quota exceeded, storing in IndexedDB:", e);
+      console.warn("localStorage quota exceeded, storing with IDB reference:", e);
+      try {
+        const safePop = { ...popupObj, imageUrl: 'indexeddb' };
+        localStorage.setItem('vuo_popup', JSON.stringify(safePop));
+      } catch (_) {}
     }
     if (window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
       window.VUO_IDB.savePdfBlob('vuo_popup_settings', popupObj, 'vuo_popup_settings');
@@ -1225,7 +1271,11 @@ const VUO_ADMIN = {
     let cloudSynced = false;
     if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized) {
       try {
-        const cloudRes = await VUO_DB.cloudSavePopup(popupObj);
+        const firestoreObj = { ...popupObj };
+        if (firestoreObj.imageUrl && firestoreObj.imageUrl.length > 500000) {
+          firestoreObj.imageUrl = '';
+        }
+        const cloudRes = await VUO_DB.cloudSavePopup(firestoreObj);
         if (cloudRes && cloudRes.success) {
           cloudSynced = true;
         }
@@ -1288,6 +1338,18 @@ const VUO_ADMIN = {
     } else {
       showToast("Notice & Photo saved successfully! Live preview updated.", "success");
     }
+  },
+
+  downloadPopupJson() {
+    const pop = JSON.parse(localStorage.getItem('vuo_popup') || JSON.stringify(VUO_DATA.popupSettings || {}));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pop, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = "popup_settings.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast("popup_settings.json downloaded! You can upload it to your repository.", "success");
   },
 
   // ---------------- 8. SECURITY & PASSWORD ---------------- //
