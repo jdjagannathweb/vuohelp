@@ -19,6 +19,9 @@ const VUO_CSCTOOLS = {
     this.initTypingTest();
     this.initQrCode();
     this.initPosterMaker();
+    if (typeof VUO_CREDITKHATA !== 'undefined') {
+      VUO_CREDITKHATA.init();
+    }
   },
 
   switchTab(tabId) {
@@ -28,7 +31,7 @@ const VUO_CSCTOOLS = {
       if (target === tabId) {
         btn.className = 'csctool-tab-btn px-4 py-2.5 rounded-xl text-xs font-black transition-all bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20 flex items-center gap-2 cursor-pointer';
       } else {
-        btn.className = 'csctool-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2 cursor-pointer';
+        btn.className = 'csctool-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition-all flex items-center gap-2 cursor-pointer';
       }
     });
 
@@ -39,6 +42,11 @@ const VUO_CSCTOOLS = {
         panel.classList.add('hidden');
       }
     });
+
+    if (tabId === 'credit' && typeof VUO_CREDITKHATA !== 'undefined') {
+      VUO_CREDITKHATA.renderMetrics();
+      VUO_CREDITKHATA.renderList();
+    }
   },
 
   /* ================= 1. GOVT ID CARD & PVC PRINT MAKER ================= */
@@ -786,7 +794,51 @@ const VUO_CSCTOOLS = {
   },
 
   /* ================= 7. CSC ADVERTISEMENT POSTER MAKER ================= */
+  posterCustomImg: null,
+
   initPosterMaker() {
+    this.renderPoster();
+  },
+
+  handlePosterPhotoUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        this.posterCustomImg = img;
+        const ctrls = document.getElementById('posterPhotoControls');
+        const rmBtn = document.getElementById('posterPhotoRemoveBtn');
+        if (ctrls) ctrls.classList.remove('hidden');
+        if (rmBtn) rmBtn.classList.remove('hidden');
+        this.renderPoster();
+        if (typeof showToast === 'function') {
+          showToast("Custom photo loaded on poster! Use slider to resize.", "success");
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  },
+
+  removePosterPhoto() {
+    this.posterCustomImg = null;
+    const input = document.getElementById('posterCustomPhoto');
+    if (input) input.value = '';
+    const ctrls = document.getElementById('posterPhotoControls');
+    const rmBtn = document.getElementById('posterPhotoRemoveBtn');
+    if (ctrls) ctrls.classList.add('hidden');
+    if (rmBtn) rmBtn.classList.add('hidden');
+    this.renderPoster();
+    if (typeof showToast === 'function') {
+      showToast("Custom photo removed.", "info");
+    }
+  },
+
+  onPhotoSizeChange(val) {
+    const lbl = document.getElementById('posterPhotoSizeLabel');
+    if (lbl) lbl.textContent = val + '%';
     this.renderPoster();
   },
 
@@ -803,7 +855,7 @@ const VUO_CSCTOOLS = {
     const phone = document.getElementById('posterPhone')?.value.trim() || '+91 9937037131';
     const address = document.getElementById('posterAddress')?.value.trim() || 'Near Block Office, Satyabadi, Puri, Odisha';
 
-    // 1. Background Gradient
+    // ================= MODEL 1: SUBHADRA YOJANA & WELFARE SCHEMES =================
     if (template === 'subhadra') {
       const grad = ctx.createLinearGradient(0, 0, 0, 1600);
       grad.addColorStop(0, '#991b1b');
@@ -824,158 +876,317 @@ const VUO_CSCTOOLS = {
 
       // Top Tagline
       ctx.fillStyle = '#fef08a';
-      ctx.font = 'bold 32px sans-serif';
+      ctx.font = 'bold 30px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('॥ ଓଡ଼ିଶା ସରକାରଙ୍କ ଯୁଗାନ୍ତକାରୀ ମହିଳା କଲ୍ୟାଣ ଯୋଜନା ॥', 600, 100);
+      ctx.fillText('॥ ଓଡ଼ିଶା ସରକାରଙ୍କ ଯୁଗାନ୍ତକାରୀ ମହିଳା କଲ୍ୟାଣ ଯୋଜନା ॥', 600, 95);
 
       // Header Banner
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 78px sans-serif';
-      ctx.fillText('ସୁଭଦ୍ରା ଯୋଜନା (SUBHADRA)', 600, 190);
+      ctx.font = '900 74px sans-serif';
+      ctx.fillText('ସୁଭଦ୍ରା ଯୋଜନା (SUBHADRA)', 600, 185);
 
       // Subhead Box
       ctx.fillStyle = '#f59e0b';
-      ctx.roundRect(100, 230, 1000, 90, 20);
+      ctx.beginPath();
+      ctx.roundRect(100, 225, 1000, 88, 20);
       ctx.fill();
 
       ctx.fillStyle = '#0f172a';
-      ctx.font = '900 48px sans-serif';
-      ctx.fillText('ମୋଟ ₹୫୦,୦୦୦/- ସହାୟତା ରାଶି', 600, 292);
+      ctx.font = '900 44px sans-serif';
+      ctx.fillText('ମୋଟ ₹୫୦,୦୦୦/- (ବାର୍ଷିକ ₹୧୦,୦୦୦/-) ସହାୟତା', 600, 285);
 
       // Main Feature Points Box
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.roundRect(80, 360, 1040, 800, 24);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(80, 345, 1040, 825, 24);
       ctx.fill();
 
       ctx.textAlign = 'left';
       ctx.fillStyle = '#991b1b';
       ctx.font = '900 38px sans-serif';
-      ctx.fillText('ଆମ କେନ୍ଦ୍ରରେ ଉପଲବ୍ଧ ସେବାସମୂହ :', 130, 430);
+      ctx.fillText('ଆମ କେନ୍ଦ୍ରରେ ଉପଲବ୍ଧ ପ୍ରମୁଖ ସେବାସମୂହ :', 130, 415);
 
       const bulletPoints = [
         '✓ ନୂଆ ସୁଭଦ୍ରା ଫର୍ମ ଅନଲାଇନ୍ ଆବେଦନ (New Registration)',
         '✓ ଆଧାର ଲିଙ୍କ୍ ଡିବିଟି (Aadhaar DBT / NPCI) ଷ୍ଟାଟସ୍ ଯାଞ୍ଚ',
         '✓ ଇ-କେୱାଇସି (Biometric / Face eKYC) ତୁରନ୍ତ ସମାଧାନ',
         '✓ ଆବେଦନ ରିଜେକ୍ଟ ହୋଇଥିଲେ ନୂଆ ସଂଶୋଧନ (Correction)',
-        '✓ ବ୍ୟାଙ୍କ ଖାତା ସହିତ ଆଧାର ମ୍ୟାପିଂ ସହାୟତା',
-        '✓ ପଞ୍ଜୀକରଣ ରସିଦ୍ ଓ ସୁଭଦ୍ରା ଆଇଡି ପ୍ରିଣ୍ଟ'
+        '✓ ବ୍ୟାଙ୍କ ଖାତା ସହିତ ଆଧାର ମ୍ୟାପିଂ ଓ ମୋବାଇଲ୍ ଲିଙ୍କ୍',
+        '✓ ପିଏମ କିଷାନ, କାଳିଆ ଓ ରେସନ କାର୍ଡ ଇ-କେୱାଇସି ସେବା',
+        '✓ ପଞ୍ଜୀକରଣ ରସିଦ୍ ଓ ସୁଭଦ୍ରା ଆଇଡି କାର୍ଡ କଲର ପ୍ରିଣ୍ଟ'
       ];
 
       ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 30px sans-serif';
+      ctx.font = 'bold 28px sans-serif';
       bulletPoints.forEach((text, i) => {
-        ctx.fillText(text, 130, 520 + (i * 70));
+        ctx.fillText(text, 130, 490 + (i * 64));
       });
 
       // Special highlight banner
       ctx.fillStyle = '#fef3c7';
-      ctx.roundRect(120, 980, 960, 130, 16);
+      ctx.beginPath();
+      ctx.roundRect(110, 960, 980, 180, 18);
       ctx.fill();
       ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 3;
       ctx.stroke();
 
-      ctx.fillStyle = '#b45309';
-      ctx.font = 'bold 26px sans-serif';
+      ctx.fillStyle = '#9a3412';
+      ctx.font = '900 30px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('ଆବଶ୍ୟକୀୟ ଡକ୍ୟୁମେଣ୍ଟ : ଆଧାର କାର୍ଡ, ବ୍ୟାଙ୍କ ପାସବୁକ୍ ଓ ମୋବାଇଲ୍ ନମ୍ବର', 600, 1035);
-      ctx.fillText('ଆଜି ହିଁ ଆସି ନିଜର ଆବେଦନ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ !', 600, 1080);
+      ctx.fillText('📌 ଆବଶ୍ୟକୀୟ କାଗଜପତ୍ର (Documents Required) :', 600, 1015);
 
-    } else if (template === 'pan') {
-      // PAN Blue gradient
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 25px sans-serif';
+      ctx.fillText('୧. ଆଧାର କାର୍ଡ  •  ୨. ବ୍ୟାଙ୍କ ପାସବୁକ୍  •  ୩. ଆଧାର ଲିଙ୍କ୍ ମୋବାଇଲ୍', 600, 1065);
+      ctx.fillStyle = '#b45309';
+      ctx.font = '900 24px sans-serif';
+      ctx.fillText('ଆଜି ହିଁ ଆସି ନିଜର ଆବେଦନ ଓ ଯାଞ୍ଚ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ !', 600, 1115);
+
+    // ================= MODEL 2: DIGI-TECH BANKING, AEPS & MINI-ATM =================
+    } else if (template === 'banking_csp') {
       const grad = ctx.createLinearGradient(0, 0, 0, 1600);
-      grad.addColorStop(0, '#0369a1');
-      grad.addColorStop(0.5, '#0c4a6e');
-      grad.addColorStop(1, '#082f49');
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.3, '#0c2461');
+      grad.addColorStop(0.7, '#1e3799');
+      grad.addColorStop(1, '#0c2461');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1200, 1600);
 
+      // Gold & Cyan High-tech Border
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 12;
+      ctx.lineWidth = 14;
       ctx.strokeRect(24, 24, 1152, 1552);
+
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(36, 36, 1128, 1528);
+
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('॥ ସମସ୍ତ ବ୍ୟାଙ୍କିଙ୍ଗ ସୁବିଧା ଏବେ ଆପଣଙ୍କ ନିକଟରେ ॥', 600, 95);
 
       ctx.fillStyle = '#ffffff';
       ctx.font = '900 72px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('INSTANT PAN CARD SERVICE', 600, 180);
+      ctx.fillText('DIGI BANKING & MINI-ATM', 600, 185);
 
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText('ମାତ୍ର ୨ ଘଣ୍ଟାରେ ଇ-ପ୍ୟାନ୍ ଓ ଘରେ ପହଞ୍ଚିବ PVC କାର୍ଡ', 600, 250);
+      // Subhead Banner
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.roundRect(100, 225, 1000, 88, 20);
+      ctx.fill();
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.roundRect(80, 340, 1040, 820, 24);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 40px sans-serif';
+      ctx.fillText('ଆଧାର ଦ୍ୱାରା ଯେକୌଣସି ବ୍ୟାଙ୍କରୁ ଟଙ୍କା ଉଠାଣ ଓ ଜମା', 600, 285);
+
+      // White Body Panel
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(80, 345, 1040, 825, 24);
       ctx.fill();
 
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#0369a1';
+      ctx.fillStyle = '#0c2461';
       ctx.font = '900 38px sans-serif';
-      ctx.fillText('ପ୍ୟାନ୍ କାର୍ଡ ସେବା ସମୂହ :', 130, 420);
+      ctx.fillText('ପ୍ରମୁଖ ବ୍ୟାଙ୍କିଙ୍ଗ ସେବାସମୂହ (Banking Services) :', 130, 415);
 
-      const points = [
-        '✓ ନୂଆ ପ୍ୟାନ୍ କାର୍ଡ ଆବେଦନ (New PAN Card Apply)',
-        '✓ ନାମ, ଜନ୍ମ ତାରିଖ ଓ ବାପାଙ୍କ ନାମ ସଂଶୋଧନ (Correction)',
-        '✓ ନାବାଳକ / Minor PAN Card ଆବେଦନ',
-        '✓ ହଜିଯାଇଥିବା ପ୍ୟାନ୍ କାର୍ଡ ପୁନଃ ପ୍ରିଣ୍ଟ (Duplicate PAN)',
-        '✓ ଆଧାର କାର୍ଡ ସହିତ ପ୍ୟାନ୍ ଲିଙ୍କ୍ (Aadhaar-PAN Link)',
-        '✓ ଫିଙ୍ଗରପ୍ରିଣ୍ଟ ବା ଓଟିପି ଦ୍ୱାରା ୨ ଘଣ୍ଟାରେ E-PAN'
+      const bPoints = [
+        '✓ ଆଧାର କାର୍ଡ ଓ ଆଙ୍ଗୁଠି ଛାପ (AEPS) ଦ୍ୱାରା ତୁରନ୍ତ ଟଙ୍କା ଉଠାଣ',
+        '✓ ଯେକୌଣସି ATM / Debit Card ଦ୍ୱାରା Micro-ATM ଟଙ୍କା ଉଠାଣ',
+        '✓ ଭାରତର ସମସ୍ତ ବ୍ୟାଙ୍କକୁ ତୁରନ୍ତ ଟଙ୍କା ପଠାଣ (Instant Money Transfer)',
+        '✓ ବ୍ୟାଙ୍କ ଖାତାର ବାଲାନ୍ସ ଚେକ୍ ଓ ମିନି ଷ୍ଟେଟମେଣ୍ଟ (Mini Statement)',
+        '✓ ନୂଆ ଜିରୋ ବାଲାନ୍ସ ସେଭିଙ୍ଗ୍ସ ବ୍ୟାଙ୍କ ଖାତା ଖୋଲିବା (Account Opening)',
+        '✓ ପିଏମ କିଷାନ, କାଳିଆ ଯୋଜନା, ସୁଭଦ୍ରା ଓ ଭତ୍ତା ଟଙ୍କା ଉଠାଣ',
+        '✓ ବିଦ୍ୟୁତ୍ ବିଲ୍, ପାଣି ବିଲ୍, ମୋବାଇଲ୍ ରିଚାର୍ଜ ଓ ବୀମା (Insurance) କିସ୍ତି'
       ];
 
       ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 30px sans-serif';
-      points.forEach((t, i) => {
-        ctx.fillText(t, 130, 510 + (i * 72));
+      ctx.font = 'bold 28px sans-serif';
+      bPoints.forEach((text, i) => {
+        ctx.fillText(text, 130, 490 + (i * 64));
       });
 
+      // Special highlight banner
+      ctx.fillStyle = '#e0f2fe';
+      ctx.beginPath();
+      ctx.roundRect(110, 960, 980, 180, 18);
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = '#0369a1';
+      ctx.font = '900 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ ୧୦୦% ସୁରକ୍ଷିତ, ବିଶ୍ୱସ୍ତ ଓ ତୁରନ୍ତ ସେବା ⚡', 600, 1015);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText('SBI • PNB • Bank of India • UCO • Odisha Gramya Bank • All Banks', 600, 1065);
+      ctx.fillStyle = '#0369a1';
+      ctx.font = '900 24px sans-serif';
+      ctx.fillText('ବ୍ୟାଙ୍କ ଯିବାର ଆବଶ୍ୟକତା ନାହିଁ — ଏଠାରେ ସବୁ କାମ ହୋଇଯିବ !', 600, 1115);
+
+    // ================= MODEL 3: CYBER CAFE, ONLINE FORMS & SMART PRINT =================
     } else {
-      // AEPS Banking Green
       const grad = ctx.createLinearGradient(0, 0, 0, 1600);
-      grad.addColorStop(0, '#065f46');
-      grad.addColorStop(0.5, '#064e3b');
-      grad.addColorStop(1, '#022c22');
+      grad.addColorStop(0, '#064e3b');
+      grad.addColorStop(0.35, '#042f2e');
+      grad.addColorStop(0.75, '#0f172a');
+      grad.addColorStop(1, '#064e3b');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1200, 1600);
 
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 12;
+      // Emerald & Gold Modern Border
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 14;
       ctx.strokeRect(24, 24, 1152, 1552);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 70px sans-serif';
+      ctx.strokeStyle = '#a7f3d0';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(36, 36, 1128, 1528);
+
+      ctx.fillStyle = '#a7f3d0';
+      ctx.font = 'bold 28px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('DIGI SEVA BANKING POINT', 600, 180);
+      ctx.fillText('॥ ସମସ୍ତ ଅନଲାଇନ୍ ଫର୍ମ ଓ ସ୍ମାର୍ଟ ପ୍ରିଣ୍ଟିଙ୍ଗ ସମାଧାନ ॥', 600, 95);
 
-      ctx.fillStyle = '#6ee7b7';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText('ଆଧାର ଦ୍ୱାରା ଯେକୌଣସି ବ୍ୟାଙ୍କରୁ ଟଙ୍କା ଉଠାଣ ଓ ଜମା', 600, 250);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 68px sans-serif';
+      ctx.fillText('CYBER CAFE & SMART PRINT', 600, 185);
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.roundRect(80, 340, 1040, 820, 24);
+      // Subhead Box
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.roundRect(100, 225, 1000, 88, 20);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 40px sans-serif';
+      ctx.fillText('ଅନଲାଇନ୍ ଫର୍ମ, ପ୍ୟାନ୍ କାର୍ଡ, PVC କାର୍ଡ ଓ ଫଟୋ', 600, 285);
+
+      // White Body Panel
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(80, 345, 1040, 825, 24);
       ctx.fill();
 
       ctx.textAlign = 'left';
       ctx.fillStyle = '#065f46';
       ctx.font = '900 38px sans-serif';
-      ctx.fillText('ବ୍ୟାଙ୍କିଙ୍ଗ ସେବାସମୂହ :', 130, 420);
+      ctx.fillText('ଆମ ପାଖରେ ଉପଲବ୍ଧ ପ୍ରମୁଖ ସେବାସମୂହ :', 130, 415);
 
-      const bPoints = [
-        '✓ ଆଧାର ଫିଙ୍ଗରପ୍ରିଣ୍ଟ ମାଧ୍ୟମରେ ତୁରନ୍ତ ଟଙ୍କା ଉଠାଣ (AEPS Cash)',
-        '✓ ଯେକୌଣସି ବ୍ୟାଙ୍କ ଖାତାର ବାଲାନ୍ସ ଚେକ୍ ଓ ମିନି ଷ୍ଟେଟମେଣ୍ଟ',
-        '✓ ସମସ୍ତ ବ୍ୟାଙ୍କକୁ ତୁରନ୍ତ ଟଙ୍କା ପଠାଣ (Money Transfer)',
-        '✓ ପିଏମ କିଷାନ ଓ କାଳିଆ ଯୋଜନା କିସ୍ତି ଟଙ୍କା ଉଠାଣ',
-        '✓ ବିଦ୍ୟୁତ୍ ବିଲ୍, ମୋବାଇଲ୍ ରିଚାର୍ଜ ଓ DTH ରିଚାର୍ଜ'
+      const cPoints = [
+        '✓ ସରକାରୀ ଚାକିରି ଅନଲାଇନ୍ ଆବେଦନ (OPSC, OSSC, OSSSC, Railway, Police)',
+        '✓ ମାତ୍ର ୨ ଘଣ୍ଟାରେ ନୂଆ ପ୍ୟାନ୍ କାର୍ଡ (Instant New PAN & Correction)',
+        '✓ HD PVC ସ୍ମାର୍ଟ କାର୍ଡ ପ୍ରିଣ୍ଟ (Aadhaar, PAN, Voter & Ayushman Card)',
+        '✓ ଜରୁରୀ ପାସପୋର୍ଟ ସାଇଜ୍ ଫଟୋ ମାତ୍ର ୫ ମିନିଟରେ (Urgent Photos)',
+        '✓ କଲର ପ୍ରିଣ୍ଟ, ଜେରକ୍ସ, ଲାମିନେସନ୍ ଓ ସ୍କାନିଂ (Color Xerox & Lamination)',
+        '✓ କାଷ୍ଟ, ଇନକମ୍, ରେସିଡେନ୍ସ ସାର୍ଟିଫିକେଟ୍ ଓ ଜମି ପଟ୍ଟା / ଖତିଆନ୍ ପ୍ରିଣ୍ଟ',
+        '✓ ଟ୍ରେନ୍ ଓ ବିମାନ ଟିକେଟ୍ ବୁକିଂ ଏବଂ ରିଜ୍ୟୁମ୍ / ବାୟୋଡାଟା ତିଆରି'
       ];
 
       ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 30px sans-serif';
-      bPoints.forEach((t, i) => {
-        ctx.fillText(t, 130, 520 + (i * 80));
+      ctx.font = 'bold 28px sans-serif';
+      cPoints.forEach((text, i) => {
+        ctx.fillText(text, 130, 490 + (i * 64));
       });
+
+      // Special highlight banner
+      ctx.fillStyle = '#ecfdf5';
+      ctx.beginPath();
+      ctx.roundRect(110, 960, 980, 180, 18);
+      ctx.fill();
+      ctx.strokeStyle = '#059669';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = '#047857';
+      ctx.font = '900 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✨ ସଠିକ୍ ଓ ଦ୍ରୁତ ଆବେଦନ ପାଇଁ ଆଜି ହିଁ ଯୋଗାଯୋଗ କରନ୍ତୁ ✨', 600, 1015);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText('କଲେଜ ଆଡମିଶନ • ସ୍କଲାରସିପ୍ • ଡ୍ରାଇଭିଂ ଲାଇସେନ୍ସ • ପାସପୋର୍ଟ ସେବା', 600, 1065);
+      ctx.fillStyle = '#047857';
+      ctx.font = '900 24px sans-serif';
+      ctx.fillText('ଅଭିଜ୍ଞ ଅପରେଟରଙ୍କ ଦ୍ୱାରା ଶତପ୍ରତିଶତ ନିର୍ଭୁଲ୍ ଆବେଦନ !', 600, 1115);
     }
 
-    // Bottom Center Footer Strip with VLE Details
+    // ================= DRAW CUSTOM PHOTO IF UPLOADED =================
+    if (this.posterCustomImg) {
+      try {
+        const photoSizeVal = parseInt(document.getElementById('posterPhotoSize')?.value || '100', 10);
+        const photoPos = document.getElementById('posterPhotoPos')?.value || 'top_right';
+        const scale = photoSizeVal / 100;
+        
+        const img = this.posterCustomImg;
+        const aspect = (img.width && img.height) ? (img.width / img.height) : 1;
+        let targetW = 200 * scale;
+        let targetH = (200 / aspect) * scale;
+        if (aspect > 1.2) {
+          targetW = 220 * scale;
+          targetH = (220 / aspect) * scale;
+        } else if (aspect < 0.8) {
+          targetH = 220 * scale;
+          targetW = (220 * aspect) * scale;
+        }
+
+        let drawX = 940;
+        let drawY = 55;
+
+        if (photoPos === 'top_right') {
+          drawX = Math.max(900, 1130 - targetW);
+          drawY = 50;
+        } else if (photoPos === 'bottom_left') {
+          drawX = 110;
+          drawY = 1245;
+          targetW = Math.min(targetW, 200);
+          targetH = Math.min(targetH, 200);
+        } else if (photoPos === 'center_feature') {
+          drawX = 600 - (targetW / 2);
+          drawY = 930;
+        }
+
+        // Draw outer card shadow & frame
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 8;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(drawX - 8, drawY - 8, targetW + 16, targetH + 16, 16);
+        ctx.fill();
+        ctx.restore();
+
+        // Draw clipped image
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(drawX, drawY, targetW, targetH, 12);
+        ctx.clip();
+        ctx.drawImage(img, drawX, drawY, targetW, targetH);
+        ctx.restore();
+
+        // Golden outline
+        ctx.save();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(drawX - 8, drawY - 8, targetW + 16, targetH + 16, 16);
+        ctx.stroke();
+        ctx.restore();
+      } catch (err) {
+        console.error("Error drawing poster custom photo:", err);
+      }
+    }
+
+    // ================= BOTTOM FOOTER STRIP WITH VLE DETAILS =================
     ctx.fillStyle = '#ffffff';
-    ctx.roundRect(80, 1220, 1040, 320, 24);
+    ctx.beginPath();
+    ctx.roundRect(80, 1205, 1040, 345, 24);
     ctx.fill();
     ctx.strokeStyle = '#cbd5e1';
     ctx.lineWidth = 2;
@@ -983,20 +1194,29 @@ const VUO_CSCTOOLS = {
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#0f172a';
-    ctx.font = '900 44px sans-serif';
-    ctx.fillText(shopName.toUpperCase(), 600, 1300);
+    ctx.font = '900 46px sans-serif';
+    ctx.fillText(shopName.toUpperCase(), 600, 1285);
 
     ctx.fillStyle = '#0284c7';
     ctx.font = 'bold 38px sans-serif';
-    ctx.fillText(`📱 ସମ୍ପର୍କ କରନ୍ତୁ : ${phone}`, 600, 1370);
+    ctx.fillText(`📱 ସମ୍ପର୍କ କରନ୍ତୁ : ${phone}`, 600, 1355);
 
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = '#475569';
     ctx.font = 'bold 26px sans-serif';
-    ctx.fillText(`📍 ଠିକଣା : ${address}`, 600, 1435);
+    ctx.fillText(`📍 ଠିକଣା : ${address}`, 600, 1420);
+
+    // Decorative time badge
+    ctx.fillStyle = '#ecfdf5';
+    ctx.beginPath();
+    ctx.roundRect(280, 1460, 640, 60, 30);
+    ctx.fill();
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     ctx.fillStyle = '#059669';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText('ସମୟ : ସକାଳ ୮:୦୦ ରୁ ରାତି ୯:୦୦ ପର୍ଯ୍ୟନ୍ତ ଖୋଲା ରହିବ', 600, 1490);
+    ctx.font = '900 24px sans-serif';
+    ctx.fillText('⏰ ସମୟ : ସକାଳ ୮:୦୦ ରୁ ରାତି ୯:୦୦ ପର୍ଯ୍ୟନ୍ତ ପ୍ରତିଦିନ ଖୋଲା', 600, 1500);
   },
 
   downloadPoster() {

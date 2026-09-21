@@ -350,23 +350,58 @@ const VUO_ADMIN = {
       vleType.addEventListener('change', () => this.renderVleActivityTable());
     }
 
+    // Member Management Filters
+    const memberSearch = document.getElementById('adminMemberSearchInput');
+    if (memberSearch) {
+      memberSearch.addEventListener('input', () => this.renderMembersTable());
+    }
+    const memberDist = document.getElementById('adminMemberDistrictFilter');
+    if (memberDist) {
+      memberDist.addEventListener('change', () => this.renderMembersTable());
+    }
+    const memberStatus = document.getElementById('adminMemberStatusFilter');
+    if (memberStatus) {
+      memberStatus.addEventListener('change', () => this.renderMembersTable());
+    }
+
+    // Member Edit Form
+    const editMemberForm = document.getElementById('adminEditMemberForm');
+    if (editMemberForm) {
+      editMemberForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveEditMember(e);
+      });
+    }
+
+    // Member Change Password Form
+    const changePwdForm = document.getElementById('adminChangeMemberPwdForm');
+    if (changePwdForm) {
+      changePwdForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveMemberPassword(e);
+      });
+    }
+
   },
 
   switchTab(tabName) {
-    this.activeTab = tabName;
+    this.activeTab = tabName || 'leads';
     document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-      if (btn.getAttribute('data-admin-tab') === tabName) {
-        btn.className = 'admin-nav-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-sky-600 text-white shadow-sm';
+      const tab = btn.getAttribute('data-admin-tab');
+      if (tab === this.activeTab) {
+        btn.className = 'admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-orange-500/20 border border-amber-400/80 cursor-pointer transition-all transform scale-[1.02]';
       } else {
-        btn.className = 'admin-nav-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100';
+        btn.className = 'admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all';
       }
     });
 
     document.querySelectorAll('.admin-tab-pane').forEach(pane => {
-      if (pane.id === `admin_pane_${tabName}`) {
+      if (pane.id === `admin_pane_${this.activeTab}`) {
         pane.classList.remove('hidden');
+        pane.style.display = 'block';
       } else {
         pane.classList.add('hidden');
+        pane.style.display = 'none';
       }
     });
 
@@ -375,6 +410,7 @@ const VUO_ADMIN = {
 
   renderAll() {
     try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
+    try { this.renderMembersTable(); } catch (e) { console.warn("renderMembersTable error:", e); }
     try { this.renderLinksTable(); } catch (e) { console.warn("renderLinksTable error:", e); }
     try { this.renderFormsTable(); } catch (e) { console.warn("renderFormsTable error:", e); }
     try { this.renderVideosTable(); } catch (e) { console.warn("renderVideosTable error:", e); }
@@ -1880,9 +1916,368 @@ const VUO_ADMIN = {
     link.click();
     document.body.removeChild(link);
     if (typeof showToast === 'function') showToast("VLE Activity CSV exported successfully!", "success");
+  },
+
+  // ---------------- 12. REGISTERED MEMBERS DIRECTORY & MANAGEMENT ---------------- //
+  renderMembersTable() {
+    const tbody = document.getElementById('adminMembersTbody');
+    const countBadge = document.getElementById('adminTotalMembersCount');
+    if (!tbody) return;
+
+    let members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+
+    if (countBadge) countBadge.textContent = members.length;
+
+    // Filters
+    const searchVal = (document.getElementById('adminMemberSearchInput')?.value || '').toLowerCase().trim();
+    const distVal = (document.getElementById('adminMemberDistrictFilter')?.value || '').toLowerCase().trim();
+    const statusVal = (document.getElementById('adminMemberStatusFilter')?.value || '').toLowerCase().trim();
+
+    if (searchVal) {
+      members = members.filter(m => 
+        (m.fullName || m.name || '').toLowerCase().includes(searchVal) ||
+        (m.mobile || '').includes(searchVal) ||
+        (m.cscId || '').toLowerCase().includes(searchVal) ||
+        (m.memberNo || '').toLowerCase().includes(searchVal) ||
+        (m.email || '').toLowerCase().includes(searchVal)
+      );
+    }
+
+    if (distVal) {
+      members = members.filter(m => (m.district || '').toLowerCase() === distVal);
+    }
+
+    if (statusVal) {
+      members = members.filter(m => {
+        const s = (m.status || 'Active').toLowerCase();
+        return s.includes(statusVal);
+      });
+    }
+
+    if (members.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="p-8 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-users-slash text-3xl mb-2 text-slate-300"></i>
+            <p class="font-bold text-slate-500">No registered VLE members found.</p>
+            <p class="text-[11px] text-slate-400">Try changing your search terms or filters.</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = members.map(m => {
+      const cleanPhone = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const waLink = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent('Namaskar ' + (m.fullName || 'VLE') + ', VLE CSC Help desk se sampark kar rahe hain.')}` : '#';
+      const isGoogle = m.authProvider === 'google' || (m.googleId && m.googleId.length > 0);
+      const isSuspended = (m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('block');
+      const statusBadge = isSuspended 
+        ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200">Suspended</span>`
+        : `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200">Active</span>`;
+
+      const safeTargetId = cleanPhone || m.cscId || m.memberNo;
+
+      return `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs">
+          <!-- Name & Avatar -->
+          <td class="p-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-600 to-blue-700 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
+                ${m.avatar && m.avatar.startsWith('http') ? `<img src="${m.avatar}" alt="${m.fullName}" class="w-full h-full rounded-full object-cover">` : (m.fullName || 'V').charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-black text-slate-900">${m.fullName || m.name || 'VLE Member'}</span>
+                  ${isGoogle ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><i class="fa-brands fa-google text-[9px]"></i> Google</span>` : ''}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono">${m.email || (cleanPhone + '@vlehelp.in')}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Mobile with WhatsApp -->
+          <td class="p-3 whitespace-nowrap">
+            <div class="flex items-center gap-1.5 font-mono font-bold text-slate-800 text-[11px]">
+              <span>+91 ${cleanPhone || '-'}</span>
+              ${cleanPhone ? `
+                <a href="${waLink}" target="_blank" class="text-emerald-600 hover:text-emerald-700 p-0.5" title="WhatsApp Message">
+                  <i class="fa-brands fa-whatsapp text-sm"></i>
+                </a>
+                <a href="tel:${cleanPhone}" class="text-sky-600 hover:text-sky-700 p-0.5" title="Call Member">
+                  <i class="fa-solid fa-phone text-xs"></i>
+                </a>
+              ` : ''}
+            </div>
+          </td>
+
+          <!-- CSC ID & Kendra -->
+          <td class="p-3">
+            <div class="font-mono font-bold text-sky-700 text-[11px]">${m.cscId || m.memberNo || '—'}</div>
+            <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${m.kendraName || 'Digital Seva Kendra'}</div>
+          </td>
+
+          <!-- District -->
+          <td class="p-3 whitespace-nowrap">
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              ${m.district || 'Odisha'}
+            </span>
+          </td>
+
+          <!-- Status & Join Date -->
+          <td class="p-3 whitespace-nowrap">
+            ${statusBadge}
+            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">${m.joiningDate || '2026'}</div>
+          </td>
+
+          <!-- Password (Masked with reveal toggle) -->
+          <td class="p-3 whitespace-nowrap">
+            <div class="flex items-center gap-1">
+              <span id="pwd_mask_${safeTargetId}" class="font-mono text-xs text-slate-400 font-bold tracking-wider">••••••</span>
+              <span id="pwd_val_${safeTargetId}" class="hidden font-mono text-xs text-emerald-700 font-bold">${m.passwordHash || '1234'}</span>
+              <button type="button" onclick="VUO_ADMIN.togglePasswordReveal('${safeTargetId}')" class="text-slate-400 hover:text-slate-600 p-1 text-[11px] cursor-pointer" title="Toggle Password View">
+                <i id="pwd_ico_${safeTargetId}" class="fa-solid fa-eye text-[10px]"></i>
+              </button>
+            </div>
+          </td>
+
+          <!-- Action Buttons -->
+          <td class="p-3 text-right whitespace-nowrap space-x-1">
+            <button type="button" onclick="VUO_ADMIN.openEditMember('${safeTargetId}')" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span>Edit</span>
+            </button>
+            <button type="button" onclick="VUO_ADMIN.openChangeMemberPassword('${safeTargetId}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs">
+              <i class="fa-solid fa-key"></i>
+              <span>Change Pwd</span>
+            </button>
+            <button type="button" onclick="VUO_ADMIN.deleteMember('${safeTargetId}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all" title="Delete Member">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  togglePasswordReveal(targetId) {
+    const mask = document.getElementById(`pwd_mask_${targetId}`);
+    const val = document.getElementById(`pwd_val_${targetId}`);
+    const ico = document.getElementById(`pwd_ico_${targetId}`);
+    if (!mask || !val) return;
+    if (mask.classList.contains('hidden')) {
+      mask.classList.remove('hidden');
+      val.classList.add('hidden');
+      if (ico) ico.className = 'fa-solid fa-eye text-[10px]';
+    } else {
+      mask.classList.add('hidden');
+      val.classList.remove('hidden');
+      if (ico) ico.className = 'fa-solid fa-eye-slash text-[10px] text-amber-600';
+    }
+  },
+
+  openEditMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!m) {
+      if (typeof showToast === 'function') showToast("Member record not found.", "error");
+      return;
+    }
+
+    const modal = document.getElementById('adminEditMemberModal');
+    if (!modal) return;
+
+    document.getElementById('editMemberTargetId').value = m.mobile || m.cscId || m.memberNo;
+    document.getElementById('editMemberName').value = m.fullName || m.name || '';
+    document.getElementById('editMemberMobile').value = (m.mobile || '').replace(/\D/g, '').slice(-10);
+    document.getElementById('editMemberCscId').value = m.cscId || '';
+    document.getElementById('editMemberDistrict').value = m.district || 'Puri';
+    document.getElementById('editMemberKendra').value = m.kendraName || '';
+    document.getElementById('editMemberEmail').value = m.email || '';
+    document.getElementById('editMemberStatus').value = (m.status || '').toLowerCase().includes('suspend') ? 'Suspended' : 'Active (Verified VLE)';
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  closeEditMemberModal() {
+    const modal = document.getElementById('adminEditMemberModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  handleSaveEditMember(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = document.getElementById('editMemberTargetId')?.value;
+    const name = document.getElementById('editMemberName')?.value;
+    const mobile = document.getElementById('editMemberMobile')?.value;
+    const cscId = document.getElementById('editMemberCscId')?.value;
+    const district = document.getElementById('editMemberDistrict')?.value;
+    const kendra = document.getElementById('editMemberKendra')?.value;
+    const email = document.getElementById('editMemberEmail')?.value;
+    const status = document.getElementById('editMemberStatus')?.value;
+
+    if (!name || name.trim().length < 2) {
+      if (typeof showToast === 'function') showToast("Please enter member name.", "warning");
+      return;
+    }
+    const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+    if (!cleanMob || cleanMob.length !== 10) {
+      if (typeof showToast === 'function') showToast("Please enter a valid 10-digit mobile number.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.updateMember(targetId, {
+      fullName: name,
+      mobile: cleanMob,
+      cscId: cscId,
+      district: district,
+      kendraName: kendra,
+      email: email,
+      status: status
+    });
+
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    this.closeEditMemberModal();
+    this.renderMembersTable();
+    if (typeof showToast === 'function') {
+      showToast(`Member profile for ${res.member.fullName} updated successfully!`, "success");
+    }
+  },
+
+  openChangeMemberPassword(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!m) {
+      if (typeof showToast === 'function') showToast("Member record not found.", "error");
+      return;
+    }
+
+    const modal = document.getElementById('adminChangeMemberPwdModal');
+    if (!modal) return;
+
+    document.getElementById('changePwdTargetId').value = m.mobile || m.cscId || m.memberNo;
+    document.getElementById('changePwdMemberInfo').textContent = `${m.fullName || 'VLE'} (+91 ${(m.mobile || '').slice(-10)}) — CSC: ${m.cscId || 'N/A'}`;
+    document.getElementById('changePwdNewValue').value = '';
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  closeChangeMemberPwdModal() {
+    const modal = document.getElementById('adminChangeMemberPwdModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  generateRandomPassword() {
+    const input = document.getElementById('changePwdNewValue');
+    if (input) {
+      const rnd = 'VLE@' + Math.floor(1000 + Math.random() * 9000);
+      input.value = rnd;
+      input.type = 'text';
+    }
+  },
+
+  handleSaveMemberPassword(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = document.getElementById('changePwdTargetId')?.value;
+    const newPwd = document.getElementById('changePwdNewValue')?.value;
+
+    if (!newPwd || newPwd.trim().length < 4) {
+      if (typeof showToast === 'function') showToast("New password must be at least 4 characters.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.adminSetPassword(targetId, newPwd.trim());
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    this.closeChangeMemberPwdModal();
+    this.renderMembersTable();
+    if (typeof showToast === 'function') {
+      showToast(`Password changed successfully for ${res.member.fullName}! (New: ${newPwd.trim()})`, "success");
+    }
+  },
+
+  deleteMember(targetId) {
+    if (!confirm("Are you sure you want to delete this VLE Member record? This cannot be undone.")) return;
+    const res = VUO_AUTH.deleteMember(targetId);
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message || "Failed to delete member.", "error");
+      return;
+    }
+    this.renderMembersTable();
+    if (typeof showToast === 'function') showToast("VLE Member deleted successfully.", "info");
+  },
+
+  exportMembersCsv() {
+    const list = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    if (list.length === 0) {
+      if (typeof showToast === 'function') showToast("No members to export.", "warning");
+      return;
+    }
+
+    const headers = ["Member No", "Full Name", "Mobile", "Email", "CSC ID", "District", "Kendra Name", "Auth Provider", "Status", "Password", "Joining Date"];
+    const rows = list.map(m => {
+      return [
+        `"${m.memberNo || ''}"`,
+        `"${(m.fullName || m.name || '').replace(/"/g, '""')}"`,
+        `"${(m.mobile || '').replace(/\D/g, '').slice(-10)}"`,
+        `"${(m.email || '').replace(/"/g, '""')}"`,
+        `"${(m.cscId || '').replace(/"/g, '""')}"`,
+        `"${(m.district || '').replace(/"/g, '""')}"`,
+        `"${(m.kendraName || '').replace(/"/g, '""')}"`,
+        `"${m.authProvider || 'mobile'}"`,
+        `"${m.status || 'Active'}"`,
+        `"${m.passwordHash || '1234'}"`,
+        `"${m.joiningDate || ''}"`
+      ].join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `VUO_Registered_Members_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof showToast === 'function') showToast("Members CSV exported successfully!", "success");
   }
 };
 
 if (typeof window !== 'undefined') {
   window.VUO_ADMIN = VUO_ADMIN;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = VUO_ADMIN;
 }

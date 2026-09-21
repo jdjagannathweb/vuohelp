@@ -344,6 +344,18 @@ const VUO_FORMS = {
     const f = forms.find(item => item.id === id);
     if (!f) return;
 
+    if (typeof VUO_GATE !== 'undefined') {
+      return VUO_GATE.requireAccess({
+        type: 'preview',
+        item: `PDF Form: ${f.title || 'CSC Application Form'}`,
+        category: 'form'
+      }, () => this._doPreviewForm(f));
+    }
+    this._doPreviewForm(f);
+  },
+
+  async _doPreviewForm(f) {
+    const id = f.id;
     // 1. If stored in IndexedDB
     if (f.storageType === 'indexeddb' || f.hasIndexedDbData) {
       try {

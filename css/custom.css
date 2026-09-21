@@ -325,10 +325,19 @@ body {
 .nav-dropdown-menu {
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-35%);
+  left: 0;
+  transform: none;
   padding-top: 10px;
   z-index: 99999;
+  max-width: calc(100vw - 24px);
+}
+
+.vuo-header-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.vuo-header-nav::-webkit-scrollbar {
+  display: none;
 }
 
 /* Open on Desktop Hover & Focus */
@@ -351,8 +360,18 @@ body {
   pointer-events: auto !important;
 }
 
+.nav-dropdown-wrapper.open .nav-chevron,
+.nav-dropdown-wrapper:hover .nav-chevron,
 .nav-dropdown-wrapper.open #navToolsChevron,
-.nav-dropdown-wrapper:hover #navToolsChevron {
+.nav-dropdown-wrapper:hover #navToolsChevron,
+.nav-dropdown-wrapper.open #navImageToolsChevron,
+.nav-dropdown-wrapper:hover #navImageToolsChevron,
+.nav-dropdown-wrapper.open #navPdfToolsChevron,
+.nav-dropdown-wrapper:hover #navPdfToolsChevron,
+.nav-dropdown-wrapper.open #navOfficeToolsChevron,
+.nav-dropdown-wrapper:hover #navOfficeToolsChevron,
+.nav-dropdown-wrapper.open #navServicesChevron,
+.nav-dropdown-wrapper:hover #navServicesChevron {
   transform: rotate(180deg);
 }
 
@@ -706,4 +725,9 @@ body {
   height: 18px;
   background: #e2e8f0;
   margin: 0 2px;
+}
+
+/* Ensure resume page footers are strictly hidden everywhere */
+.resume-page-footer {
+  display: none !important;
 }

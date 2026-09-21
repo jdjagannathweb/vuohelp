@@ -448,22 +448,22 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     let targetW = Math.round(avgW);
     let targetH = Math.round(avgH);
 
-    // Apply Aspect Ratio Constraint
+    // Apply Aspect Ratio Constraint with High-DPI Output (250-300 DPI equivalent for crisp text)
     if (this.aspectRatio === 'a4_portrait') {
-      // Standard A4 aspect: 1 : 1.4142
-      targetW = Math.max(800, targetW);
+      // Standard A4 aspect: 1 : 1.4142 (At least 1800px width for crystal clear text)
+      targetW = Math.max(1800, targetW);
       targetH = Math.round(targetW * 1.4142);
     } else if (this.aspectRatio === 'a4_landscape') {
-      targetH = Math.max(600, targetH);
+      targetH = Math.max(1400, targetH);
       targetW = Math.round(targetH * 1.4142);
     } else if (this.aspectRatio === 'id_card') {
       // Standard ID Card (Aadhaar / Voter / PAN: 85.6 x 53.98 mm = 1.5857 ratio)
-      targetW = Math.max(900, targetW);
+      targetW = Math.max(1600, targetW);
       targetH = Math.round(targetW / 1.5857);
     }
 
-    // Limit maximum size for smooth canvas performance
-    const maxDim = 2400;
+    // High performance limit (Up to 3200px for full A4 crispness)
+    const maxDim = 3200;
     if (targetW > maxDim || targetH > maxDim) {
       const scale = maxDim / Math.max(targetW, targetH);
       targetW = Math.round(targetW * scale);
@@ -600,25 +600,37 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       const sat = maxC - minC;
 
       if (mode === 'bw_laser') {
-        // Pure Laser B&W: Whitens paper to 255, 255, 255 to save 90% toner
-        // Preserves crisp black text and stamps
-        if (lum > thresh) {
+        // High-Definition Document Text Preservation & Laser Clean
+        // Protects small numbers, light ball-pen ink, and stamps from getting erased
+        if (lum > thresh + 25) {
           // Pure white paper background
           data[i] = 255;
           data[i + 1] = 255;
           data[i + 2] = 255;
-        } else {
+        } else if (lum < thresh - 25) {
           // Sharp dark text
-          const darkVal = Math.max(0, Math.min(60, lum * 0.45));
+          const darkVal = Math.max(0, Math.min(45, lum * 0.3));
           data[i] = darkVal;
           data[i + 1] = darkVal;
           data[i + 2] = darkVal;
+        } else {
+          // Smooth adaptive transition curve: keeps faint text and fine lines legible
+          const factor = (lum - (thresh - 25)) / 50;
+          if (factor > 0.62) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          } else {
+            const darkVal = Math.round(25 + factor * 65);
+            data[i] = darkVal;
+            data[i + 1] = darkVal;
+            data[i + 2] = darkVal;
+          }
         }
       } else if (mode === 'magic_color') {
         // Magic Color: Clears background shadows, keeps color stamps/photos/signatures
-        if (sat > 28) {
+        if (sat > 25) {
           // Colored area (Aadhaar photo, red seal, blue stamp, government logo)
-          // Boost brightness & contrast slightly
           let adjR = contrastFactor * (r - 128) + 128 + bright;
           let adjG = contrastFactor * (g - 128) + 128 + bright;
           let adjB = contrastFactor * (b - 128) + 128 + bright;
@@ -627,15 +639,27 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
           data[i + 2] = Math.max(0, Math.min(255, adjB));
         } else {
           // Grayscale / Paper background or black text
-          if (lum > thresh) {
+          if (lum > thresh + 20) {
             data[i] = 255;
             data[i + 1] = 255;
             data[i + 2] = 255;
-          } else {
-            const darkVal = Math.max(0, Math.min(50, lum * 0.4));
+          } else if (lum < thresh - 20) {
+            const darkVal = Math.max(0, Math.min(45, lum * 0.35));
             data[i] = darkVal;
             data[i + 1] = darkVal;
             data[i + 2] = darkVal;
+          } else {
+            const factor = (lum - (thresh - 20)) / 40;
+            if (factor > 0.65) {
+              data[i] = 255;
+              data[i + 1] = 255;
+              data[i + 2] = 255;
+            } else {
+              const darkVal = Math.round(30 + factor * 70);
+              data[i] = darkVal;
+              data[i + 1] = darkVal;
+              data[i + 2] = darkVal;
+            }
           }
         }
       } else if (mode === 'photocopy') {
@@ -722,7 +746,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
   },
 
   _doPrintDocument() {
-    const dataUrl = this.resultCanvas.toDataURL('image/jpeg', 0.95);
+    const dataUrl = this.resultCanvas.toDataURL('image/png');
     const printWin = window.open('', '_blank');
     if (!printWin) {
       if (typeof showToast === 'function') showToast('Popup blocked! Please allow popups to print.', 'error');
@@ -734,26 +758,38 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>VLE Print - Cleaned Document</title>
+        <title>VLE Print - Cleaned Document (High-DPI)</title>
         <style>
           @page {
             size: A4 ${isLand ? 'landscape' : 'portrait'};
-            margin: 8mm;
+            margin: 6mm 8mm;
           }
-          body {
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
             margin: 0;
             padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             background: #fff;
+            width: 100%;
+            height: 100%;
+          }
+          body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
           }
           img {
+            width: 100%;
             max-width: 100%;
+            height: auto;
             max-height: 98vh;
             object-fit: contain;
-            box-sizing: border-box;
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
           }
         </style>
       </head>

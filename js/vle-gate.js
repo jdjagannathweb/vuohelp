@@ -91,10 +91,11 @@ const VUO_GATE = {
    * If no: opens verification modal and runs onGranted() after submit.
    */
   requireAccess(actionInfo, onGranted) {
-    const profile = this.getProfile();
+    const user = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
 
-    if (profile && profile.name && profile.mobile) {
+    if (user && (user.fullName || user.name) && user.mobile) {
       // User is verified! Log action and proceed immediately
+      const profile = { name: user.fullName || user.name, mobile: user.mobile, district: user.district, cscId: user.cscId };
       this.logActivity(profile, actionInfo);
       if (typeof onGranted === 'function') {
         onGranted();
@@ -102,11 +103,19 @@ const VUO_GATE = {
       return;
     }
 
-    // User is not yet verified: Prompt verification modal
-    this._pendingAction = actionInfo || { type: 'download', item: 'CSC File' };
+    // User is not yet verified: Prompt VLE Login / Signup modal
+    this._pendingAction = actionInfo || { type: 'download', item: 'CSC Service / Document' };
     this._pendingCallback = onGranted;
 
-    this.openVerificationModal(this._pendingAction);
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Kripya pehle VLE Login karein! Sabhi tools, services, videos aur forms keval registered VLEs ke liye uplabdh hain.", "warning");
+    }
+
+    if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
+      VUO_AUTH_MODAL.openLogin(this._pendingAction, this._pendingCallback);
+    } else {
+      this.openVerificationModal(this._pendingAction);
+    }
   },
 
   openVerificationModal(actionInfo) {
@@ -294,8 +303,15 @@ const VUO_GATE = {
   }
 };
 
-window.VUO_GATE = VUO_GATE;
+if (typeof window !== 'undefined') {
+  window.VUO_GATE = VUO_GATE;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = VUO_GATE;
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  VUO_GATE.init();
-});
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('DOMContentLoaded', () => {
+    VUO_GATE.init();
+  });
+}

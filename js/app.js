@@ -125,6 +125,7 @@ const VUO_SEARCH = {
       { name: "CGPA to Percentage Calculator", nameOdia: "CGPA କାଲକୁଲେଟର", hash: "#calculators-cgpa", type: "Tool", icon: "🎓", desc: "Convert CGPA to percentage for CBSE & Odisha Universities" },
       { name: "Custom QR Code Generator", nameOdia: "QR କୋଡ୍ ଜେନେରେଟର", hash: "#csctools-qrcode", type: "Tool", icon: "📱", desc: "Create UPI Payment QR, Web URL & Mobile QR standees" },
       { name: "CSC Advertisement Poster Maker", nameOdia: "ପୋଷ୍ଟର ମେକର", hash: "#csctools-poster", type: "Tool", icon: "📢", desc: "Subhadra Yojana, PAN & AEPS banking banner maker with VLE details" },
+      { name: "VLE Udhar Khata (Credit Ledger)", nameOdia: "ଉଧାର ଖାତା (Credit)", hash: "#csctools-credit", type: "Tool", icon: "📒", desc: "Customer credit ledger with auto 7-day WhatsApp overdue reminder" },
       { name: "Word to PDF Converter", nameOdia: "ୱାର୍ଡ ଟୁ PDF", hash: "#pdftools-wordtopdf", type: "Tool", icon: "📝", desc: "Convert Docx and text files to clean A4 PDF documents" },
       { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdfeditor", type: "Tool", icon: "✒️", desc: "Interactive visual PDF editor, stamps & signatures" },
       { name: "WhatsApp Image Resizer & Darkness Clear", nameOdia: "ହ୍ୱାଟ୍ସଆପ୍ ଡକ୍ୟୁମେଣ୍ଟ ରିସାଇଜର ଓ ଡାର୍କନେସ କ୍ଲିଅର", hash: "#whatsappresizer", type: "Tool", icon: "🟢", desc: "4-Corner perspective warp, clear darkness for printing & save ink" },
@@ -180,7 +181,7 @@ const VUO_SEARCH = {
       const displayName = currentLanguage === 'or' && item.nameOdia ? item.nameOdia : item.name;
       const isExternal = !!item.url;
       const targetAction = isExternal ? 
-        `href="${item.url}" target="_blank"` : 
+        `href="${item.url}" onclick="if (typeof VUO_LINKS !== 'undefined' && VUO_LINKS.openPortalLink) { VUO_SEARCH.close(); return VUO_LINKS.openPortalLink(event, '${item.url}', '${(displayName || '').replace(/'/g, "\\'")}'); }"` : 
         `href="${item.hash}" onclick="VUO_SEARCH.close()"`;
 
       return `
@@ -443,10 +444,10 @@ const VUO_APP = {
 
   filterDashboardTools(category, btn) {
     document.querySelectorAll('.dash-tool-filter-btn').forEach(b => {
-      b.className = 'dash-tool-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all';
+      b.className = 'dash-tool-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 bg-white/90 hover:bg-sky-50/80 border border-slate-200/80 hover:border-sky-300 shadow-2xs transition-all';
     });
     if (btn) {
-      btn.className = 'dash-tool-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-black transition-all bg-sky-600 text-white shadow-sm ring-2 ring-sky-300';
+      btn.className = 'dash-tool-filter-btn px-4 py-2 rounded-xl text-xs font-black transition-all bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-md shadow-blue-500/25 border border-sky-400/80 transform scale-[1.02]';
     }
     document.querySelectorAll('.vle-tool-card').forEach(card => {
       const cardCat = card.getAttribute('data-tool-category');
@@ -503,13 +504,14 @@ const VUO_APP = {
     if (langEnBtn) langEnBtn.addEventListener('click', () => setLanguage('en'));
     if (langOrBtn) langOrBtn.addEventListener('click', () => setLanguage('or'));
 
-    // Navigation Tools Dropdown Controller (Hover, Click & Touch Toggle + Auto Close)
-    const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-    const toolsDropdownBtn = document.getElementById('navToolsDropdownBtn');
-    const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-    const toolsChevron = document.getElementById('navToolsChevron');
+    // Reusable Navigation Dropdown Controller (Hover, Click & Touch Toggle + Auto Close)
+    const setupNavDropdown = (wrapperId, btnId, menuId, chevronId, toggleFnName) => {
+      const wrapper = document.getElementById(wrapperId);
+      const btn = document.getElementById(btnId);
+      const menu = document.getElementById(menuId);
+      const chevron = document.getElementById(chevronId);
+      if (!wrapper || !btn || !menu) return;
 
-    if (toolsDropdownBtn && toolsDropdownWrapper && toolsDropdownMenu) {
       let closeTimer = null;
 
       const openDropdown = () => {
@@ -517,59 +519,65 @@ const VUO_APP = {
           clearTimeout(closeTimer);
           closeTimer = null;
         }
-        toolsDropdownWrapper.classList.add('open');
-        toolsDropdownMenu.classList.remove('hidden');
-        if (toolsChevron) toolsChevron.classList.add('rotate-180');
+        // Close other dropdowns
+        document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+          if (w !== wrapper) {
+            w.classList.remove('open');
+            const m = w.querySelector('.nav-dropdown-menu');
+            if (m) m.classList.add('hidden');
+            const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+            if (c) c.classList.remove('rotate-180');
+          }
+        });
+
+        wrapper.classList.add('open');
+        menu.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
       };
 
       const closeDropdown = (delay = 0) => {
         if (delay > 0) {
           closeTimer = setTimeout(() => {
-            toolsDropdownWrapper.classList.remove('open');
-            toolsDropdownMenu.classList.add('hidden');
-            if (toolsChevron) toolsChevron.classList.remove('rotate-180');
+            wrapper.classList.remove('open');
+            menu.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
           }, delay);
         } else {
           if (closeTimer) clearTimeout(closeTimer);
-          toolsDropdownWrapper.classList.remove('open');
-          toolsDropdownMenu.classList.add('hidden');
-          if (toolsChevron) toolsChevron.classList.remove('rotate-180');
+          wrapper.classList.remove('open');
+          menu.classList.add('hidden');
+          if (chevron) chevron.classList.remove('rotate-180');
         }
       };
 
-      window.toggleNavToolsDropdown = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        if (toolsDropdownMenu.classList.contains('hidden') || !toolsDropdownWrapper.classList.contains('open')) {
-          openDropdown();
-        } else {
-          closeDropdown(0);
-        }
-      };
+      if (toggleFnName) {
+        window[toggleFnName] = (e) => {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          if (menu.classList.contains('hidden') || !wrapper.classList.contains('open')) {
+            openDropdown();
+          } else {
+            closeDropdown(0);
+          }
+        };
+        btn.onclick = (e) => window[toggleFnName](e);
+      }
 
-      // Toggle on button click / touch
-      toolsDropdownBtn.onclick = (e) => window.toggleNavToolsDropdown(e);
+      // Hover on desktop
+      wrapper.addEventListener('mouseenter', () => openDropdown());
+      wrapper.addEventListener('mouseleave', () => closeDropdown(180));
 
-      // Hover on desktop with smooth 180ms buffer
-      toolsDropdownWrapper.addEventListener('mouseenter', () => {
-        openDropdown();
-      });
-
-      toolsDropdownWrapper.addEventListener('mouseleave', () => {
-        closeDropdown(180);
-      });
-
-      // Close dropdown when clicking anywhere outside
+      // Global outside click
       document.addEventListener('click', (e) => {
-        if (!toolsDropdownWrapper.contains(e.target)) {
+        if (!wrapper.contains(e.target)) {
           closeDropdown(0);
         }
       });
 
-      // Handle click on any dropdown sub-option (Ensures immediate 1-click navigation)
-      toolsDropdownWrapper.querySelectorAll('.nav-dropdown-menu a').forEach(subLink => {
+      // Dropdown sub-link routing
+      wrapper.querySelectorAll('.nav-dropdown-menu a').forEach(subLink => {
         subLink.addEventListener('click', (e) => {
           const targetHash = subLink.getAttribute('href');
           if (targetHash && targetHash.startsWith('#')) {
@@ -579,7 +587,6 @@ const VUO_APP = {
             VUO_APP.handleRoute(routeName);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
-          // Close dropdown smoothly without blocking click dispatch
           setTimeout(() => {
             closeDropdown(0);
             try {
@@ -589,7 +596,20 @@ const VUO_APP = {
           }, 50);
         });
       });
-    }
+    };
+
+    // Initialize all 4 Navigation Dropdowns: Image Tools, PDF Tools, Office & CSC Tools, CSC Services
+    setupNavDropdown('navImageToolsDropdownWrapper', 'navImageToolsDropdownBtn', 'navImageToolsDropdownMenu', 'navImageToolsChevron', 'toggleNavImageToolsDropdown');
+    setupNavDropdown('navPdfToolsDropdownWrapper', 'navPdfToolsDropdownBtn', 'navPdfToolsDropdownMenu', 'navPdfToolsChevron', 'toggleNavPdfToolsDropdown');
+    setupNavDropdown('navOfficeToolsDropdownWrapper', 'navOfficeToolsDropdownBtn', 'navOfficeToolsDropdownMenu', 'navOfficeToolsChevron', 'toggleNavOfficeToolsDropdown');
+    setupNavDropdown('navServicesDropdownWrapper', 'navServicesDropdownBtn', 'navServicesDropdownMenu', 'navServicesChevron', 'toggleNavServicesDropdown');
+
+    // Backward compatibility alias for legacy toggleNavToolsDropdown
+    window.toggleNavToolsDropdown = (e) => {
+      if (typeof window.toggleNavImageToolsDropdown === 'function') {
+        window.toggleNavImageToolsDropdown(e);
+      }
+    };
 
     // Global Hash Link Click Handler (Ensures immediate 1-click navigation for ALL options across website)
     document.querySelectorAll('a[href^="#"]').forEach(link => {
@@ -602,11 +622,14 @@ const VUO_APP = {
           const mobileDrawer = document.getElementById('mobileDrawer');
           if (mobileDrawer) mobileDrawer.classList.add('hidden');
 
-          // Close Tools Dropdown if open
-          const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-          const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-          if (toolsDropdownWrapper) toolsDropdownWrapper.classList.remove('open');
-          if (toolsDropdownMenu) toolsDropdownMenu.classList.add('hidden');
+          // Close any open navigation dropdowns
+          document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+            w.classList.remove('open');
+            const m = w.querySelector('.nav-dropdown-menu');
+            if (m) m.classList.add('hidden');
+            const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+            if (c) c.classList.remove('rotate-180');
+          });
 
           // If clicking current hash, prevent default page jump and re-route
           if (hash === window.location.hash) {
@@ -753,10 +776,14 @@ const VUO_APP = {
             }
           }
         });
-        const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-        const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-        if (toolsDropdownWrapper) toolsDropdownWrapper.classList.remove('open');
-        if (toolsDropdownMenu) toolsDropdownMenu.classList.add('hidden');
+        // Close any open navigation dropdowns
+        document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+          w.classList.remove('open');
+          const m = w.querySelector('.nav-dropdown-menu');
+          if (m) m.classList.add('hidden');
+          const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+          if (c) c.classList.remove('rotate-180');
+        });
       }
     });
 
@@ -843,6 +870,46 @@ const VUO_APP = {
         link.classList.remove('active');
       }
     });
+
+    // Strict Authentication Guard for All Tools & Services
+    const publicRoutes = ['home', 'contact', 'admin'];
+    const currentUser = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
+
+    if (!publicRoutes.includes(viewName) && !currentUser) {
+      // Revert hash to #home
+      window.location.hash = '#home';
+
+      // Hide all views and show Home view
+      document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+      const homeView = document.getElementById('view_home');
+      if (homeView) homeView.classList.remove('hidden');
+
+      // Update active nav link to Home
+      document.querySelectorAll('.nav-link').forEach(link => {
+        const linkHref = link.getAttribute('href') || '';
+        if (linkHref === '#home') {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Kripya pehle VLE Login karein! Sabhi tools, services, videos aur forms keval registered VLEs ke liye uplabdh hain.", "warning");
+      }
+
+      if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
+        VUO_AUTH_MODAL.openLogin({
+          item: `CSC Tools & Services (${cleanHash.toUpperCase()})`
+        }, () => {
+          window.location.hash = `#${cleanHash}`;
+          VUO_APP.handleRoute(cleanHash);
+        });
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     // Show target view (With strict admin guard)
     if (viewName === 'admin' && !VUO_AUTH.isAdmin()) {
