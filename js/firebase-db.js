@@ -44,11 +44,14 @@ const VUO_DB = {
         console.log("✅ VUO Firebase Firestore & Storage Cloud DB connected successfully!");
         this.setupRealtimeListeners();
       } else {
-        console.log("ℹ️ VUO running in LocalStorage mode (Firebase config pending).");
+        console.log("ℹ️ VUO running in LocalStorage mode (Direct REST fallback active).");
       }
+      // Always trigger direct cloud members fetch in background to guarantee zero missing members
+      this.fetchCloudMembersDirectly();
     } catch (e) {
       console.warn("Firebase initialization warning (falling back to local storage):", e);
       this.isInitialized = false;
+      this.fetchCloudMembersDirectly();
     }
   },
 
@@ -266,6 +269,64 @@ const VUO_DB = {
         }
       }
     }, (err) => console.warn("VLE activity listener error:", err));
+
+    // 9. Registered Members Realtime Sync (All devices & Admin panel)
+    this.db.collection('vuo_members').onSnapshot((snapshot) => {
+      const defaultMembers = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.sampleMembers)) ? VUO_DATA.sampleMembers : [];
+      const membersMap = new Map();
+      
+      let localExisting = [];
+      try {
+        const stored = localStorage.getItem('vuo_members');
+        if (stored) localExisting = JSON.parse(stored);
+      } catch (_) {}
+      
+      [...defaultMembers, ...localExisting].forEach(m => {
+        const k = (m.mobile || m.id || m.memberNo || '').trim();
+        if (k) membersMap.set(k, m);
+      });
+
+      if (!snapshot.empty) {
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d) {
+            const k = (d.mobile || d.id || d.memberNo || doc.id || '').trim();
+            if (k) {
+              const prev = membersMap.get(k) || {};
+              membersMap.set(k, { ...prev, ...d });
+            }
+          }
+        });
+      }
+
+      const merged = Array.from(membersMap.values());
+      merged.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+      localStorage.setItem('vuo_members', JSON.stringify(merged));
+      console.log(`☁️ Real-time: Synced ${merged.length} members from Cloud Firestore!`);
+
+      if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderMembersTable === 'function') {
+        VUO_ADMIN.renderMembersTable();
+      }
+    }, (err) => console.warn("Members listener error:", err));
+
+    // 10. VLE Gate Users Realtime Sync
+    this.db.collection('vuo_vle_users').onSnapshot((snapshot) => {
+      if (!snapshot.empty) {
+        const users = [];
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d) users.push(d);
+        });
+        users.sort((a, b) => (Number(b.registeredAt || b.lastVisitAt) || 0) - (Number(a.registeredAt || a.lastVisitAt) || 0));
+        localStorage.setItem('vuo_vle_users', JSON.stringify(users));
+        console.log(`☁️ Real-time: Synced ${users.length} VLE Gate users from Cloud Firestore!`);
+
+        if (typeof VUO_ADMIN !== 'undefined') {
+          if (typeof VUO_ADMIN.renderMembersTable === 'function') VUO_ADMIN.renderMembersTable();
+          if (typeof VUO_ADMIN.renderVleActivityTable === 'function') VUO_ADMIN.renderVleActivityTable();
+        }
+      }
+    }, (err) => console.warn("Gate users listener error:", err));
   },
 
   // ---------------- CLOUD CRUD HELPERS ---------------- //
@@ -501,6 +562,102 @@ const VUO_DB = {
       }
     }
     return { success: false, error: "Firebase not initialized" };
+  },
+
+  // ---------------- DIRECT REST SYNC FALLBACK (Bulletproof against blocked SDK) ---------------- //
+  parseFirestoreFields(fields) {
+    const res = {};
+    if (!fields) return res;
+    for (const key of Object.keys(fields)) {
+      const valObj = fields[key];
+      if (!valObj) continue;
+      if (valObj.stringValue !== undefined) res[key] = valObj.stringValue;
+      else if (valObj.integerValue !== undefined) res[key] = Number(valObj.integerValue);
+      else if (valObj.booleanValue !== undefined) res[key] = valObj.booleanValue;
+      else if (valObj.doubleValue !== undefined) res[key] = Number(valObj.doubleValue);
+      else if (valObj.timestampValue !== undefined) res[key] = valObj.timestampValue;
+    }
+    return res;
+  },
+
+  async fetchCloudMembersDirectly() {
+    const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+    const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+    const membersUrl = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_members?key=${apiKey}`;
+    const gateUsersUrl = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_vle_users?key=${apiKey}`;
+
+    let memberCount = 0;
+    let gateCount = 0;
+
+    try {
+      // 1. Fetch vuo_members
+      const resMembers = await fetch(membersUrl, { cache: 'no-cache' });
+      if (resMembers.ok) {
+        const data = await resMembers.json();
+        if (data && data.documents && Array.isArray(data.documents)) {
+          const membersMap = new Map();
+          const defaultMembers = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.sampleMembers)) ? VUO_DATA.sampleMembers : [];
+          defaultMembers.forEach(m => {
+            const k = (m.mobile || m.id || m.memberNo || '').trim();
+            if (k) membersMap.set(k, m);
+          });
+
+          try {
+            const localStored = localStorage.getItem('vuo_members');
+            if (localStored) {
+              JSON.parse(localStored).forEach(m => {
+                const k = (m.mobile || m.id || m.memberNo || '').trim();
+                if (k) membersMap.set(k, m);
+              });
+            }
+          } catch (_) {}
+
+          data.documents.forEach(doc => {
+            const parsed = this.parseFirestoreFields(doc.fields);
+            if (parsed && (parsed.mobile || parsed.id || parsed.memberNo || parsed.fullName)) {
+              const k = (parsed.mobile || parsed.id || parsed.memberNo || '').trim();
+              if (k) {
+                const prev = membersMap.get(k) || {};
+                membersMap.set(k, { ...prev, ...parsed });
+              }
+            }
+          });
+
+          const merged = Array.from(membersMap.values());
+          merged.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+          localStorage.setItem('vuo_members', JSON.stringify(merged));
+          memberCount = merged.length;
+          console.log(`✅ Direct REST: Loaded ${memberCount} members from Cloud Firestore.`);
+        }
+      }
+
+      // 2. Fetch vuo_vle_users (Gate Users)
+      const resGate = await fetch(gateUsersUrl, { cache: 'no-cache' });
+      if (resGate.ok) {
+        const dataGate = await resGate.json();
+        if (dataGate && dataGate.documents && Array.isArray(dataGate.documents)) {
+          const gateUsers = [];
+          dataGate.documents.forEach(doc => {
+            const parsed = this.parseFirestoreFields(doc.fields);
+            if (parsed && parsed.mobile) {
+              gateUsers.push(parsed);
+            }
+          });
+          gateUsers.sort((a, b) => (Number(b.registeredAt || b.lastVisitAt) || 0) - (Number(a.registeredAt || a.lastVisitAt) || 0));
+          localStorage.setItem('vuo_vle_users', JSON.stringify(gateUsers));
+          gateCount = gateUsers.length;
+          console.log(`✅ Direct REST: Loaded ${gateCount} VLE Gate users from Cloud Firestore.`);
+        }
+      }
+
+      if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderMembersTable === 'function') {
+        VUO_ADMIN.renderMembersTable();
+      }
+      return { success: true, memberCount, gateCount };
+    } catch (e) {
+      console.warn("Direct Cloud Member fetch warning:", e);
+      return { success: false, error: e.message };
+    }
   }
 };
 

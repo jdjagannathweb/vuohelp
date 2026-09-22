@@ -36,15 +36,8 @@ const VUO_GATE = {
       localStorage.setItem('vuo_vle_profile', JSON.stringify(profile));
 
       // Also register in VUO Members list if not present
-      if (typeof VUO_DATA !== 'undefined' && VUO_DATA.registerMember) {
-        VUO_DATA.registerMember({
-          memberNo: 'VLE-' + profile.mobile.slice(-4),
-          name: profile.name,
-          mobile: profile.mobile,
-          district: profile.district,
-          cscId: profile.cscId || ('OD-' + profile.mobile.slice(-6)),
-          kendraName: profile.kendraName || (profile.name + ' Digital Seva')
-        });
+      if (typeof VUO_AUTH !== 'undefined' && typeof VUO_AUTH.registerGateUser === 'function') {
+        VUO_AUTH.registerGateUser(profile);
       }
 
       // Sync to Firebase Cloud if available
@@ -103,22 +96,37 @@ const VUO_GATE = {
       return;
     }
 
-    // User is not yet verified: Prompt VLE Login / Signup modal
+    // User is NOT logged in: Mandatory VLE Registration / Signup modal
     this._pendingAction = actionInfo || { type: 'download', item: 'CSC Service / Document' };
     this._pendingCallback = onGranted;
 
     if (typeof showToast === 'function') {
-      showToast("⚠️ Kripya pehle VLE Login karein! Sabhi tools, services, videos aur forms keval registered VLEs ke liye uplabdh hain.", "warning");
+      showToast("⚠️ VLE Registration Required! Sabhi tools, services aur PDF forms download karne ke liye VLE Signup anivarya hai.", "warning");
     }
 
-    if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
-      VUO_AUTH_MODAL.openLogin(this._pendingAction, this._pendingCallback);
+    if (typeof VUO_AUTH_MODAL !== 'undefined' && typeof VUO_AUTH_MODAL.openSignup === 'function') {
+      VUO_AUTH_MODAL.openSignup(this._pendingAction, this._pendingCallback);
     } else {
       this.openVerificationModal(this._pendingAction);
     }
   },
 
   openVerificationModal(actionInfo) {
+    if (typeof VUO_AUTH_MODAL !== 'undefined' && typeof VUO_AUTH_MODAL.openSignup === 'function') {
+      VUO_AUTH_MODAL.openSignup(actionInfo || this._pendingAction, this._pendingCallback);
+      return;
+    }
+
+    const authModal = document.getElementById('vleAuthModal');
+    if (authModal) {
+      if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.switchTab) {
+        VUO_AUTH_MODAL.switchTab('signup');
+      }
+      authModal.classList.remove('hidden');
+      authModal.style.display = 'flex';
+      return;
+    }
+
     const modal = document.getElementById('vleVerificationModal');
     if (!modal) {
       // Fallback: If modal markup is missing, allow user to proceed
@@ -188,42 +196,19 @@ const VUO_GATE = {
       return;
     }
 
-    const profile = {
-      name,
-      mobile,
-      district,
-      registeredAt: Date.now()
-    };
+    this.closeVerificationModal();
 
-    // Save profile locally & cloud
-    this.saveProfile(profile);
-    this.updateUserGreetingBadge();
-
-    // Log the current action
-    const currentAction = this._pendingAction || { type: 'download', item: 'Verified Access' };
-    this.logActivity(profile, {
-      ...currentAction,
-      action: 'Initial Verification & ' + (currentAction.item || currentAction.action || 'Download')
-    });
-
-    // Close modal
-    const modal = document.getElementById('vleVerificationModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.style.display = 'none';
-    }
-
-    if (typeof showToast === 'function') {
-      showToast(`Swagat hai ${name}! Download shuru ho raha hai...`, 'success');
-    }
-
-    // Execute the pending action
-    const cb = this._pendingCallback;
-    this._pendingAction = null;
-    this._pendingCallback = null;
-
-    if (typeof cb === 'function') {
-      setTimeout(() => cb(), 150);
+    if (typeof VUO_AUTH_MODAL !== 'undefined' && typeof VUO_AUTH_MODAL.openSignup === 'function') {
+      VUO_AUTH_MODAL.openSignup(this._pendingAction, this._pendingCallback);
+      const sName = document.getElementById('authSignupName');
+      const sMob = document.getElementById('authSignupMobile');
+      const sDist = document.getElementById('authSignupDistrict');
+      if (sName && name) sName.value = name;
+      if (sMob && mobile) sMob.value = mobile;
+      if (sDist && district) sDist.value = district;
+      if (typeof showToast === 'function') {
+        showToast("Kripya apna CSC ID aur Password set karke Full VLE Signup complete karein!", "info");
+      }
     }
   },
 

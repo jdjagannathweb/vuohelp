@@ -41,20 +41,18 @@ const VUO_AUTH = {
       const user = localStorage.getItem('vuo_current_user');
       if (user) return JSON.parse(user);
       
-      // Fallback: check vuo_vle_profile
+      // Check if previous vuo_vle_profile belongs to a registered Full Member in vuo_members
       const prof = localStorage.getItem('vuo_vle_profile');
       if (prof) {
         const p = JSON.parse(prof);
-        if (p && p.name && p.mobile) {
-          return {
-            fullName: p.name,
-            mobile: p.mobile,
-            district: p.district || 'Odisha',
-            cscId: p.cscId || ('OD-' + p.mobile.slice(-6)),
-            memberNo: 'VLE-' + p.mobile.slice(-4),
-            kendraName: p.kendraName || (p.name + ' Digital Seva'),
-            status: "Active (Verified VLE)"
-          };
+        const cleanMob = (p && p.mobile) ? p.mobile.replace(/\D/g, '').slice(-10) : '';
+        if (cleanMob) {
+          const members = this.getAllMembers();
+          const match = members.find(m => m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMob && !m.isGateOnly);
+          if (match) {
+            this.setCurrentUser(match);
+            return match;
+          }
         }
       }
       return null;
@@ -86,23 +84,109 @@ const VUO_AUTH = {
 
   getAllMembers() {
     try {
-      const members = localStorage.getItem('vuo_members');
-      if (members) {
-        const parsed = JSON.parse(members);
-        return parsed.map(m => {
-          if (!m.id) m.id = m.memberNo || (m.mobile ? ('VLE-' + m.mobile.replace(/\D/g, '').slice(-4)) : ('M-' + Math.random().toString(36).substr(2, 6)));
-          return m;
-        });
+      let members = [];
+      const stored = localStorage.getItem('vuo_members');
+      if (stored) {
+        members = JSON.parse(stored);
+      } else if (typeof VUO_DATA !== 'undefined' && VUO_DATA.sampleMembers) {
+        members = [...VUO_DATA.sampleMembers];
       }
-      if (typeof VUO_DATA !== 'undefined' && VUO_DATA.sampleMembers) {
-        return VUO_DATA.sampleMembers.map(m => {
-          if (!m.id) m.id = m.memberNo || ('VLE-' + Math.random().toString(36).substr(2, 6));
-          return m;
-        });
+
+      // Map format
+      const formatted = members.map(m => {
+        if (!m.id) m.id = m.memberNo || (m.mobile ? ('VLE-' + m.mobile.replace(/\D/g, '').slice(-4)) : ('M-' + Math.random().toString(36).substr(2, 6)));
+        if (!m.status) m.status = "Active (Verified VLE)";
+        return m;
+      });
+
+      // Track mobiles of already registered members
+      const existingMobiles = new Set(formatted.map(m => (m.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean));
+
+      // Merge VLE Gate users if available
+      try {
+        const gateStored = localStorage.getItem('vuo_vle_users');
+        if (gateStored) {
+          const gateUsers = JSON.parse(gateStored);
+          if (Array.isArray(gateUsers)) {
+            gateUsers.forEach(u => {
+              const cleanM = (u.mobile || '').replace(/\D/g, '').slice(-10);
+              if (cleanM && !existingMobiles.has(cleanM)) {
+                existingMobiles.add(cleanM);
+                formatted.push({
+                  id: 'GATE-' + cleanM.slice(-4),
+                  memberNo: 'GATE-' + cleanM.slice(-4),
+                  cscId: u.cscId || ('OD-' + cleanM.slice(-6)),
+                  fullName: u.name || u.fullName || 'VLE User',
+                  mobile: cleanM,
+                  email: u.email || (cleanM + '@vlehelp.in'),
+                  district: u.district || 'Odisha',
+                  kendraName: u.kendraName || ((u.name || 'CSC') + ' Digital Seva'),
+                  status: 'Gate Verified (VLE)',
+                  registrationType: 'gate',
+                  createdAt: u.registeredAt || u.lastVisitAt || Date.now(),
+                  joiningDate: u.registeredAt ? new Date(u.registeredAt).toLocaleDateString('en-GB') : '2026',
+                  isGateOnly: true,
+                  passwordHash: '1234'
+                });
+              }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // Trigger direct background cloud sync if needed
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudMembersDirectly === 'function') {
+        if (!this._hasSyncedCloudMembers) {
+          this._hasSyncedCloudMembers = true;
+          setTimeout(() => {
+            VUO_DB.fetchCloudMembersDirectly().catch(() => {});
+          }, 300);
+        }
       }
-      return [];
+
+      return formatted;
     } catch (e) {
+      console.warn("getAllMembers error:", e);
       return [];
+    }
+  },
+
+  registerGateUser(profile) {
+    if (!profile || !profile.mobile) return;
+    try {
+      const cleanMobile = profile.mobile.replace(/\D/g, '').slice(-10);
+      const members = this.getAllMembers();
+      const exists = members.find(m => m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMobile);
+      if (!exists) {
+        const memberNo = 'VLE-' + (cleanMobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+        const gateMember = {
+          id: memberNo,
+          memberNo,
+          cscId: profile.cscId || ('OD-' + cleanMobile.slice(-6)),
+          fullName: profile.name || 'VLE Member',
+          mobile: cleanMobile,
+          email: profile.email || (cleanMobile + '@vlehelp.in'),
+          district: profile.district || 'Odisha',
+          kendraName: profile.kendraName || ((profile.name || 'CSC') + ' Digital Seva'),
+          status: 'Gate Verified (VLE)',
+          registrationType: 'gate',
+          createdAt: profile.registeredAt || Date.now(),
+          joiningDate: new Date().toLocaleDateString('en-GB'),
+          isGateOnly: true,
+          passwordHash: '1234'
+        };
+
+        const stored = localStorage.getItem('vuo_members');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(gateMember);
+        localStorage.setItem('vuo_members', JSON.stringify(list));
+
+        if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+          VUO_DB.cloudSaveMember(gateMember);
+        }
+      }
+    } catch (e) {
+      console.warn("registerGateUser error:", e);
     }
   },
 
@@ -692,9 +776,12 @@ const VUO_AUTH_MODAL = {
     if (promptBox) {
       if (actionInfo && actionInfo.item) {
         promptBox.innerHTML = `
-          <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl mb-3 flex items-center gap-2 text-xs text-amber-900 font-bold">
-            <i class="fa-solid fa-lock text-amber-600"></i>
-            <span>Login or Signup required to access: <strong>${actionInfo.item}</strong></span>
+          <div class="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl mb-3 flex items-start gap-2.5 text-xs text-amber-950 font-bold">
+            <i class="fa-solid fa-lock text-amber-600 mt-0.5"></i>
+            <div>
+              <p class="font-black text-amber-900">VLE Portal Login / Verification</p>
+              <p class="text-[11px] font-normal text-slate-700 mt-0.5">Access karne ke liye login karein: <strong class="text-slate-900">${actionInfo.item}</strong></p>
+            </div>
           </div>
         `;
         promptBox.classList.remove('hidden');
@@ -708,9 +795,38 @@ const VUO_AUTH_MODAL = {
     modal.style.display = 'flex';
   },
 
-  openSignup() {
-    this.openLogin();
+  openSignup(actionInfo = null, onGranted = null) {
+    this._pendingAction = actionInfo;
+    this._pendingCallback = onGranted;
+
+    const modal = document.getElementById('vleAuthModal');
+    if (!modal) return;
+
     this.switchTab('signup');
+
+    const promptBox = document.getElementById('vleAuthGatePrompt');
+    if (promptBox) {
+      if (actionInfo && actionInfo.item) {
+        promptBox.innerHTML = `
+          <div class="p-3 bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-300 rounded-2xl mb-3 flex items-start gap-2.5 text-xs text-sky-950 font-bold">
+            <div class="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <i class="fa-solid fa-user-plus text-xs"></i>
+            </div>
+            <div>
+              <p class="font-black text-sky-900">VLE Registration (Signup) Required</p>
+              <p class="text-[11px] font-normal text-slate-700 mt-0.5">Sabhi PDF forms, photos, PVC cards aur tools use karne ke liye naya VLE account banayein (ya pehle se account hai toh Login karein): <strong class="text-slate-900">${actionInfo.item}</strong></p>
+            </div>
+          </div>
+        `;
+        promptBox.classList.remove('hidden');
+      } else {
+        promptBox.innerHTML = '';
+        promptBox.classList.add('hidden');
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   },
 
   switchTab(tab) {

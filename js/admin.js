@@ -1950,6 +1950,9 @@ const VUO_ADMIN = {
     if (statusVal) {
       members = members.filter(m => {
         const s = (m.status || 'Active').toLowerCase();
+        const isGate = m.isGateOnly || m.registrationType === 'gate';
+        if (statusVal === 'gate') return isGate || s.includes('gate');
+        if (statusVal === 'active') return !s.includes('suspend') && !s.includes('block');
         return s.includes(statusVal);
       });
     }
@@ -1960,7 +1963,7 @@ const VUO_ADMIN = {
           <td colspan="7" class="p-8 text-center text-slate-400 text-xs">
             <i class="fa-solid fa-users-slash text-3xl mb-2 text-slate-300"></i>
             <p class="font-bold text-slate-500">No registered VLE members found.</p>
-            <p class="text-[11px] text-slate-400">Try changing your search terms or filters.</p>
+            <p class="text-[11px] text-slate-400">Try changing your search terms or filters, or click "Cloud Sync".</p>
           </td>
         </tr>
       `;
@@ -1971,10 +1974,17 @@ const VUO_ADMIN = {
       const cleanPhone = (m.mobile || '').replace(/\D/g, '').slice(-10);
       const waLink = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent('Namaskar ' + (m.fullName || 'VLE') + ', VLE CSC Help desk se sampark kar rahe hain.')}` : '#';
       const isGoogle = m.authProvider === 'google' || (m.googleId && m.googleId.length > 0);
+      const isGate = m.isGateOnly || m.registrationType === 'gate' || (m.status || '').toLowerCase().includes('gate');
       const isSuspended = (m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('block');
-      const statusBadge = isSuspended 
-        ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200">Suspended</span>`
-        : `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200">Active</span>`;
+      
+      let statusBadge;
+      if (isSuspended) {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200">Suspended</span>`;
+      } else if (isGate) {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-cyan-100 text-cyan-800 border border-cyan-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-shield-halved text-[9px]"></i> Gate Verified</span>`;
+      } else {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-circle-check text-[9px]"></i> Full Member</span>`;
+      }
 
       const safeTargetId = cleanPhone || m.cscId || m.memberNo;
 
@@ -2058,6 +2068,36 @@ const VUO_ADMIN = {
         </tr>
       `;
     }).join('');
+  },
+
+  async syncCloudMembersNow() {
+    const btn = document.getElementById('adminSyncMembersBtn');
+    const oldHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Syncing...</span>`;
+      btn.disabled = true;
+    }
+    if (typeof showToast === 'function') showToast("Firebase Cloud se members sync ho rahe hain...", "info");
+
+    try {
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudMembersDirectly === 'function') {
+        const res = await VUO_DB.fetchCloudMembersDirectly();
+        this.renderMembersTable();
+        if (typeof showToast === 'function') {
+          showToast(`Cloud se ${res.memberCount || 0} Registered Members aur ${res.gateCount || 0} Gate VLEs sync ho gaye!`, "success");
+        }
+      } else {
+        this.renderMembersTable();
+      }
+    } catch (e) {
+      console.error(e);
+      if (typeof showToast === 'function') showToast("Sync error: " + e.message, "error");
+    } finally {
+      if (btn) {
+        btn.innerHTML = oldHtml || `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Cloud Sync</span>`;
+        btn.disabled = false;
+      }
+    }
   },
 
   togglePasswordReveal(targetId) {
