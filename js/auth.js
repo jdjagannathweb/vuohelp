@@ -82,8 +82,42 @@ const VUO_AUTH = {
     this.updateAuthUI();
   },
 
+  getDeletedMembers() {
+    try {
+      const stored = localStorage.getItem('vuo_deleted_members');
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch (_) {}
+    return [];
+  },
+
+  addDeletedMember(keys) {
+    try {
+      const list = this.getDeletedMembers();
+      const set = new Set(list.map(s => String(s).toLowerCase().trim()));
+      (Array.isArray(keys) ? keys : [keys]).forEach(k => {
+        if (k) set.add(String(k).toLowerCase().trim());
+      });
+      localStorage.setItem('vuo_deleted_members', JSON.stringify(Array.from(set)));
+    } catch (_) {}
+  },
+
+  unmarkDeleted(key) {
+    try {
+      if (!key) return;
+      const clean = String(key).toLowerCase().trim();
+      const list = this.getDeletedMembers().filter(s => String(s).toLowerCase().trim() !== clean);
+      localStorage.setItem('vuo_deleted_members', JSON.stringify(list));
+    } catch (_) {}
+  },
+
   getAllMembers() {
     try {
+      const deletedList = this.getDeletedMembers();
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
       let members = [];
       const stored = localStorage.getItem('vuo_members');
       if (stored) {
@@ -91,6 +125,15 @@ const VUO_AUTH = {
       } else if (typeof VUO_DATA !== 'undefined' && VUO_DATA.sampleMembers) {
         members = [...VUO_DATA.sampleMembers];
       }
+
+      // Filter out deleted members
+      members = members.filter(m => {
+        const memNo = (m.memberNo || '').toLowerCase().trim();
+        const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+        const idVal = (m.id || '').toString().toLowerCase().trim();
+        const csc = (m.cscId || '').toLowerCase().trim();
+        return !(deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc)));
+      });
 
       // Map format
       const formatted = members.map(m => {
@@ -102,7 +145,7 @@ const VUO_AUTH = {
       // Track mobiles of already registered members
       const existingMobiles = new Set(formatted.map(m => (m.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean));
 
-      // Merge VLE Gate users if available
+      // Merge VLE Gate users if available (ignoring deleted)
       try {
         const gateStored = localStorage.getItem('vuo_vle_users');
         if (gateStored) {
@@ -110,7 +153,7 @@ const VUO_AUTH = {
           if (Array.isArray(gateUsers)) {
             gateUsers.forEach(u => {
               const cleanM = (u.mobile || '').replace(/\D/g, '').slice(-10);
-              if (cleanM && !existingMobiles.has(cleanM)) {
+              if (cleanM && !existingMobiles.has(cleanM) && !deletedSet.has(cleanM)) {
                 existingMobiles.add(cleanM);
                 formatted.push({
                   id: 'GATE-' + cleanM.slice(-4),
@@ -121,7 +164,7 @@ const VUO_AUTH = {
                   email: u.email || (cleanM + '@vlehelp.in'),
                   district: u.district || 'Odisha',
                   kendraName: u.kendraName || ((u.name || 'CSC') + ' Digital Seva'),
-                  status: 'Gate Verified (VLE)',
+                  status: u.status || 'Gate Verified (VLE)',
                   registrationType: 'gate',
                   createdAt: u.registeredAt || u.lastVisitAt || Date.now(),
                   joiningDate: u.registeredAt ? new Date(u.registeredAt).toLocaleDateString('en-GB') : '2026',
@@ -268,6 +311,17 @@ const VUO_AUTH = {
       return { success: false, message: "VLE account not found with this Mobile / CSC ID. Please Sign Up!" };
     }
 
+    // Check if account is suspended / locked by admin
+    const isLocked = (member.status || '').toLowerCase().includes('suspend') || 
+                     (member.status || '').toLowerCase().includes('lock') || 
+                     (member.status || '').toLowerCase().includes('block');
+    if (isLocked) {
+      return { 
+        success: false, 
+        message: "⚠️ Aapka VLE account Administrator dwara Lock / Suspend kar diya gaya hai. Kripya Admin se sampark karein." 
+      };
+    }
+
     const userPwd = member.passwordHash || '1234';
     if (userPwd !== password.trim()) {
       return { success: false, message: "Incorrect password. Click 'Forgot Password?' to reset via OTP." };
@@ -297,7 +351,7 @@ const VUO_AUTH = {
   },
 
   /* ================= ADMIN MEMBER MANAGEMENT ================= */
-  updateMember(targetId, updateData) {
+  async updateMember(targetId, updateData) {
     if (!targetId) return { success: false, message: "Target member identifier required." };
     const members = this.getAllMembers();
     const targetStr = String(targetId).trim();
@@ -333,13 +387,13 @@ const VUO_AUTH = {
     }
 
     if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
-      VUO_DB.cloudSaveMember(member);
+      await VUO_DB.cloudSaveMember(member);
     }
 
     return { success: true, member };
   },
 
-  adminSetPassword(targetId, newPassword) {
+  async adminSetPassword(targetId, newPassword) {
     if (!targetId) return { success: false, message: "Target member identifier required." };
     if (!newPassword || newPassword.trim().length < 4) {
       return { success: false, message: "Password must be at least 4 characters long." };
@@ -373,40 +427,137 @@ const VUO_AUTH = {
     }
 
     if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
-      VUO_DB.cloudSaveMember(member);
+      await VUO_DB.cloudSaveMember(member);
     }
 
     return { success: true, member };
   },
 
-  deleteMember(targetId) {
+  async toggleMemberLock(targetId) {
+    if (!targetId) return { success: false, message: "Target member identifier required." };
+    const members = this.getAllMembers();
+    const targetStr = String(targetId).trim();
+    const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
+    const targetLower = targetStr.toLowerCase();
+
+    const member = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!member) {
+      return { success: false, message: "Member record not found to toggle lock." };
+    }
+
+    const isCurrentlyLocked = (member.status || '').toLowerCase().includes('suspend') || 
+                             (member.status || '').toLowerCase().includes('lock') || 
+                             (member.status || '').toLowerCase().includes('block');
+
+    member.status = isCurrentlyLocked ? "Active (Verified VLE)" : "Suspended (Locked by Admin)";
+    this.saveMembers(members);
+
+    // Also update in gate users if present
+    try {
+      const gateStored = localStorage.getItem('vuo_vle_users');
+      if (gateStored) {
+        const gateList = JSON.parse(gateStored);
+        const gUser = gateList.find(u => (u.mobile || '').replace(/\D/g, '').slice(-10) === cleanTarget);
+        if (gUser) {
+          gUser.status = member.status;
+          localStorage.setItem('vuo_vle_users', JSON.stringify(gateList));
+        }
+      }
+    } catch (_) {}
+
+    // If active user is this member and now locked, log them out immediately
+    const cur = this.getCurrentUser();
+    if (cur && (cur.mobile === member.mobile || cur.cscId === member.cscId || (cur.id && cur.id === member.id))) {
+      if (!isCurrentlyLocked) {
+        this.setCurrentUser(null);
+      } else {
+        cur.status = member.status;
+        this.setCurrentUser(cur);
+      }
+    }
+
+    // Persist to Cloud Firestore
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      await VUO_DB.cloudSaveMember(member);
+    }
+
+    return { 
+      success: true, 
+      member, 
+      isLocked: !isCurrentlyLocked,
+      message: !isCurrentlyLocked ? `Account for ${member.fullName} locked.` : `Account for ${member.fullName} unlocked.`
+    };
+  },
+
+  async deleteMember(targetId) {
     if (!targetId) return { success: false, message: "Target member identifier required." };
     let members = this.getAllMembers();
     const targetStr = String(targetId).trim();
     const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
     const targetLower = targetStr.toLowerCase();
 
+    // Find the member record before removing to extract all identifiers
+    const targetMember = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const memberNo = targetMember ? (targetMember.memberNo || targetMember.id) : (targetStr.startsWith('VLE-') || targetStr.startsWith('VUO-') ? targetStr : '');
+    const mobileNo = targetMember ? (targetMember.mobile || '').replace(/\D/g, '').slice(-10) : cleanTarget;
+    const cscId = targetMember ? (targetMember.cscId || '') : '';
+    const idVal = targetMember ? (targetMember.id || '') : targetStr;
+
+    // 1. Add to tombstone blacklist so they can never be rehydrated
+    this.addDeletedMember([memberNo, mobileNo, cscId, idVal, targetStr]);
+
+    // 2. Filter from local vuo_members
     const initialLen = members.length;
     members = members.filter(m => {
       const mId = (m.id || '').toString().toLowerCase();
       const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
       const mCsc = (m.cscId || '').toLowerCase();
       const mNo = (m.memberNo || '').toLowerCase();
-      return !((mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower);
+      return !((mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower || (memberNo && mNo === memberNo.toLowerCase()));
     });
-
-    if (members.length === initialLen) {
-      return { success: false, message: "Member not found to delete." };
-    }
-
     this.saveMembers(members);
 
+    // 3. Filter from local vuo_vle_users
+    try {
+      const gateStored = localStorage.getItem('vuo_vle_users');
+      if (gateStored) {
+        let gateList = JSON.parse(gateStored);
+        if (Array.isArray(gateList)) {
+          gateList = gateList.filter(u => {
+            const uMob = (u.mobile || '').replace(/\D/g, '').slice(-10);
+            return !(uMob && (uMob === cleanTarget || uMob === mobileNo));
+          });
+          localStorage.setItem('vuo_vle_users', JSON.stringify(gateList));
+        }
+      }
+    } catch (_) {}
+
+    // 4. Log out if currently logged in user is this member
     const cur = this.getCurrentUser();
     if (cur && ((cur.id && cur.id === targetStr) || (cleanTarget && (cur.mobile || '').slice(-10) === cleanTarget) || (cur.cscId || '').toLowerCase() === targetLower)) {
       this.setCurrentUser(null);
     }
 
-    return { success: true };
+    // 5. Delete from Cloud Firestore permanently (SDK and REST fallback)
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudDeleteMember) {
+      await VUO_DB.cloudDeleteMember(memberNo, mobileNo);
+    }
+
+    return { success: true, member: targetMember };
   },
 
   /* ================= GOOGLE AUTHENTICATION & PROFILE ONBOARDING ================= */

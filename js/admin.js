@@ -1975,11 +1975,11 @@ const VUO_ADMIN = {
       const waLink = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent('Namaskar ' + (m.fullName || 'VLE') + ', VLE CSC Help desk se sampark kar rahe hain.')}` : '#';
       const isGoogle = m.authProvider === 'google' || (m.googleId && m.googleId.length > 0);
       const isGate = m.isGateOnly || m.registrationType === 'gate' || (m.status || '').toLowerCase().includes('gate');
-      const isSuspended = (m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('block');
+      const isSuspended = (m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('lock') || (m.status || '').toLowerCase().includes('block');
       
       let statusBadge;
       if (isSuspended) {
-        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200">Suspended</span>`;
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-lock text-[9px]"></i> Suspended (Locked)</span>`;
       } else if (isGate) {
         statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-cyan-100 text-cyan-800 border border-cyan-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-shield-halved text-[9px]"></i> Gate Verified</span>`;
       } else {
@@ -1989,11 +1989,11 @@ const VUO_ADMIN = {
       const safeTargetId = cleanPhone || m.cscId || m.memberNo;
 
       return `
-        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs">
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs ${isSuspended ? 'bg-rose-50/30' : ''}">
           <!-- Name & Avatar -->
           <td class="p-3">
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-600 to-blue-700 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr ${isSuspended ? 'from-rose-600 to-red-700' : 'from-sky-600 to-blue-700'} text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
                 ${m.avatar && m.avatar.startsWith('http') ? `<img src="${m.avatar}" alt="${m.fullName}" class="w-full h-full rounded-full object-cover">` : (m.fullName || 'V').charAt(0).toUpperCase()}
               </div>
               <div class="min-w-0">
@@ -2053,15 +2053,26 @@ const VUO_ADMIN = {
 
           <!-- Action Buttons -->
           <td class="p-3 text-right whitespace-nowrap space-x-1">
-            <button type="button" onclick="VUO_ADMIN.openEditMember('${safeTargetId}')" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs">
+            <button type="button" onclick="VUO_ADMIN.openEditMember('${safeTargetId}')" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Edit Member Details">
               <i class="fa-solid fa-pen-to-square"></i>
               <span>Edit</span>
             </button>
-            <button type="button" onclick="VUO_ADMIN.openChangeMemberPassword('${safeTargetId}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs">
+            <button type="button" onclick="VUO_ADMIN.openChangeMemberPassword('${safeTargetId}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Change Password">
               <i class="fa-solid fa-key"></i>
               <span>Change Pwd</span>
             </button>
-            <button type="button" onclick="VUO_ADMIN.deleteMember('${safeTargetId}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all" title="Delete Member">
+            ${isSuspended ? `
+              <button type="button" onclick="VUO_ADMIN.toggleLockMember('${safeTargetId}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Unlock Member Account">
+                <i class="fa-solid fa-lock-open"></i>
+                <span>Unlock</span>
+              </button>
+            ` : `
+              <button type="button" onclick="VUO_ADMIN.toggleLockMember('${safeTargetId}')" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Lock / Suspend Member Account">
+                <i class="fa-solid fa-lock"></i>
+                <span>Lock</span>
+              </button>
+            `}
+            <button type="button" onclick="VUO_ADMIN.deleteMember('${safeTargetId}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all" title="Delete Member Permanently">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </td>
@@ -2245,38 +2256,120 @@ const VUO_ADMIN = {
     }
   },
 
-  handleSaveMemberPassword(e) {
+  async handleSaveMemberPassword(e) {
     if (e && e.preventDefault) e.preventDefault();
     const targetId = document.getElementById('changePwdTargetId')?.value;
     const newPwd = document.getElementById('changePwdNewValue')?.value;
+    const saveBtn = e?.target?.querySelector('button[type="submit"]') || document.querySelector('#adminChangeMemberPwdModal button[type="submit"]');
+    const oldBtnHtml = saveBtn ? saveBtn.innerHTML : '';
 
     if (!newPwd || newPwd.trim().length < 4) {
       if (typeof showToast === 'function') showToast("New password must be at least 4 characters.", "warning");
       return;
     }
 
-    const res = VUO_AUTH.adminSetPassword(targetId, newPwd.trim());
-    if (!res.success) {
-      if (typeof showToast === 'function') showToast(res.message, "error");
-      return;
+    if (saveBtn) {
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving to Cloud...`;
+      saveBtn.disabled = true;
     }
 
-    this.closeChangeMemberPwdModal();
-    this.renderMembersTable();
-    if (typeof showToast === 'function') {
-      showToast(`Password changed successfully for ${res.member.fullName}! (New: ${newPwd.trim()})`, "success");
+    try {
+      const res = await VUO_AUTH.adminSetPassword(targetId, newPwd.trim());
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message, "error");
+        return;
+      }
+
+      this.closeChangeMemberPwdModal();
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(`✅ Password changed & synced to Cloud for ${res.member.fullName}! (New: ${newPwd.trim()})`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Error updating password: " + err.message, "error");
+    } finally {
+      if (saveBtn) {
+        saveBtn.innerHTML = oldBtnHtml || 'Save New Password';
+        saveBtn.disabled = false;
+      }
     }
   },
 
-  deleteMember(targetId) {
-    if (!confirm("Are you sure you want to delete this VLE Member record? This cannot be undone.")) return;
-    const res = VUO_AUTH.deleteMember(targetId);
-    if (!res.success) {
-      if (typeof showToast === 'function') showToast(res.message || "Failed to delete member.", "error");
+  async toggleLockMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const isLocked = m && ((m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('lock') || (m.status || '').toLowerCase().includes('block'));
+    const actionName = isLocked ? "UNLOCK" : "LOCK / SUSPEND";
+    const name = m ? (m.fullName || m.name || 'Member') : targetId;
+
+    if (!confirm(`Kya aap sach me member "${name}" ka account ${actionName} karna chahte hain?`)) return;
+
+    if (typeof showToast === 'function') {
+      showToast(`${actionName} kiya ja raha hai (Cloud Firestore sync)...`, "info");
+    }
+
+    try {
+      const res = await VUO_AUTH.toggleMemberLock(targetId);
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message || "Failed to update member lock status.", "error");
+        return;
+      }
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(res.isLocked ? `🔒 Member ${name} ka account LOCK kar diya gaya hai.` : `🔓 Member ${name} ka account UNLOCK ho gaya hai.`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Error: " + err.message, "error");
+    }
+  },
+
+  async deleteMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const name = m ? `${m.fullName || 'VLE'} (${m.memberNo || cleanTarget})` : targetId;
+
+    if (!confirm(`⚠️ Kripya dhyan dein:\n\nKya aap sach me VLE Member "${name}" ko DELETE karna chahte hain?\n\nYe record Cloud Firestore aur Local Storage dono se PERMANENTLY delete ho jayega aur dobara wapas nahi aayega.`)) {
       return;
     }
-    this.renderMembersTable();
-    if (typeof showToast === 'function') showToast("VLE Member deleted successfully.", "info");
+
+    if (typeof showToast === 'function') {
+      showToast("Cloud Firestore aur Local se delete kiya ja raha hai...", "info");
+    }
+
+    try {
+      const res = await VUO_AUTH.deleteMember(targetId);
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message || "Failed to delete member.", "error");
+        return;
+      }
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(`✅ VLE Member "${name}" permanently delete ho gaya hai (Cloud & Local dono se).`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Delete error: " + err.message, "error");
+    }
   },
 
   exportMembersCsv() {

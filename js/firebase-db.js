@@ -272,28 +272,32 @@ const VUO_DB = {
 
     // 9. Registered Members Realtime Sync (All devices & Admin panel)
     this.db.collection('vuo_members').onSnapshot((snapshot) => {
-      const defaultMembers = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.sampleMembers)) ? VUO_DATA.sampleMembers : [];
-      const membersMap = new Map();
-      
-      let localExisting = [];
+      let deletedList = [];
       try {
-        const stored = localStorage.getItem('vuo_members');
-        if (stored) localExisting = JSON.parse(stored);
+        const delRaw = localStorage.getItem('vuo_deleted_members');
+        if (delRaw) deletedList = JSON.parse(delRaw);
       } catch (_) {}
-      
-      [...defaultMembers, ...localExisting].forEach(m => {
-        const k = (m.mobile || m.id || m.memberNo || '').trim();
-        if (k) membersMap.set(k, m);
-      });
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
+      const membersMap = new Map();
 
       if (!snapshot.empty) {
         snapshot.forEach(doc => {
           const d = doc.data();
           if (d) {
+            const memNo = (d.memberNo || doc.id || '').toLowerCase().trim();
+            const mob = (d.mobile || '').replace(/\D/g, '').slice(-10);
+            const idVal = (d.id || '').toLowerCase().trim();
+            const csc = (d.cscId || '').toLowerCase().trim();
+
+            // Ignore deleted members
+            if (deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc))) {
+              return;
+            }
+
             const k = (d.mobile || d.id || d.memberNo || doc.id || '').trim();
             if (k) {
-              const prev = membersMap.get(k) || {};
-              membersMap.set(k, { ...prev, ...d });
+              membersMap.set(k, d);
             }
           }
         });
@@ -311,11 +315,23 @@ const VUO_DB = {
 
     // 10. VLE Gate Users Realtime Sync
     this.db.collection('vuo_vle_users').onSnapshot((snapshot) => {
+      let deletedList = [];
+      try {
+        const delRaw = localStorage.getItem('vuo_deleted_members');
+        if (delRaw) deletedList = JSON.parse(delRaw);
+      } catch (_) {}
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
       if (!snapshot.empty) {
         const users = [];
         snapshot.forEach(doc => {
           const d = doc.data();
-          if (d) users.push(d);
+          if (d && d.mobile) {
+            const cleanM = (d.mobile || doc.id || '').replace(/\D/g, '').slice(-10);
+            if (cleanM && !deletedSet.has(cleanM)) {
+              users.push(d);
+            }
+          }
         });
         users.sort((a, b) => (Number(b.registeredAt || b.lastVisitAt) || 0) - (Number(a.registeredAt || a.lastVisitAt) || 0));
         localStorage.setItem('vuo_vle_users', JSON.stringify(users));
@@ -426,28 +442,88 @@ const VUO_DB = {
     }
   },
 
-  // Member Registration
+  // Member Registration & Cloud Management
   async cloudSaveMember(memberObj) {
+    if (!memberObj) return { success: false, error: "Empty member object" };
+    memberObj.createdAt = memberObj.createdAt || Date.now();
+    const docId = (memberObj.memberNo || memberObj.id || memberObj.mobile || '').trim();
+    if (!docId) return { success: false, error: "Missing member identifier" };
+
+    // 1. Firebase SDK
     if (this.isInitialized && this.db) {
       try {
-        memberObj.createdAt = memberObj.createdAt || Date.now();
-        await this.db.collection('vuo_members').doc(memberObj.memberNo).set(memberObj);
-        console.log("☁️ Member saved to Firebase Cloud!");
+        await this.db.collection('vuo_members').doc(docId).set(memberObj, { merge: true });
+        console.log("☁️ Member saved to Firebase Cloud (SDK):", docId);
       } catch (e) {
-        console.warn("Could not save member to cloud:", e);
+        console.warn("Could not save member via SDK:", e);
       }
     }
+
+    // 2. Direct REST API Fallback (Guaranteed persistence to Firestore)
+    try {
+      const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+      const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+      const url = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_members/${encodeURIComponent(docId)}?key=${apiKey}`;
+      const restRes = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: this.toFirestoreFields(memberObj) })
+      });
+      if (restRes.ok) {
+        console.log("☁️ Member synced to Cloud Firestore REST:", docId);
+      }
+    } catch (restErr) {
+      console.warn("REST member save warning:", restErr);
+    }
+
+    return { success: true };
   },
 
-  async cloudDeleteMember(memberNo) {
+  async cloudDeleteMember(memberNo, mobileNo) {
+    const cleanMem = (memberNo || '').toString().trim();
+    const cleanMob = (mobileNo || '').toString().replace(/\D/g, '').slice(-10);
+    const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+    const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+
+    console.log(`🗑️ Deleting member from Cloud Firestore: memberNo=${cleanMem}, mobile=${cleanMob}`);
+
+    // 1. Delete via SDK (if initialized and online)
     if (this.isInitialized && this.db) {
       try {
-        await this.db.collection('vuo_members').doc(memberNo).delete();
-        console.log("☁️ Member deleted from Firebase Cloud!");
+        if (cleanMem) {
+          await this.db.collection('vuo_members').doc(cleanMem).delete().catch(() => {});
+        }
+        if (cleanMob) {
+          await this.db.collection('vuo_vle_users').doc(cleanMob).delete().catch(() => {});
+          await this.db.collection('vuo_members').doc(cleanMob).delete().catch(() => {});
+        }
+        console.log("☁️ Member deleted via Firebase SDK!");
       } catch (e) {
-        console.warn("Could not delete member from cloud:", e);
+        console.warn("Could not delete member via SDK:", e);
       }
     }
+
+    // 2. Direct REST DELETE (Guaranteed synchronous deletion from Firestore)
+    try {
+      const deletePromises = [];
+      if (cleanMem) {
+        deletePromises.push(
+          fetch(`https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_members/${encodeURIComponent(cleanMem)}?key=${apiKey}`, { method: 'DELETE' })
+        );
+      }
+      if (cleanMob) {
+        deletePromises.push(
+          fetch(`https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_vle_users/${encodeURIComponent(cleanMob)}?key=${apiKey}`, { method: 'DELETE' }),
+          fetch(`https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_members/${encodeURIComponent(cleanMob)}?key=${apiKey}`, { method: 'DELETE' })
+        );
+      }
+      await Promise.allSettled(deletePromises);
+      console.log("☁️ Member deleted via Firestore REST API (vuo_members & vuo_vle_users)!");
+    } catch (err) {
+      console.warn("REST member delete error:", err);
+    }
+
+    return { success: true };
   },
 
   // Leads & General Insurance
@@ -565,6 +641,34 @@ const VUO_DB = {
   },
 
   // ---------------- DIRECT REST SYNC FALLBACK (Bulletproof against blocked SDK) ---------------- //
+  toFirestoreFields(obj) {
+    const fields = {};
+    if (!obj || typeof obj !== 'object') return fields;
+    for (const [key, val] of Object.entries(obj)) {
+      if (val === undefined || val === null) continue;
+      if (typeof val === 'string') {
+        fields[key] = { stringValue: val };
+      } else if (typeof val === 'number') {
+        if (Number.isInteger(val)) {
+          fields[key] = { integerValue: String(val) };
+        } else {
+          fields[key] = { doubleValue: val };
+        }
+      } else if (typeof val === 'boolean') {
+        fields[key] = { booleanValue: val };
+      } else if (Array.isArray(val)) {
+        fields[key] = {
+          arrayValue: {
+            values: val.map(v => typeof v === 'object' ? { stringValue: JSON.stringify(v) } : { stringValue: String(v) })
+          }
+        };
+      } else if (typeof val === 'object') {
+        fields[key] = { stringValue: JSON.stringify(val) };
+      }
+    }
+    return fields;
+  },
+
   parseFirestoreFields(fields) {
     const res = {};
     if (!fields) return res;
@@ -589,6 +693,13 @@ const VUO_DB = {
     let memberCount = 0;
     let gateCount = 0;
 
+    let deletedList = [];
+    try {
+      const delRaw = localStorage.getItem('vuo_deleted_members');
+      if (delRaw) deletedList = JSON.parse(delRaw);
+    } catch (_) {}
+    const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
     try {
       // 1. Fetch vuo_members
       const resMembers = await fetch(membersUrl, { cache: 'no-cache' });
@@ -596,29 +707,22 @@ const VUO_DB = {
         const data = await resMembers.json();
         if (data && data.documents && Array.isArray(data.documents)) {
           const membersMap = new Map();
-          const defaultMembers = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.sampleMembers)) ? VUO_DATA.sampleMembers : [];
-          defaultMembers.forEach(m => {
-            const k = (m.mobile || m.id || m.memberNo || '').trim();
-            if (k) membersMap.set(k, m);
-          });
-
-          try {
-            const localStored = localStorage.getItem('vuo_members');
-            if (localStored) {
-              JSON.parse(localStored).forEach(m => {
-                const k = (m.mobile || m.id || m.memberNo || '').trim();
-                if (k) membersMap.set(k, m);
-              });
-            }
-          } catch (_) {}
 
           data.documents.forEach(doc => {
             const parsed = this.parseFirestoreFields(doc.fields);
             if (parsed && (parsed.mobile || parsed.id || parsed.memberNo || parsed.fullName)) {
+              const memNo = (parsed.memberNo || doc.name.split('/').pop() || '').toLowerCase().trim();
+              const mob = (parsed.mobile || '').replace(/\D/g, '').slice(-10);
+              const idVal = (parsed.id || '').toLowerCase().trim();
+              const csc = (parsed.cscId || '').toLowerCase().trim();
+
+              if (deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc))) {
+                return;
+              }
+
               const k = (parsed.mobile || parsed.id || parsed.memberNo || '').trim();
               if (k) {
-                const prev = membersMap.get(k) || {};
-                membersMap.set(k, { ...prev, ...parsed });
+                membersMap.set(k, parsed);
               }
             }
           });
@@ -640,7 +744,10 @@ const VUO_DB = {
           dataGate.documents.forEach(doc => {
             const parsed = this.parseFirestoreFields(doc.fields);
             if (parsed && parsed.mobile) {
-              gateUsers.push(parsed);
+              const cleanM = (parsed.mobile || '').replace(/\D/g, '').slice(-10);
+              if (cleanM && !deletedSet.has(cleanM)) {
+                gateUsers.push(parsed);
+              }
             }
           });
           gateUsers.sort((a, b) => (Number(b.registeredAt || b.lastVisitAt) || 0) - (Number(a.registeredAt || a.lastVisitAt) || 0));

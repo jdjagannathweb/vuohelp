@@ -87,6 +87,19 @@ const VUO_GATE = {
     const user = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
 
     if (user && (user.fullName || user.name) && user.mobile) {
+      const isLocked = (user.status || '').toLowerCase().includes('suspend') || 
+                       (user.status || '').toLowerCase().includes('lock') || 
+                       (user.status || '').toLowerCase().includes('block');
+      if (isLocked) {
+        if (typeof showToast === 'function') {
+          showToast("⚠️ Aapka VLE account Administrator dwara Lock / Suspend kar diya gaya hai. Kripya Admin se sampark karein.", "error");
+        }
+        if (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.logout) {
+          VUO_AUTH.logout();
+        }
+        return;
+      }
+
       // User is verified! Log action and proceed immediately
       const profile = { name: user.fullName || user.name, mobile: user.mobile, district: user.district, cscId: user.cscId };
       this.logActivity(profile, actionInfo);
