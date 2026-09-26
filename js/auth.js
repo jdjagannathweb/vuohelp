@@ -187,11 +187,55 @@ const VUO_AUTH = {
         }
       }
 
+      // Ensure custom set passwords are never overwritten by defaults or cloud snapshots
+      let customMap = {};
+      try { customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}'); } catch (_) {}
+      formatted.forEach(m => {
+        const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+        const csc = (m.cscId || '').toLowerCase().trim();
+        if (mob && customMap[mob] && customMap[mob].passwordHash) {
+          m.passwordHash = customMap[mob].passwordHash;
+        } else if (csc && customMap[csc] && customMap[csc].passwordHash) {
+          m.passwordHash = customMap[csc].passwordHash;
+        }
+      });
+
       return formatted;
     } catch (e) {
       console.warn("getAllMembers error:", e);
       return [];
     }
+  },
+
+  recordCustomPassword(mobile, cscId, password) {
+    if (!password) return;
+    try {
+      const customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}');
+      const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+      const trimmedPwd = String(password).trim();
+      if (cleanMob) {
+        customMap[cleanMob] = { passwordHash: trimmedPwd, updatedAt: Date.now() };
+      }
+      if (cscId) {
+        customMap[String(cscId).toLowerCase().trim()] = { passwordHash: trimmedPwd, updatedAt: Date.now() };
+      }
+      localStorage.setItem('vuo_custom_passwords', JSON.stringify(customMap));
+    } catch (e) {}
+  },
+
+  getCustomPassword(mobile, cscId) {
+    try {
+      const customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}');
+      const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+      if (cleanMob && customMap[cleanMob] && customMap[cleanMob].passwordHash) {
+        return customMap[cleanMob].passwordHash;
+      }
+      const cscKey = String(cscId || '').toLowerCase().trim();
+      if (cscKey && customMap[cscKey] && customMap[cscKey].passwordHash) {
+        return customMap[cscKey].passwordHash;
+      }
+    } catch (e) {}
+    return null;
   },
 
   registerGateUser(profile) {
@@ -202,6 +246,7 @@ const VUO_AUTH = {
       const exists = members.find(m => m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMobile);
       if (!exists) {
         const memberNo = 'VLE-' + (cleanMobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+        const customPwd = this.getCustomPassword(cleanMobile, profile.cscId);
         const gateMember = {
           id: memberNo,
           memberNo,
@@ -216,7 +261,7 @@ const VUO_AUTH = {
           createdAt: profile.registeredAt || Date.now(),
           joiningDate: new Date().toLocaleDateString('en-GB'),
           isGateOnly: true,
-          passwordHash: '1234'
+          passwordHash: customPwd || '1234'
         };
 
         const stored = localStorage.getItem('vuo_members');
@@ -234,6 +279,14 @@ const VUO_AUTH = {
   },
 
   saveMembers(members) {
+    if (Array.isArray(members)) {
+      // Record any custom passwords so they are never lost
+      members.forEach(m => {
+        if (m && m.passwordHash && m.passwordHash !== '1234') {
+          this.recordCustomPassword(m.mobile, m.cscId, m.passwordHash);
+        }
+      });
+    }
     localStorage.setItem('vuo_members', JSON.stringify(members));
   },
 
@@ -417,6 +470,7 @@ const VUO_AUTH = {
     }
 
     member.passwordHash = newPassword.trim();
+    this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
     this.saveMembers(members);
 
     // If current session is this user, update active user
@@ -431,6 +485,60 @@ const VUO_AUTH = {
     }
 
     return { success: true, member };
+  },
+
+  async updateSelfProfile(formData) {
+    const curUser = this.getCurrentUser();
+    if (!curUser) return { success: false, message: "No active session found. Please login." };
+
+    const members = this.getAllMembers();
+    const cleanCurMobile = (curUser.mobile || '').replace(/\D/g, '').slice(-10);
+
+    let member = members.find(m => {
+      const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      return (mob && mob === cleanCurMobile) || (m.id && curUser.id && m.id === curUser.id);
+    });
+
+    if (!member) {
+      member = { ...curUser };
+      members.push(member);
+    }
+
+    if (formData.fullName && formData.fullName.trim()) {
+      member.fullName = formData.fullName.trim();
+    }
+    if (formData.kendraName && formData.kendraName.trim()) {
+      member.kendraName = formData.kendraName.trim();
+    }
+    if (formData.cscId && formData.cscId.trim()) {
+      member.cscId = formData.cscId.trim().toUpperCase();
+    }
+    if (formData.district && formData.district.trim()) {
+      member.district = formData.district.trim();
+    }
+    if (formData.email && formData.email.trim()) {
+      member.email = formData.email.trim();
+    }
+    if (formData.avatar) {
+      member.avatar = formData.avatar;
+    }
+    if (formData.newPassword && formData.newPassword.trim().length >= 4) {
+      member.passwordHash = formData.newPassword.trim();
+      this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
+    }
+
+    this.saveMembers(members);
+    this.setCurrentUser(member);
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      try {
+        await VUO_DB.cloudSaveMember(member);
+      } catch (e) {
+        console.warn("Could not sync updated profile to cloud:", e);
+      }
+    }
+
+    return { success: true, member, message: "Profile updated successfully! / ପ୍ରୋଫାଇଲ୍ ସଫଳତାର ସହ ଅପଡେଟ୍ ହେଲା!" };
   },
 
   async toggleMemberLock(targetId) {
@@ -746,7 +854,7 @@ const VUO_AUTH = {
     };
   },
 
-  verifyOtpAndResetPassword(identifier, enteredOtp, newPassword) {
+  async verifyOtpAndResetPassword(identifier, enteredOtp, newPassword) {
     if (!enteredOtp || enteredOtp.trim().length !== 4) {
       return { success: false, message: "Please enter a valid 4-digit OTP." };
     }
@@ -779,11 +887,20 @@ const VUO_AUTH = {
     }
 
     member.passwordHash = newPassword.trim();
+    this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
     this.saveMembers(members);
     localStorage.removeItem('vuo_pwd_reset_token');
 
     // Automatically log in user with updated credentials
     this.setCurrentUser(member);
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      try {
+        await VUO_DB.cloudSaveMember(member);
+      } catch (e) {
+        console.warn("Could not sync reset password to cloud:", e);
+      }
+    }
 
     return { success: true, member, message: "Password updated successfully! Welcome back." };
   },
@@ -1399,7 +1516,7 @@ const VUO_AUTH_MODAL = {
     }
   },
 
-  handleResetPassword(e) {
+  async handleResetPassword(e) {
     if (e && e.preventDefault) e.preventDefault();
     const mobInput = document.getElementById('forgotMobile') || document.getElementById('forgotIdentifier');
     const otpInput = document.getElementById('forgotOtpInput');
@@ -1409,7 +1526,7 @@ const VUO_AUTH_MODAL = {
     const otp = otpInput ? otpInput.value.trim() : '';
     const newPwd = newPwdInput ? newPwdInput.value : '';
 
-    const res = VUO_AUTH.verifyOtpAndResetPassword(id, otp, newPwd);
+    const res = await VUO_AUTH.verifyOtpAndResetPassword(id, otp, newPwd);
     if (!res.success) {
       if (typeof showToast === 'function') showToast(res.message, "error");
       return;
@@ -1492,6 +1609,96 @@ const VUO_AUTH_MODAL = {
           </div>
         `;
       }
+    }
+  },
+
+  openEditProfile() {
+    const user = VUO_AUTH.getCurrentUser();
+    if (!user) {
+      this.openLogin();
+      return;
+    }
+
+    const editView = document.getElementById('vleProfileEditView');
+    const mainView = document.getElementById('vleDashboardMainView');
+    if (editView && mainView) {
+      mainView.classList.add('hidden');
+      editView.classList.remove('hidden');
+
+      // Populate inputs with current data
+      if (document.getElementById('editVleName')) document.getElementById('editVleName').value = user.fullName || user.name || '';
+      if (document.getElementById('editVleShop')) document.getElementById('editVleShop').value = user.kendraName || '';
+      if (document.getElementById('editVleCscId')) document.getElementById('editVleCscId').value = user.cscId || '';
+      if (document.getElementById('editVleDistrict')) document.getElementById('editVleDistrict').value = user.district || 'Puri';
+      if (document.getElementById('editVleEmail')) document.getElementById('editVleEmail').value = user.email || '';
+      if (document.getElementById('editVlePhoneDisplay')) document.getElementById('editVlePhoneDisplay').textContent = '+91 ' + (user.mobile || '');
+      if (document.getElementById('editVleNewPassword')) document.getElementById('editVleNewPassword').value = '';
+    }
+  },
+
+  closeEditProfile() {
+    const editView = document.getElementById('vleProfileEditView');
+    const mainView = document.getElementById('vleDashboardMainView');
+    if (editView && mainView) {
+      editView.classList.add('hidden');
+      mainView.classList.remove('hidden');
+      this.renderDashboard();
+    }
+  },
+
+  async saveProfileChanges() {
+    const nameEl = document.getElementById('editVleName');
+    const shopEl = document.getElementById('editVleShop');
+    const cscIdEl = document.getElementById('editVleCscId');
+    const distEl = document.getElementById('editVleDistrict');
+    const emailEl = document.getElementById('editVleEmail');
+    const pwdEl = document.getElementById('editVleNewPassword');
+
+    const fullName = nameEl ? nameEl.value.trim() : '';
+    const kendraName = shopEl ? shopEl.value.trim() : '';
+    const cscId = cscIdEl ? cscIdEl.value.trim().toUpperCase() : '';
+    const district = distEl ? distEl.value.trim() : '';
+    const email = emailEl ? emailEl.value.trim() : '';
+    const newPassword = pwdEl ? pwdEl.value.trim() : '';
+
+    if (!fullName) {
+      if (typeof showToast === 'function') showToast("Please enter your Full Name / ନାମ ଲେଖନ୍ତୁ!", "warning");
+      if (nameEl) nameEl.focus();
+      return;
+    }
+
+    if (newPassword && newPassword.length < 4) {
+      if (typeof showToast === 'function') showToast("Password must be at least 4 characters long!", "warning");
+      if (pwdEl) pwdEl.focus();
+      return;
+    }
+
+    const saveBtn = document.getElementById('vleSaveProfileBtn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
+    }
+
+    const res = await VUO_AUTH.updateSelfProfile({
+      fullName,
+      kendraName,
+      cscId,
+      district,
+      email,
+      newPassword
+    });
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Save Changes (ସଂରକ୍ଷଣ କରନ୍ତୁ)';
+    }
+
+    if (res.success) {
+      if (typeof showToast === 'function') showToast(res.message || "Profile updated successfully!", "success");
+      this.closeEditProfile();
+      this.renderDashboard();
+    } else {
+      if (typeof showToast === 'function') showToast(res.message || "Failed to update profile", "error");
     }
   },
 

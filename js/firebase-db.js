@@ -277,9 +277,15 @@ const VUO_DB = {
         const delRaw = localStorage.getItem('vuo_deleted_members');
         if (delRaw) deletedList = JSON.parse(delRaw);
       } catch (_) {}
-      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+      let customMap = {};
+      try { customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}'); } catch (_) {}
 
-      const membersMap = new Map();
+      let curUser = null;
+      try {
+        const curRaw = localStorage.getItem('vuo_current_user');
+        if (curRaw) curUser = JSON.parse(curRaw);
+      } catch (_) {}
+      const curMob = curUser ? (curUser.mobile || '').replace(/\D/g, '').slice(-10) : '';
 
       if (!snapshot.empty) {
         snapshot.forEach(doc => {
@@ -295,6 +301,17 @@ const VUO_DB = {
               return;
             }
 
+            // Preserve custom passwords so cloud defaults never wipe them
+            if (mob && customMap[mob] && customMap[mob].passwordHash) {
+              d.passwordHash = customMap[mob].passwordHash;
+            } else if (csc && customMap[csc] && customMap[csc].passwordHash) {
+              d.passwordHash = customMap[csc].passwordHash;
+            } else if (mob && curMob && mob === curMob && curUser.passwordHash) {
+              d.passwordHash = curUser.passwordHash;
+            } else if (d.passwordHash && d.passwordHash !== '1234') {
+              if (mob) customMap[mob] = { passwordHash: d.passwordHash, updatedAt: Date.now() };
+            }
+
             const k = (d.mobile || d.id || d.memberNo || doc.id || '').trim();
             if (k) {
               membersMap.set(k, d);
@@ -302,6 +319,8 @@ const VUO_DB = {
           }
         });
       }
+
+      try { localStorage.setItem('vuo_custom_passwords', JSON.stringify(customMap)); } catch (_) {}
 
       const merged = Array.from(membersMap.values());
       merged.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
@@ -700,40 +719,63 @@ const VUO_DB = {
     } catch (_) {}
     const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
 
-    try {
-      // 1. Fetch vuo_members
-      const resMembers = await fetch(membersUrl, { cache: 'no-cache' });
-      if (resMembers.ok) {
-        const data = await resMembers.json();
-        if (data && data.documents && Array.isArray(data.documents)) {
-          const membersMap = new Map();
+      let customMap = {};
+      try { customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}'); } catch (_) {}
 
-          data.documents.forEach(doc => {
-            const parsed = this.parseFirestoreFields(doc.fields);
-            if (parsed && (parsed.mobile || parsed.id || parsed.memberNo || parsed.fullName)) {
-              const memNo = (parsed.memberNo || doc.name.split('/').pop() || '').toLowerCase().trim();
-              const mob = (parsed.mobile || '').replace(/\D/g, '').slice(-10);
-              const idVal = (parsed.id || '').toLowerCase().trim();
-              const csc = (parsed.cscId || '').toLowerCase().trim();
+      let curUser = null;
+      try {
+        const curRaw = localStorage.getItem('vuo_current_user');
+        if (curRaw) curUser = JSON.parse(curRaw);
+      } catch (_) {}
+      const curMob = curUser ? (curUser.mobile || '').replace(/\D/g, '').slice(-10) : '';
 
-              if (deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc))) {
-                return;
+      try {
+        // 1. Fetch vuo_members
+        const resMembers = await fetch(membersUrl, { cache: 'no-cache' });
+        if (resMembers.ok) {
+          const data = await resMembers.json();
+          if (data && data.documents && Array.isArray(data.documents)) {
+            const membersMap = new Map();
+
+            data.documents.forEach(doc => {
+              const parsed = this.parseFirestoreFields(doc.fields);
+              if (parsed && (parsed.mobile || parsed.id || parsed.memberNo || parsed.fullName)) {
+                const memNo = (parsed.memberNo || doc.name.split('/').pop() || '').toLowerCase().trim();
+                const mob = (parsed.mobile || '').replace(/\D/g, '').slice(-10);
+                const idVal = (parsed.id || '').toLowerCase().trim();
+                const csc = (parsed.cscId || '').toLowerCase().trim();
+
+                if (deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc))) {
+                  return;
+                }
+
+                // Preserve custom passwords so cloud defaults never wipe them
+                if (mob && customMap[mob] && customMap[mob].passwordHash) {
+                  parsed.passwordHash = customMap[mob].passwordHash;
+                } else if (csc && customMap[csc] && customMap[csc].passwordHash) {
+                  parsed.passwordHash = customMap[csc].passwordHash;
+                } else if (mob && curMob && mob === curMob && curUser.passwordHash) {
+                  parsed.passwordHash = curUser.passwordHash;
+                } else if (parsed.passwordHash && parsed.passwordHash !== '1234') {
+                  if (mob) customMap[mob] = { passwordHash: parsed.passwordHash, updatedAt: Date.now() };
+                }
+
+                const k = (parsed.mobile || parsed.id || parsed.memberNo || '').trim();
+                if (k) {
+                  membersMap.set(k, parsed);
+                }
               }
+            });
 
-              const k = (parsed.mobile || parsed.id || parsed.memberNo || '').trim();
-              if (k) {
-                membersMap.set(k, parsed);
-              }
-            }
-          });
+            try { localStorage.setItem('vuo_custom_passwords', JSON.stringify(customMap)); } catch (_) {}
 
-          const merged = Array.from(membersMap.values());
-          merged.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
-          localStorage.setItem('vuo_members', JSON.stringify(merged));
-          memberCount = merged.length;
-          console.log(`✅ Direct REST: Loaded ${memberCount} members from Cloud Firestore.`);
+            const merged = Array.from(membersMap.values());
+            merged.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+            localStorage.setItem('vuo_members', JSON.stringify(merged));
+            memberCount = merged.length;
+            console.log(`✅ Direct REST: Loaded ${memberCount} members from Cloud Firestore.`);
+          }
         }
-      }
 
       // 2. Fetch vuo_vle_users (Gate Users)
       const resGate = await fetch(gateUsersUrl, { cache: 'no-cache' });

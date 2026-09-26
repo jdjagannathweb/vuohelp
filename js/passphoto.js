@@ -14,11 +14,13 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   suitScale: 1.0, // Scale multiplier for suit shoulder width (0.75 to 1.35) // 'none', 'suit_black', 'suit_navy', 'suit_grey', 'women_blazer', 'shirt_white'
   copies: 6,
   addBorder: true,
-  brightness: 106,
-  contrast: 108,
-  sharpness: 40, // 0 to 100%
-  clarity: 15, // 0 to 100%
-  autoEnhance: true,
+  brightness: 100, // Natural 100% (No artificial blowout)
+  contrast: 100,   // Balanced 100% (Avoids harsh red contrast from AI photos)
+  sharpness: 30,  // 0 to 100% crisp facial focus
+  clarity: 15,    // 0 to 100%
+  redTone: 25,    // 0 to 100% excess red reduction (fixes red face from Gemini/cameras)
+  naturalSkin: true, // Auto skin tone balancer for natural Indian skin complexion
+  autoEnhance: false, // Replaced by smart skin tone balance; gentle mode
   viewMode: 'fit', // 'fit' (entire A4 visible) or 'zoom' (100% actual pixels)
   studioMode: 'single', // 'single' or 'couple' (husband & wife)
   wifeCropper: null,
@@ -314,6 +316,26 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       });
     }
 
+    // Redness / Warmth Tone Reduction Slider (Gemini AI & Camera Red-Face Fix)
+    const redToneSlider = document.getElementById('passPhotoRedTone');
+    if (redToneSlider) {
+      redToneSlider.addEventListener('input', (e) => {
+        this.redTone = parseInt(e.target.value, 10) || 0;
+        const valEl = document.getElementById('passPhotoRedToneVal');
+        if (valEl) valEl.textContent = `${this.redTone}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Natural Skin Tone Mode Checkbox
+    const naturalSkinCheck = document.getElementById('passPhotoNaturalSkin');
+    if (naturalSkinCheck) {
+      naturalSkinCheck.addEventListener('change', (e) => {
+        this.naturalSkin = e.target.checked;
+        this.generateSheet();
+      });
+    }
+
     // Auto-Enhance Skin & Dynamic Range
     const autoEnhanceCheck = document.getElementById('passPhotoAutoEnhance');
     if (autoEnhanceCheck) {
@@ -325,7 +347,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   },
 
   setEnhancePreset(type) {
-    ['studio', 'bright', 'sharp', 'reset'].forEach(p => {
+    ['naturalskin', 'studio', 'bright', 'sharp', 'reset'].forEach(p => {
       const btn = document.getElementById(`preset_btn_${p}`);
       if (btn) {
         btn.className = 'px-2 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-[11px] font-bold hover:bg-slate-50 transition shadow-2xs flex flex-col items-center gap-0.5 cursor-pointer';
@@ -336,25 +358,40 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       activeBtn.className = 'px-2 py-2 rounded-xl border border-sky-300 bg-sky-50 text-sky-800 text-[11px] font-black hover:bg-sky-100 transition shadow-2xs flex flex-col items-center gap-0.5 ring-2 ring-sky-500 cursor-pointer';
     }
 
-    if (type === 'studio') {
-      this.brightness = 106;
-      this.contrast = 108;
-      this.sharpness = 40;
-      this.autoEnhance = true;
-    } else if (type === 'bright') {
-      this.brightness = 118;
-      this.contrast = 105;
-      this.sharpness = 35;
-      this.autoEnhance = true;
-    } else if (type === 'sharp') {
+    if (type === 'naturalskin') {
+      this.brightness = 100;
+      this.contrast = 100;
+      this.sharpness = 30;
+      this.redTone = 35;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'studio') {
       this.brightness = 104;
-      this.contrast = 112;
-      this.sharpness = 65;
-      this.autoEnhance = true;
+      this.contrast = 102;
+      this.sharpness = 35;
+      this.redTone = 20;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'bright') {
+      this.brightness = 112;
+      this.contrast = 100;
+      this.sharpness = 30;
+      this.redTone = 15;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'sharp') {
+      this.brightness = 102;
+      this.contrast = 104;
+      this.sharpness = 55;
+      this.redTone = 20;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
     } else if (type === 'reset') {
       this.brightness = 100;
       this.contrast = 100;
       this.sharpness = 0;
+      this.redTone = 0;
+      this.naturalSkin = false;
       this.autoEnhance = false;
     }
 
@@ -373,12 +410,21 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     const cVal = document.getElementById('passPhotoContrastVal');
     if (cVal) cVal.textContent = `${this.contrast}%`;
 
+    const rInput = document.getElementById('passPhotoRedTone');
+    if (rInput) rInput.value = this.redTone;
+    const rVal = document.getElementById('passPhotoRedToneVal');
+    if (rVal) rVal.textContent = `${this.redTone}%`;
+
+    const nInput = document.getElementById('passPhotoNaturalSkin');
+    if (nInput) nInput.checked = this.naturalSkin;
+
     const aInput = document.getElementById('passPhotoAutoEnhance');
     if (aInput) aInput.checked = this.autoEnhance;
 
     this.generateSheet();
     if (typeof showToast === 'function') {
       const msgs = {
+        naturalskin: "🌸 Natural Skin Tone Applied (Gemini AI Red Face & Contrast Normalizer)",
         studio: "🌟 Studio HD Enhancer Applied (Balanced Bright & Sharp)",
         bright: "💡 Shadow Lifter Applied (Clears Dark Shadows)",
         sharp: "🔍 Ultra-Sharp Applied (Enhances Blurry Eyes & Features)",
@@ -1053,6 +1099,53 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     return canvas;
   },
 
+  applySkinAndToneEnhance(canvas) {
+    if (!canvas) return canvas;
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    const redFactor = (this.redTone !== undefined ? this.redTone : 25) / 100;
+    const naturalSkin = this.naturalSkin !== false;
+
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+
+      // Detect warm / red dominant tones typical in portraits & Gemini AI photos
+      // Skin tones: Red is highest, Green is middle, Blue is lowest
+      if (r > g && g > (b - 20) && r > 50) {
+        const excessRed = r - Math.max(g, b);
+        if (excessRed > 0 && redFactor > 0) {
+          // Proportionally reduce the red channel to remove over-saturation & "red face"
+          const reduction = excessRed * redFactor * 0.70;
+          r = Math.max(g, Math.round(r - reduction));
+
+          // Soft golden-warmth balance for natural Indian skin undertone
+          if (naturalSkin && g < 240) {
+            g = Math.min(255, Math.round(g + reduction * 0.16));
+          }
+        }
+
+        // Tame harsh highlight burn on forehead/cheeks often generated by Gemini AI
+        if (naturalSkin && r > 215) {
+          const overHighlight = r - 215;
+          r = Math.round(r - overHighlight * 0.35);
+        }
+      }
+
+      data[i] = Math.max(0, Math.min(255, r));
+      data[i + 1] = Math.max(0, Math.min(255, g));
+      data[i + 2] = Math.max(0, Math.min(255, b));
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  },
+
   applyAutoEnhance(canvas) {
     const width = canvas.width;
     const height = canvas.height;
@@ -1068,18 +1161,17 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       if (lum > maxLum) maxLum = lum;
     }
 
-    minLum = Math.max(0, minLum - 10);
-    maxLum = Math.min(255, maxLum + 10);
+    minLum = Math.max(0, minLum - 5);
+    maxLum = Math.min(255, maxLum + 5);
     const range = Math.max(1, maxLum - minLum);
 
-    // 2. Dynamic stretch & vibrance boost
+    // 2. Very gentle contrast stretch without polynomial red-burn
     for (let i = 0; i < data.length; i += 4) {
       for (let c = 0; c < 3; c++) {
-        // Contrast stretch
         let val = ((data[i + c] - minLum) / range) * 255;
-        // Gentle S-curve
-        val = val < 128 ? (2 * val * val) / 255 : 255 - (2 * (255 - val) * (255 - val)) / 255;
-        data[i + c] = Math.max(0, Math.min(255, val));
+        // Mild linear blend (85% original, 15% stretched) to avoid destroying skin tones
+        const gentle = 0.85 * data[i + c] + 0.15 * val;
+        data[i + c] = Math.max(0, Math.min(255, Math.round(gentle)));
       }
     }
 
@@ -1399,6 +1491,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     ctx.drawImage(photoToDraw, 0, 0);
     ctx.filter = 'none';
 
+    // 2.5 Tone & Skin Balance (Red-Face & Contrast Fix for Gemini / Camera Photos)
+    if (this.naturalSkin || (this.redTone && this.redTone > 0)) {
+      this.applySkinAndToneEnhance(target);
+    }
+
     // 3. Apply Auto-Enhance if enabled
     if (this.autoEnhance) {
       this.applyAutoEnhance(target);
@@ -1439,6 +1536,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       hCtx.filter = `brightness(${this.brightness}%) contrast(${this.contrast}%)`;
       hCtx.drawImage(husbandToDraw, 0, 0, slotW, totalH);
       hCtx.filter = 'none';
+      if (this.naturalSkin || (this.redTone && this.redTone > 0)) this.applySkinAndToneEnhance(husbandTarget);
       if (this.autoEnhance) this.applyAutoEnhance(husbandTarget);
       if (this.sharpness > 0) this.applySharpen(husbandTarget, this.sharpness);
 
@@ -1464,6 +1562,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         wCtx.drawImage(wifeToDraw, 0, 0, slotW, totalH);
         wCtx.filter = 'none';
 
+        if (this.naturalSkin || (this.redTone && this.redTone > 0)) this.applySkinAndToneEnhance(wifeTarget);
         if (this.autoEnhance) this.applyAutoEnhance(wifeTarget);
         if (this.sharpness > 0) this.applySharpen(wifeTarget, this.sharpness);
 
@@ -1935,13 +2034,15 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       sCtx.drawImage(singlePhoto, 0, 0);
     }
 
-    // A4 Dimension at high fidelity: 1240 x 1754 px
+    // A4 Dimension at Ultra HD commercial photo print standard (300 DPI: 2480 x 3508 px)
     const a4Canvas = document.getElementById('passPhotoSheetCanvas');
     if (!a4Canvas) return;
 
-    a4Canvas.width = 1240;
-    a4Canvas.height = 1754;
+    a4Canvas.width = 2480;
+    a4Canvas.height = 3508;
     const ctx = a4Canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // White paper background
     ctx.fillStyle = '#ffffff';
@@ -1950,82 +2051,88 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     const ratio = singlePhoto.width / singlePhoto.height;
     const presetName = this.presets[this.currentPreset]?.name || 'Passport Size';
 
-    // Determine Grid Dimensions (Columns x Rows) with Minimal Margins (25px top, 25px left & right)
+    // Determine Base Grid Dimensions (Columns x Rows) with Minimal Margins (scaled 2x for 300 DPI)
     let cols = 6;
     let rows = Math.ceil(this.copies / 6);
-    let photoW = 180;
-    let photoH = Math.round(photoW / ratio);
-    let startX = 25; // Minimal tight left margin
-    let startY = 25; // Minimal tight top margin (no wasted paper at top!)
-    let gapX = 22;
-    let gapY = 20;
+    let basePhotoW = 180;
+    let basePhotoH = Math.round(basePhotoW / ratio);
+    let baseStartX = 25;
+    let baseStartY = 25;
+    let baseGapX = 22;
+    let baseGapY = 20;
 
     const is6ColMode = (this.currentPreset === 'size_12x15') || 
                        (this.copies === 6 || this.copies === 12 || this.copies === 18 || this.copies === 24 || this.copies === 30 || this.copies === 36);
 
     if (this.currentPreset === 'joint_40x31' || this.currentPreset === 'joint_18x15') {
-      // Joint / Couple Photo (4.00 x 3.10 cm or 1.8 x 1.5 Inch)
-      // Default 4 copies = 2 rows x 2 cols or 1 row x 4 cols
       cols = (this.copies <= 2) ? 2 : 4;
       rows = Math.ceil(this.copies / cols);
-      photoW = (cols === 2) ? 460 : 268;
-      photoH = Math.round(photoW / ratio);
-      startX = Math.floor((1240 - (cols * photoW + (cols - 1) * 24)) / 2);
-      startY = 35;
-      gapX = 24;
-      gapY = 25;
+      basePhotoW = (cols === 2) ? 460 : 268;
+      basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = Math.floor((1240 - (cols * basePhotoW + (cols - 1) * 24)) / 2);
+      baseStartY = 35;
+      baseGapX = 24;
+      baseGapY = 25;
     } else if (this.currentPreset === 'joint_2x3') {
       cols = (this.copies <= 2) ? 2 : 3;
       rows = Math.ceil(this.copies / cols);
-      photoW = (cols === 2) ? 460 : 340;
-      photoH = Math.round(photoW / ratio);
-      startX = Math.floor((1240 - (cols * photoW + (cols - 1) * 30)) / 2);
-      startY = 35;
-      gapX = 30;
-      gapY = 30;
+      basePhotoW = (cols === 2) ? 460 : 340;
+      basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = Math.floor((1240 - (cols * basePhotoW + (cols - 1) * 30)) / 2);
+      baseStartY = 35;
+      baseGapX = 30;
+      baseGapY = 30;
     } else if (this.copies === 1) {
       cols = 1; rows = 1;
-      photoW = 280; photoH = Math.round(photoW / ratio);
-      startX = 25;
-      startY = 25;
+      basePhotoW = 320; basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25;
+      baseStartY = 25;
     } else if (this.copies === 4) {
       cols = 2; rows = 2;
-      photoW = 320; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 35; gapY = 30;
+      basePhotoW = 320; basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25; baseStartY = 25;
+      baseGapX = 35; baseGapY = 30;
     } else if (is6ColMode) {
-      // 6 Photos in a single line / row layout with minimal margins
       cols = 6;
       rows = Math.ceil(this.copies / 6);
-      photoW = 180;
-      photoH = Math.round(photoW / ratio);
-      startX = 25; // 25 + 6*180 + 5*22 = 1215px (25px right margin on 1240px A4)
-      startY = 25; // Clean 25px top margin
-      gapX = 22;
-      gapY = 20;
+      basePhotoW = 180;
+      basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25;
+      baseStartY = 25;
+      baseGapX = 22;
+      baseGapY = 20;
     } else if (this.copies === 8) {
       cols = 4; rows = 2;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 30;
+      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25; baseStartY = 25;
+      baseGapX = 40; baseGapY = 30;
     } else if (this.copies === 16) {
       cols = 4; rows = 4;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 25;
+      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25; baseStartY = 25;
+      baseGapX = 40; baseGapY = 25;
     } else if (this.copies === 32) {
       cols = 4; rows = 8;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 16;
+      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25; baseStartY = 25;
+      baseGapX = 40; baseGapY = 16;
     } else {
       cols = 4;
       rows = Math.ceil(this.copies / 4);
-      photoW = 265;
-      photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 25;
+      basePhotoW = 265;
+      basePhotoH = Math.round(basePhotoW / ratio);
+      baseStartX = 25; baseStartY = 25;
+      baseGapX = 40; baseGapY = 25;
     }
+
+    // 300 DPI multiplier (2.0x from 1240x1754 -> 2480x3508)
+    const scale = 2;
+    const photoW = basePhotoW * scale;
+    const photoH = basePhotoH * scale;
+    const startX = baseStartX * scale;
+    const startY = baseStartY * scale;
+    const gapX = baseGapX * scale;
+    const gapY = baseGapY * scale;
 
     let count = 0;
     for (let r = 0; r < rows; r++) {
@@ -2035,27 +2142,27 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         const posX = startX + c * (photoW + gapX);
         const posY = startY + r * (photoH + gapY);
 
-        // Draw photo
+        // Draw photo at full crisp Ultra HD resolution
         ctx.drawImage(singlePhoto, posX, posY, photoW, photoH);
 
-        // Cutting Guideline crosses around corners
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 0.8;
-        ctx.setLineDash([3, 3]);
-        
-        // Guideline lines
-        ctx.strokeRect(posX - 3, posY - 3, photoW + 6, photoH + 6);
-        ctx.setLineDash([]); // Reset dash
+        // Optional cutting guideline crosses around corners
+        if (this.addBorder) {
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 6]);
+          ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
+          ctx.setLineDash([]); // Reset dash
+        }
 
         count++;
       }
     }
 
-    // Small footer info placed at the very bottom edge of A4 sheet (No space wasted at top!)
+    // Ultra HD footer info placed at the very bottom edge of A4 sheet
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '500 11px Inter, sans-serif';
+    ctx.font = '600 20px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`VLE HELP DESK — ${presetName} | ${this.copies} Photos | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 1735);
+    ctx.fillText(`VLE HELP DESK — ${presetName} | 300 DPI Ultra HD Print | ${this.copies} Photos | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 3470);
   },
 
   

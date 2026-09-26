@@ -560,7 +560,28 @@ const VUO_CSCTOOLS = {
 
   /* ================= 4. WHATSAPP DIRECT MESSAGE TOOL ================= */
   initWhatsAppTool() {
-    //
+    const phoneInput = document.getElementById('waPhoneNumber');
+    if (phoneInput) {
+      phoneInput.addEventListener('input', () => this.updateWhatsAppPreview());
+      phoneInput.addEventListener('paste', () => setTimeout(() => this.updateWhatsAppPreview(), 50));
+    }
+    this.updateWhatsAppPreview();
+  },
+
+  updateWhatsAppPreview() {
+    const raw = document.getElementById('waPhoneNumber')?.value || '';
+    const cleanDigits = raw.replace(/\D/g, '');
+    const clean10 = cleanDigits.slice(-10);
+    const prevEl = document.getElementById('waPhonePreview');
+    if (!prevEl) return;
+
+    if (clean10.length === 10) {
+      prevEl.innerHTML = `<span class="text-emerald-700 font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Ready to send: <strong class="font-mono text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">+91 ${clean10.slice(0, 5)} ${clean10.slice(5)}</strong></span>`;
+    } else if (cleanDigits.length > 0) {
+      prevEl.innerHTML = `<span class="text-amber-700 font-medium flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-amber-600"></i> Enter full 10-digit mobile (${10 - clean10.length} digits needed)</span>`;
+    } else {
+      prevEl.innerHTML = `<span class="text-slate-500 font-normal flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-600"></i> Standard India (+91) format automatically handled</span>`;
+    }
   },
 
   applyWhatsAppTemplate(type) {
@@ -573,30 +594,41 @@ const VUO_CSCTOOLS = {
       msgBox.value = `Namaskar! Subhadra Yojana form apply ba DBT Status check kariba pain apananka Aadhaar Card, Bank Passbook sahita CSC Center ku asantu. Dhanyabad!`;
     } else if (type === 'bill') {
       msgBox.value = `Namaskar! Apanka service ra bill payment confirmation receipt ready achi. Thank you for visiting our CSC Digital Seva Kendra!`;
+    } else if (type === 'credit') {
+      msgBox.value = `Namaskar! CSC Digital Seva Kendra ru apananka seba baki (pending dues) ra reminder. Daya kari asiki dues clear karantu. Dhanyabad!`;
     }
   },
 
-  openWhatsAppChat() {
-    const code = document.getElementById('waCountryCode')?.value || '91';
-    let phone = document.getElementById('waPhoneNumber')?.value || '';
+  openWhatsAppChat(mode = 'any') {
+    const phoneInput = document.getElementById('waPhoneNumber');
+    let rawPhone = phoneInput ? phoneInput.value : '';
     const message = document.getElementById('waDirectMessage')?.value || '';
 
-    phone = phone.replace(/[^0-9]/g, '');
-    if (!phone || phone.length < 10) {
+    // Strip everything except digits
+    let digits = rawPhone.replace(/\D/g, '');
+
+    // Extract exact 10-digit Indian mobile number
+    let clean10 = digits.slice(-10);
+
+    if (!clean10 || clean10.length !== 10) {
       showToast('Kripya valid 10-digit mobile number enter karein!', 'warning');
+      if (phoneInput) phoneInput.focus();
       return;
     }
 
-    // Strip leading 0 if present
-    if (phone.length === 11 && phone.startsWith('0')) {
-      phone = phone.substring(1);
+    // Official WhatsApp URL format requires full international number without + or symbols (e.g. 919937037131)
+    const fullNumber = `91${clean10}`;
+    const encodedMsg = encodeURIComponent(message.trim());
+
+    let url;
+    if (mode === 'web') {
+      url = `https://web.whatsapp.com/send?phone=${fullNumber}&text=${encodedMsg}`;
+    } else {
+      url = `https://api.whatsapp.com/send?phone=${fullNumber}&text=${encodedMsg}`;
     }
 
-    const fullNumber = phone.length === 10 ? `${code}${phone}` : phone;
-    const encodedMsg = encodeURIComponent(message);
-    const url = `https://wa.me/${fullNumber}?text=${encodedMsg}`;
     window.open(url, '_blank');
-    showToast('WhatsApp Chat window open ho rahi hai!', 'success');
+    showToast(`WhatsApp Chat window open ho rahi hai (+91 ${clean10})!`, 'success');
   },
 
   /* ================= 5. TYPING SPEED & ACCURACY TEST ================= */
