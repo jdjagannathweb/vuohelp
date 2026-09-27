@@ -232,13 +232,33 @@ body {
 
   #printableBillArea {
     box-shadow: none !important;
-    border: 1.5px solid #1e293b !important;
-    border-radius: 8px !important;
-    padding: 10mm 12mm !important; /* Beautiful margin inside the bill */
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     width: 100% !important;
-    background: #ffffff !important;
+    background: transparent !important;
     overflow: visible !important;
+  }
+
+  .bill-a4-page {
+    border: 1.5px solid #1e293b !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 8mm 10mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  }
+
+  .bill-a4-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
   /* Multi-page table print support */

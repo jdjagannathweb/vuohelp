@@ -188,6 +188,8 @@ const VUO_FORMS = {
     if (!this._initialized) {
       this.bindEvents();
       this._initialized = true;
+      // Auto-sync Google Drive forms on initialization
+      setTimeout(() => this.syncFromGoogleDrive(false), 300);
     }
     this.renderForms();
   },
@@ -220,6 +222,90 @@ const VUO_FORMS = {
     });
   },
 
+  detectFormCategory(fileName) {
+    const f = (fileName || '').toLowerCase();
+    if (f.includes('subhadra')) {
+      return { category: 'subhadra', categoryName: 'Subhadra Yojana', tags: ['subhadra', 'odisha', 'welfare'] };
+    }
+    if (f.includes('income') || f.includes('caste') || f.includes('residence') || f.includes('o.b.c') || f.includes('obc') || f.includes('s.c') || f.includes('s.e.b.c') || f.includes('cews') || f.includes('declaration')) {
+      return { category: 'edistrict', categoryName: 'e-District (Caste/Income/Res)', tags: ['edistrict', 'odisha', 'revenue', 'certificate'] };
+    }
+    if (f.includes('pan') || f.includes('aadhaar') || f.includes('uidai') || f.includes('5-18') || f.includes('18 +') || f.includes('hf based')) {
+      return { category: 'pan_aadhaar', categoryName: 'PAN & Aadhaar', tags: ['aadhaar', 'uidai', 'pan', 'identity'] };
+    }
+    if (f.includes('kisan') || f.includes('paddy') || f.includes('chasi') || f.includes('sahamati') || f.includes('genelogy') || f.includes('fasal')) {
+      return { category: 'agriculture', categoryName: 'PM Kisan & Agriculture', tags: ['kisan', 'agriculture', 'krushak', 'paddy'] };
+    }
+    if (f.includes('15g') || f.includes('121') || f.includes('bc boi') || f.includes('bank') || f.includes('csp') || f.includes('ac open')) {
+      return { category: 'banking', categoryName: 'Banking & CSP / 15G', tags: ['banking', 'csp', '15g', 'tds'] };
+    }
+    if (f.includes('lebour') || f.includes('labour') || f.includes('vehicle') || f.includes('anganwadi') || f.includes('bhata') || f.includes('monthly') || f.includes('ligal hire')) {
+      return { category: 'general', categoryName: 'Labour & General CSC', tags: ['labour', 'welfare', 'general', 'csc'] };
+    }
+    return { category: 'general', categoryName: 'CSC Citizen Service', tags: ['csc', 'form', 'odisha'] };
+  },
+
+  async syncFromGoogleDrive(notify = false) {
+    const syncStatusEl = document.getElementById('driveSyncStatusText');
+    if (syncStatusEl) syncStatusEl.textContent = 'Syncing Drive Forms...';
+    try {
+      let files = [];
+      const res = await fetch('/api/sync-drive-forms', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.files && Array.isArray(data.files) && data.files.length > 0) {
+          files = data.files;
+        }
+      }
+
+      if (files && files.length > 0) {
+        if (!window.VUO_DRIVE_FORMS_MAP) window.VUO_DRIVE_FORMS_MAP = {};
+        const syncedForms = files.map(file => {
+          window.VUO_DRIVE_FORMS_MAP[file.name] = file.fileId;
+          const catInfo = this.detectFormCategory(file.name);
+          const cleanTitle = file.name.replace(/\.pdf$/i, '').trim();
+          return {
+            id: 'drive-' + file.fileId,
+            driveFileId: file.fileId,
+            fileName: file.name,
+            title: cleanTitle,
+            titleOdia: cleanTitle,
+            category: catInfo.category,
+            categoryName: catInfo.categoryName,
+            tags: catInfo.tags,
+            desc: `Official CSC PDF application form automatically synced from Google Drive (${file.name}). Instant preview and download.`,
+            fileUrl: `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing`,
+            previewUrl: file.previewUrl || `https://drive.google.com/file/d/${file.fileId}/preview`,
+            downloadUrl: file.downloadUrl || `https://drive.usercontent.google.com/download?id=${file.fileId}&export=download`,
+            size: 'PDF',
+            isDrive: true,
+            storageType: 'google_drive',
+            isSynced: true,
+            syncedAt: Date.now()
+          };
+        });
+
+        localStorage.setItem('vuo_drive_synced_forms', JSON.stringify(syncedForms));
+        localStorage.setItem('vuo_drive_last_sync_time', Date.now().toString());
+
+        this.renderForms();
+
+        if (syncStatusEl) {
+          syncStatusEl.textContent = `🟢 Live Synced (${files.length} Forms Active)`;
+        }
+
+        if (notify && typeof showToast === 'function') {
+          showToast(`Google Drive ରୁ ସମସ୍ତ ${files.length}+ ଫର୍ମ ସଫଳତାର ସହିତ ସିଙ୍କ୍ ହୋଇଗଲା!`, "success");
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn("Drive sync error:", err);
+      if (syncStatusEl) syncStatusEl.textContent = 'Drive Sync Connected (Cached)';
+    }
+    return false;
+  },
+
   getAllForms() {
     const defaultForms = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.forms)) ? VUO_DATA.forms : [];
     try {
@@ -232,6 +318,15 @@ const VUO_FORMS = {
           customForms = parsed.filter(f => f.isCustom);
         }
       }
+
+      // Read auto-synced forms from Google Drive
+      let driveSyncedForms = [];
+      try {
+        const driveStored = localStorage.getItem('vuo_drive_synced_forms');
+        if (driveStored) {
+          driveSyncedForms = JSON.parse(driveStored);
+        }
+      } catch (_) {}
       
       const formsMap = new Map();
       // 1. Put custom/admin added forms first so they appear at the top
@@ -240,10 +335,36 @@ const VUO_FORMS = {
           formsMap.set(cf.id, cf);
         }
       });
-      // 2. Append default catalog forms if not deleted and not overridden
+
+      // 2. Append default catalog forms
       defaultForms.forEach(df => {
         if (!deletedIds.includes(df.id) && !formsMap.has(df.id)) {
           formsMap.set(df.id, df);
+        }
+      });
+
+      // 3. Merge or append auto-synced Drive forms
+      driveSyncedForms.forEach(dsf => {
+        if (!deletedIds.includes(dsf.id)) {
+          let existingKey = null;
+          for (const [key, form] of formsMap.entries()) {
+            const rawUrl = form.fileUrl || form.url || '';
+            const formFname = decodeURIComponent(rawUrl.split('/').pop() || '').trim();
+            if (formFname === dsf.fileName || (form.previewUrl && form.previewUrl.includes(dsf.driveFileId))) {
+              existingKey = key;
+              break;
+            }
+          }
+          if (existingKey) {
+            const existing = formsMap.get(existingKey);
+            existing.previewUrl = dsf.previewUrl;
+            existing.downloadUrl = dsf.downloadUrl;
+            existing.fileUrl = dsf.fileUrl;
+            existing.isDrive = true;
+            existing.storageType = 'google_drive';
+          } else {
+            formsMap.set(dsf.id, dsf);
+          }
         }
       });
       

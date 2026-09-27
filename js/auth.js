@@ -1510,6 +1510,20 @@ const VUO_AUTH_MODAL = {
       };
     }
 
+    // Setup 1-click Free SMS OTP send directly to user's registered phone
+    const smsBtn = document.getElementById('forgotSmsOtpBtn');
+    if (smsBtn) {
+      const cleanMob = res.mobile.replace(/\D/g, '').slice(-10);
+      smsBtn.onclick = () => {
+        if (typeof VUO_SMS !== 'undefined') {
+          VUO_SMS.sendOtp(cleanMob, res.otp, res.name);
+        } else {
+          const text = `VLE HELP DESK: Hello ${res.name}, your verification OTP is ${res.otp}. Valid for 10 minutes. Do not share this OTP with anyone.`;
+          window.location.href = `sms:+91${cleanMob}?body=${encodeURIComponent(text)}`;
+        }
+      };
+    }
+
     if (typeof showToast === 'function') {
       const emailNotice = res.maskedEmail ? ` & Email (${res.maskedEmail})` : '';
       showToast(`Member verified! Secret OTP dispatched to registered Mobile${emailNotice}.`, "success");

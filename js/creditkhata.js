@@ -198,15 +198,44 @@ const VUO_CREDITKHATA = {
     this.renderList();
   },
 
+  getVleInfo() {
+    let vleName = 'VLE Member';
+    let shopName = 'Digital Seva Kendra';
+    let phone = '';
+    let address = 'Odisha';
+    let cscId = '';
+
+    if (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) {
+      const u = VUO_AUTH.getCurrentUser();
+      if (u) {
+        if (u.fullName) vleName = u.fullName;
+        if (u.kendraName) shopName = u.kendraName;
+        if (u.mobile) phone = u.mobile;
+        if (u.district) address = u.district + ', Odisha';
+        if (u.cscId) cscId = u.cscId;
+      }
+    }
+    // Also fallback to poster inputs if filled
+    const pShop = document.getElementById('posterShopName')?.value.trim();
+    if (pShop) shopName = pShop;
+    const pPhone = document.getElementById('posterPhone')?.value.trim();
+    if (pPhone) phone = pPhone;
+    const pAddr = document.getElementById('posterAddress')?.value.trim();
+    if (pAddr) address = pAddr;
+
+    return { vleName, shopName, phone, address, cscId };
+  },
+
   sendWhatsAppReminder(id) {
     const entry = this.entries.find(e => e.id === id);
     if (!entry) return;
 
-    const shopName = document.getElementById('posterShopName')?.value.trim() || 'Digital Seva Kendra';
-    const vlePhone = document.getElementById('posterPhone')?.value.trim() || '';
+    const vle = this.getVleInfo();
     const days = this.getDaysOverdue(entry.date);
+    const overdueText = days >= 7 ? ` (${days} ଦିନ ବିତିଗଲାଣି)` : '';
 
-    const message = `ନମସ୍କାର ${entry.name} ଆଜ୍ଞା,\n\nଆପଣଙ୍କର ${shopName} ରେ "${entry.service}" ବାବଦକୁ ମୋଟ ₹${entry.amount}/- ଟଙ୍କା ବାକି (Udhar / Credit) ରହିଅଛି। (ତାରିଖ: ${entry.date}${days >= 7 ? ` - ${days} ଦିନ ବିତିଗଲାଣି` : ''})।\n\nଦୟାକରି ଏହି ବାକି ଟଙ୍କା ଶୀଘ୍ର ପରିଶୋଧ କରିବାକୁ ଅନୁରୋଧ। \n\nଧନ୍ୟବାଦ,\n${shopName}\nମୋବାଇଲ୍: ${vlePhone}`;
+    // 100% Pure & Respectful Odia WhatsApp Credit Reminder
+    const message = `ନମସ୍କାର ${entry.name} ଆଜ୍ଞା,\n\nଆପଣଙ୍କର ${vle.shopName} ରେ "${entry.service}" ବାବଦକୁ ମୋଟ ₹${entry.amount}/- ଟଙ୍କା ବାକି (Udhar / Credit) ରହିଅଛି। (ତାରିଖ: ${entry.date}${overdueText})।\n\nଦୟାକରି ଏହି ବାକି ଟଙ୍କା ଶୀଘ୍ର ପରିଶୋଧ କରିବାକୁ ଅନୁରୋଧ କରୁଅଛୁ।\n\nଧନ୍ୟବାଦ ସହିତ,\n${vle.vleName}\n${vle.shopName}\nମୋବାଇଲ୍: ${vle.phone}`;
 
     const cleanMobile = entry.mobile.replace(/\D/g, '').slice(-10);
     const waUrl = `https://wa.me/91${cleanMobile}?text=${encodeURIComponent(message)}`;
@@ -221,19 +250,44 @@ const VUO_CREDITKHATA = {
     }
   },
 
+  sendSmsReminder(id) {
+    const entry = this.entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const vle = this.getVleInfo();
+    const cleanMobile = entry.mobile.replace(/\D/g, '').slice(-10);
+    // 100% Pure Odia SMS Reminder
+    const text = `ନମସ୍କାର ${entry.name} ଆଜ୍ଞା, ${vle.shopName} ରେ ଆପଣଙ୍କର ${entry.service} ବାବଦକୁ ₹${entry.amount}/- ବାକି ଅଛି। ଦୟାକରି ଶୀଘ୍ର ପରିଶୋଧ କରନ୍ତୁ। ଧନ୍ୟବାଦ - ${vle.vleName} (${vle.phone})`;
+
+    if (typeof VUO_SMS !== 'undefined') {
+      VUO_SMS.sendSms(cleanMobile, text);
+    } else {
+      window.location.href = `sms:+91${cleanMobile}?body=${encodeURIComponent(text)}`;
+    }
+
+    entry.lastReminderAt = Date.now();
+    this.saveEntries();
+    this.renderList();
+
+    if (typeof showToast === 'function') {
+      showToast(`Odia SMS reminder dispatched to ${entry.name}!`, 'success');
+    }
+  },
+
   copySmsText(id) {
     const entry = this.entries.find(e => e.id === id);
     if (!entry) return;
 
-    const shopName = document.getElementById('posterShopName')?.value.trim() || 'Digital Seva Kendra';
-    const text = `Dear ${entry.name}, your due balance at ${shopName} for "${entry.service}" is Rs.${entry.amount}. Kindly clear your pending payment soon. Thanks, ${shopName}`;
+    const vle = this.getVleInfo();
+    // 100% Odia text for clipboard copy
+    const text = `ନମସ୍କାର ${entry.name} ଆଜ୍ଞା, ${vle.shopName} ରେ ଆପଣଙ୍କର ${entry.service} ବାବଦକୁ ₹${entry.amount}/- ବାକି ଅଛି। ଦୟାକରି ଶୀଘ୍ର ପରିଶୋଧ କରନ୍ତୁ। ଧନ୍ୟବାଦ - ${vle.vleName} (${vle.phone})`;
 
     navigator.clipboard.writeText(text).then(() => {
       if (typeof showToast === 'function') {
-        showToast("SMS text copied to clipboard! You can paste & send via normal SMS.", "success");
+        showToast("ଓଡ଼ିଆ SMS ଟେକ୍ସଟ କପି ହୋଇଗଲା! (Odia SMS text copied)", "success");
       }
     }).catch(() => {
-      alert("SMS Text:\n" + text);
+      alert("Odia SMS Text:\n" + text);
     });
   },
 
@@ -241,9 +295,10 @@ const VUO_CREDITKHATA = {
     const entry = this.entries.find(e => e.id === id);
     if (!entry) return;
 
-    const shopName = document.getElementById('posterShopName')?.value.trim() || 'ODISHA DIGITAL SEVA KENDRA';
-    const vlePhone = document.getElementById('posterPhone')?.value.trim() || '+91 9937037131';
-    const vleAddress = document.getElementById('posterAddress')?.value.trim() || 'Odisha';
+    const vle = this.getVleInfo();
+    const shopName = vle.shopName.toUpperCase();
+    const vlePhone = vle.phone || '+91 9937037131';
+    const vleAddress = vle.address || 'Odisha';
 
     const printWin = window.open('', '_blank');
     if (!printWin) {
@@ -287,7 +342,7 @@ const VUO_CREDITKHATA = {
           </div>
           <div class="row"><span style="font-size: 10px;">Status:</span><span class="bold" style="color: ${entry.status === 'paid' ? '#059669' : '#b91c1c'}; text-transform: uppercase;">${entry.status === 'paid' ? 'PAID / CLEARED' : 'PENDING'}</span></div>
           <div class="footer">
-            Computer Generated Credit Record • VUO CSC Help<br>
+            Computer Generated Credit Record • Authorized Digital Seva Kendra<br>
             Please clear your due payment at the earliest.
           </div>
         </div>
@@ -422,12 +477,16 @@ const VUO_CREDITKHATA = {
 
             <div class="flex items-center gap-1.5">
               ${!isPaid ? `
-                <button type="button" onclick="VUO_CREDITKHATA.sendWhatsAppReminder('${entry.id}')" title="Send WhatsApp Payment Reminder" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                <button type="button" onclick="VUO_CREDITKHATA.sendWhatsAppReminder('${entry.id}')" title="Send Odia WhatsApp Payment Reminder" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
                   <i class="fa-brands fa-whatsapp text-sm"></i>
-                  <span>Remind</span>
+                  <span>WhatsApp</span>
                 </button>
-                <button type="button" onclick="VUO_CREDITKHATA.copySmsText('${entry.id}')" title="Copy SMS Reminder text" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition-all cursor-pointer">
-                  <i class="fa-regular fa-comment-dots"></i>
+                <button type="button" onclick="VUO_CREDITKHATA.sendSmsReminder('${entry.id}')" title="Send Free Odia SMS Reminder" class="px-2 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <i class="fa-solid fa-comment-sms text-xs"></i>
+                  <span>SMS</span>
+                </button>
+                <button type="button" onclick="VUO_CREDITKHATA.copySmsText('${entry.id}')" title="Copy Odia SMS Reminder text" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition-all cursor-pointer">
+                  <i class="fa-regular fa-copy"></i>
                 </button>
                 <button type="button" onclick="VUO_CREDITKHATA.markAsPaid('${entry.id}')" title="Mark as Paid" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-300 text-xs font-bold transition-all cursor-pointer">
                   <i class="fa-solid fa-check mr-1"></i>Paid

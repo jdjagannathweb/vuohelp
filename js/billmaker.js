@@ -83,17 +83,24 @@ const VUO_BILLMAKER = {
     const savedShop = localStorage.getItem('vuo_saved_shop_info');
 
     let shopData = {
-      shopName: "VUO CSC HELP DIGITAL SEVA KENDRA",
+      shopName: user && user.kendraName ? user.kendraName : (user && (user.fullName || user.name) ? `${(user.fullName || user.name).toUpperCase()} DIGITAL SEVA KENDRA` : "DIGITAL SEVA KENDRA"),
       vleName: user ? (user.fullName || user.name) : "Jagannath Mohanty",
-      cscId: user ? user.cscId : "782910482910",
-      phone: user ? (user.mobile || user.phone) : "9937037131",
-      address: user ? `${user.gp || ''}, ${user.block || ''}, ${user.district || 'Puri, Odisha'}` : "Satyabadi, Puri, Odisha",
-      upiId: "9937037131@upi"
+      cscId: user && user.cscId ? user.cscId : "782910482910",
+      phone: user && (user.mobile || user.phone) ? (user.mobile || user.phone) : "9937037131",
+      address: user ? `${user.gp ? user.gp + ', ' : ''}${user.block ? user.block + ', ' : ''}${user.district || 'Puri, Odisha'}` : "Satyabadi, Puri, Odisha",
+      upiId: user && (user.mobile || user.phone) ? `${(user.mobile || user.phone).replace(/\D/g, '').slice(-10)}@upi` : "9937037131@upi"
     };
 
     if (savedShop) {
       try {
-        shopData = { ...shopData, ...JSON.parse(savedShop) };
+        const parsed = JSON.parse(savedShop);
+        shopData = { ...shopData, ...parsed };
+        if (user && (user.fullName || user.name)) {
+          shopData.vleName = user.fullName || user.name;
+        }
+        if (user && user.kendraName) {
+          shopData.shopName = user.kendraName;
+        }
       } catch (e) {}
     }
 
@@ -201,35 +208,44 @@ const VUO_BILLMAKER = {
   },
 
   /**
-   * Intelligently paginates items for A4 pages:
-   * - If total items <= 8: single page with full header + all items + totals & QR + footer
-   * - If total items > 8:
-   *    Page 1: Full Header + Customer strip + Table Header + 10 items + "Continued..." note
+   * Intelligently paginates items for standard A4 pages:
+   * - If total items <= 6: single page with full header + all items + totals & QR + footer
+   * - If total items > 6:
+   *    Page 1: Full Header + Customer strip + Table Header + items + "Continued..." note
    *    Page 2+: Compact header + Customer strip + Table Header + items + Totals/QR on final page
+   * Completely avoids vertical page overflow or trailing empty pages.
    */
   paginateItems(items) {
     if (!items || items.length === 0) {
       return [{ pageNum: 1, items: [], startIndex: 0 }];
     }
-    if (items.length <= 8) {
+    // Up to 6 items fit comfortably on a single A4 page with Full Header + Totals/QR/Signature
+    if (items.length <= 6) {
       return [{ pageNum: 1, items: [...items], startIndex: 0 }];
     }
 
     const pages = [];
-    // Page 1 gets first 10 items
+    // When there are more than 6 items, we divide into multiple pages:
+    // If total items is 7 or 8: Page 1 gets 4 items, Page 2 gets the remaining items + totals
+    // If total items >= 9: Page 1 gets up to 8 items
+    let page1Limit = 8;
+    if (items.length <= 8) {
+      page1Limit = Math.ceil(items.length / 2);
+    }
+
     pages.push({
       pageNum: 1,
-      items: items.slice(0, 10),
+      items: items.slice(0, page1Limit),
       startIndex: 0
     });
 
-    let currentOffset = 10;
+    let currentOffset = page1Limit;
     let pageCounter = 2;
 
     while (currentOffset < items.length) {
       const remainingCount = items.length - currentOffset;
-      // If remaining items can fit on the final page with Totals & QR (up to 8 items)
-      if (remainingCount <= 8) {
+      // If remaining items can fit on the final page with Totals & QR (up to 6 items)
+      if (remainingCount <= 6) {
         pages.push({
           pageNum: pageCounter,
           items: items.slice(currentOffset),
@@ -237,8 +253,8 @@ const VUO_BILLMAKER = {
         });
         break;
       } else {
-        // Intermediate page without totals can comfortably fit 12 items
-        const sliceCount = Math.min(12, remainingCount);
+        // Intermediate page without totals can fit up to 9 items
+        const sliceCount = (remainingCount <= 12) ? Math.ceil(remainingCount / 2) : 9;
         pages.push({
           pageNum: pageCounter,
           items: items.slice(currentOffset, currentOffset + sliceCount),
@@ -435,7 +451,7 @@ const VUO_BILLMAKER = {
           <div class="flex justify-between items-end pt-4 text-[10.5px] text-slate-500 bill-footer-section">
             <div>
               <p class="font-medium text-slate-700">${notes}</p>
-              <p class="mt-0.5 text-[10px] text-slate-400">Official Computer-Generated Receipt • VUO CSC Help • Page ${pageNum} of ${totalPages}</p>
+              <p class="mt-0.5 text-[10px] text-slate-400">Official Computer-Generated Receipt • Digital Seva Kendra • Page ${pageNum} of ${totalPages}</p>
             </div>
             <div class="text-center">
               <div class="w-32 border-b-2 border-slate-700 mb-1"></div>
@@ -608,7 +624,7 @@ const VUO_BILLMAKER = {
         const canvas = await window.html2canvas(pageEl, {
           scale: 2,
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false,
           backgroundColor: '#ffffff',
           logging: false
         });

@@ -22,7 +22,10 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   naturalSkin: true, // Auto skin tone balancer for natural Indian skin complexion
   autoEnhance: false, // Replaced by smart skin tone balance; gentle mode
   viewMode: 'fit', // 'fit' (entire A4 visible) or 'zoom' (100% actual pixels)
-  studioMode: 'single', // 'single' or 'couple' (husband & wife)
+  studioMode: 'single', // 'single', 'couple' (husband & wife), 'multi' (2 persons on same sheet)
+  person1Copies: 4,
+  person2Copies: 2,
+  multiSplit: '4_2',
   wifeCropper: null,
   wifeUploadedImage: null,
 
@@ -1182,21 +1185,48 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   setStudioMode(mode) {
     this.studioMode = mode;
     const singleBtn = document.getElementById('passPhotoModeSingle');
+    const multiBtn = document.getElementById('passPhotoModeMulti');
     const coupleBtn = document.getElementById('passPhotoModeCouple');
     const wifeBox = document.getElementById('passPhotoWifeBox');
+    const multiSplitBox = document.getElementById('passPhotoMultiSplitBox');
 
-    if (mode === 'couple') {
-      if (coupleBtn) {
-        coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-pink-600 text-white shadow-xs transition-all flex items-center gap-1.5';
-      }
-      if (singleBtn) {
-        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
-      }
+    if (mode === 'multi') {
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
       if (wifeBox) wifeBox.classList.remove('hidden');
+      if (multiSplitBox) multiSplitBox.classList.remove('hidden');
+
+      const husbandTitle = document.getElementById('passPhotoHusbandTitle');
+      if (husbandTitle) husbandTitle.textContent = "Person 1 Photograph (ପ୍ରଥମ ବ୍ୟକ୍ତି)";
+      const wifeTitle = document.getElementById('passPhotoWifeTitle');
+      if (wifeTitle) wifeTitle.textContent = "Person 2 Photograph (ଦ୍ୱିତୀୟ ବ୍ୟକ୍ତି)";
+
+      this.currentPreset = 'size_12x15';
+      const presetSelect = document.getElementById('passPhotoPreset');
+      if (presetSelect) presetSelect.value = 'size_12x15';
+      if (this.cropper) this.cropper.setAspectRatio(this.presets.size_12x15.ratio);
+      if (this.wifeCropper) this.wifeCropper.setAspectRatio(this.presets.size_12x15.ratio);
+
+      if (!this.wifeUploadedImage) {
+        this.loadSampleWifePhoto();
+      }
+      this.setMultiSplit(this.multiSplit || '4_2');
+      if (typeof showToast === 'function') {
+        showToast("Multi-Person Strip Mode (2 Persons on Same Sheet) Activated 👥", "success");
+      }
+    } else if (mode === 'couple') {
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-pink-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (wifeBox) wifeBox.classList.remove('hidden');
+      if (multiSplitBox) multiSplitBox.classList.add('hidden');
 
       // Update titles for Husband & Wife clear identification
       const husbandTitle = document.getElementById('passPhotoHusbandTitle');
       if (husbandTitle) husbandTitle.textContent = "Husband / Groom Photograph (ପତିଙ୍କ ଫଟୋ)";
+      const wifeTitle = document.getElementById('passPhotoWifeTitle');
+      if (wifeTitle) wifeTitle.textContent = "Wife / Bride Photograph (ପତ୍ନୀଙ୍କ ଫଟୋ)";
 
       // DEFAULT JOINT PHOTO SIZE: W-4.00 cm x H-3.10 cm (40mm x 31mm)
       this.currentPreset = 'joint_40x31';
@@ -1208,11 +1238,6 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       const copiesSelect = document.getElementById('passPhotoCopies');
       if (copiesSelect) copiesSelect.value = "4";
 
-      // Ratio for each individual portrait slot in 4.00 x 3.10 cm joint frame:
-      // Total frame: 4.00 cm width x 3.10 cm height (Aspect Ratio ~1.29)
-      // Husband gets Left slot: 2.00 cm width x 3.10 cm height => ratio 2.00 / 3.10 = 0.645
-      // Wife gets Right slot: 2.00 cm width x 3.10 cm height => ratio 2.00 / 3.10 = 0.645
-      // Both husband & wife full faces and shoulders are 100% visible side-by-side with zero clipping!
       const individualRatio = (40.0 / 2) / 31.0; // ~0.645
       if (this.cropper) {
         this.cropper.setAspectRatio(individualRatio);
@@ -1225,15 +1250,15 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       if (!this.wifeUploadedImage) {
         this.loadSampleWifePhoto();
       }
-      showToast("Joint Photo Mode (Default: 4.00 x 3.10 cm • 4 Copies • Full Face) Activated 💑", "success");
+      if (typeof showToast === 'function') {
+        showToast("Joint Photo Mode (Default: 4.00 x 3.10 cm • 4 Copies • Full Face) Activated 💑", "success");
+      }
     } else {
-      if (singleBtn) {
-        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5';
-      }
-      if (coupleBtn) {
-        coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
-      }
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5';
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
       if (wifeBox) wifeBox.classList.add('hidden');
+      if (multiSplitBox) multiSplitBox.classList.add('hidden');
 
       const husbandTitle = document.getElementById('passPhotoHusbandTitle');
       if (husbandTitle) husbandTitle.textContent = "Upload Customer Photograph";
@@ -1250,7 +1275,9 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
           this.cropper.setAspectRatio(this.presets.size_12x15.ratio);
         }
       }
-      showToast("Single Passport Photo Mode", "info");
+      if (typeof showToast === 'function') {
+        showToast("Single Passport Photo Mode", "info");
+      }
     }
     this.generateSheet();
   },
@@ -1603,6 +1630,109 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     }
 
     return target;
+  },
+
+  getPerson2ProcessedPhotoCanvas() {
+    const currentPresetObj = this.presets[this.currentPreset] || this.presets.size_12x15;
+    const targetW = Math.round(currentPresetObj.w * 11.81) || 360;
+    const targetH = Math.round(currentPresetObj.h * 11.81) || 450;
+
+    let cropped = null;
+    if (this.wifeCropper) {
+      try {
+        cropped = this.wifeCropper.getCroppedCanvas({
+          width: targetW,
+          height: targetH,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+      } catch(e) {}
+    }
+
+    if (!cropped && this.wifeUploadedImage) {
+      const fallbackCanvas = document.createElement('canvas');
+      fallbackCanvas.width = targetW;
+      fallbackCanvas.height = targetH;
+      const fCtx = fallbackCanvas.getContext('2d');
+      fCtx.drawImage(this.wifeUploadedImage, 0, 0, targetW, targetH);
+      cropped = fallbackCanvas;
+    }
+
+    if (!cropped) return null;
+
+    let photoToDraw = cropped;
+    if (this.bgColor && this.bgColor !== 'original' && this.bgColor !== 'none') {
+      const tol = this.bgTolerance || 45;
+      photoToDraw = this.replaceBackground(cropped, this.bgColor, tol);
+    }
+
+    const target = document.createElement('canvas');
+    target.width = photoToDraw.width;
+    target.height = photoToDraw.height;
+    const ctx = target.getContext('2d');
+
+    ctx.filter = `brightness(${this.brightness}%) contrast(${this.contrast}%)`;
+    ctx.drawImage(photoToDraw, 0, 0);
+    ctx.filter = 'none';
+
+    if (this.naturalSkin || (this.redTone && this.redTone > 0)) {
+      this.applySkinAndToneEnhance(target);
+    }
+    if (this.autoEnhance) {
+      this.applyAutoEnhance(target);
+    }
+    if (this.sharpness > 0) {
+      this.applySharpen(target, this.sharpness);
+    }
+
+    if (this.addBorder) {
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, target.width - 2, target.height - 2);
+    }
+
+    return target;
+  },
+
+  setMultiSplit(split) {
+    this.multiSplit = split;
+    if (split === '4_2') {
+      this.person1Copies = 4;
+      this.person2Copies = 2;
+    } else if (split === '3_3') {
+      this.person1Copies = 3;
+      this.person2Copies = 3;
+    } else if (split === '5_1') {
+      this.person1Copies = 5;
+      this.person2Copies = 1;
+    } else if (split === '6_6') {
+      this.person1Copies = 6;
+      this.person2Copies = 6;
+    }
+    const p1El = document.getElementById('passPhotoP1Copies');
+    const p2El = document.getElementById('passPhotoP2Copies');
+    if (p1El) p1El.value = this.person1Copies;
+    if (p2El) p2El.value = this.person2Copies;
+
+    document.querySelectorAll('.passphoto-split-btn').forEach(b => {
+      if (b.getAttribute('data-split') === split) {
+        b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-xs cursor-pointer text-center';
+      } else {
+        b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 cursor-pointer text-center';
+      }
+    });
+
+    this.generateSheet();
+  },
+
+  onCustomPersonCopiesChange(p1, p2) {
+    this.person1Copies = Math.max(1, parseInt(p1, 10) || 1);
+    this.person2Copies = Math.max(1, parseInt(p2, 10) || 1);
+    this.multiSplit = 'custom';
+    document.querySelectorAll('.passphoto-split-btn').forEach(b => {
+      b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 cursor-pointer text-center';
+    });
+    this.generateSheet();
   },
 
   selectSuit(suitKey) {
@@ -2051,6 +2181,62 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     const ratio = singlePhoto.width / singlePhoto.height;
     const presetName = this.presets[this.currentPreset]?.name || 'Passport Size';
 
+    // MULTI-PERSON STRIP MODE: Print 2 people on the same A4 sheet / line (e.g. 4+2, 3+3, 6+6)
+    if (this.studioMode === 'multi') {
+      const photo1 = singlePhoto;
+      const photo2 = this.getPerson2ProcessedPhotoCanvas() || photo1;
+      const p1Copies = this.person1Copies || 4;
+      const p2Copies = this.person2Copies || 2;
+      const totalCopies = p1Copies + p2Copies;
+      this.copies = totalCopies;
+
+      const cols = 6; // Exactly 6 photos per row
+      const rows = Math.ceil(totalCopies / 6);
+      let basePhotoW = 180;
+      let basePhotoH = Math.round(basePhotoW / ratio);
+      let baseStartX = 25;
+      let baseStartY = 25;
+      let baseGapX = 22;
+      let baseGapY = 20;
+
+      const scale = 2; // 300 DPI Ultra HD multiplier
+      const photoW = basePhotoW * scale;
+      const photoH = basePhotoH * scale;
+      const startX = baseStartX * scale;
+      const startY = baseStartY * scale;
+      const gapX = baseGapX * scale;
+      const gapY = baseGapY * scale;
+
+      let count = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (count >= totalCopies) break;
+
+          const posX = startX + c * (photoW + gapX);
+          const posY = startY + r * (photoH + gapY);
+
+          const curPhoto = (count < p1Copies) ? photo1 : photo2;
+          ctx.drawImage(curPhoto, posX, posY, photoW, photoH);
+
+          if (this.addBorder) {
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 6]);
+            ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
+            ctx.setLineDash([]);
+          }
+
+          count++;
+        }
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 20px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`VLE HELP DESK — Multi-Person Sheet (Person 1: ${p1Copies} Photos | Person 2: ${p2Copies} Photos) | 300 DPI Ultra HD Print | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 3470);
+      return;
+    }
+
     // Determine Base Grid Dimensions (Columns x Rows) with Minimal Margins (scaled 2x for 300 DPI)
     let cols = 6;
     let rows = Math.ceil(this.copies / 6);
@@ -2173,18 +2359,18 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       return (k.startsWith('AQ.Ab8RN6') || !k.startsWith('AIza')) ? '' : k;
     } catch(e) { return ''; }
   })(),
-  defaultGeminiPrompt: `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`,
+  defaultGeminiPrompt: `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`,
   geminiPrompt: (function() {
     try {
       const saved = localStorage.getItem('vuo_gemini_prompt');
-      if (saved && saved.includes('35x45mm')) return saved;
-      return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
+      if (saved && saved.includes('professional standard passport size photo') && saved.includes('reference image')) return saved;
+      return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
     } catch(e) {
-      return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a solid neutral light blue or plain white. Dress the person in a same dress with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
+      return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
     }
   })(),
   geminiAttire: 'same',
-  geminiBg: 'blue',
+  geminiBg: 'offwhite',
   lastGeminiRecommendation: null,
   _aiSegmenter: null,
   _cachedAiMask: null,
@@ -2193,22 +2379,24 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
 
   buildGeminiPassportPrompt() {
     const attireMap = {
-      same: 'in a same dress',
-      suit: 'in a formal dark navy blue suit with a clean collared white shirt and dark tie',
-      shirt: 'in a crisp formal white collared dress shirt',
-      blazer: 'in a sharp professional formal dark blazer',
-      saree: 'in a neat formal traditional saree with visible shoulders'
+      same: 'Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image.',
+      suit: 'Dress the person in a formal dark navy blue business suit with a crisp white collared shirt and dark tie.',
+      shirt: 'Dress the person in a clean, crisp professional white collared formal dress shirt.',
+      blazer: 'Dress the person in a sharp, modern professional dark formal blazer.',
+      saree: 'Dress the person in an elegant formal traditional attire (neat saree / formal kurta) with visible shoulders.'
     };
     const bgMap = {
-      blue: 'solid neutral light blue (#87CEEB)',
-      white: 'solid clean plain white (#FFFFFF)',
-      gray: 'solid neutral light gray'
+      offwhite: 'Clean, solid plain off-white background.',
+      white: 'Clean, solid plain off-white background.',
+      blue: 'Clean, solid plain light sky blue (#87CEEB) studio background.',
+      navy: 'Clean, solid plain studio dark navy blue background.',
+      gray: 'Clean, solid plain neutral light grey studio background.'
     };
 
     const dressDesc = attireMap[this.geminiAttire] || attireMap.same;
-    const bgDesc = bgMap[this.geminiBg] || bgMap.blue;
+    const bgDesc = bgMap[this.geminiBg] || bgMap.offwhite;
 
-    return `Edit the uploaded photo to a professional passport-size photo (35x45mm). Keep the original face and expression unchanged. Change the background to a ${bgDesc}. Dress the person ${dressDesc} with frontal pose, visible shoulders, clear studio lighting, natural skin tones, and high resolution with no filters or cartoonish effects`;
+    return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. ${dressDesc} The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. ${bgDesc} Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
   },
 
   updateGeminiStudioUi() {
@@ -2353,7 +2541,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   },
 
   setGeminiBg(bgType) {
-    this.geminiBg = bgType || 'blue';
+    this.geminiBg = bgType || 'offwhite';
     this.updateGeminiStudioUi();
     this.copyGeminiPrompt(true);
   },
