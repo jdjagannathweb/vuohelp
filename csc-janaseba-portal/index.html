@@ -1,0 +1,1130 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSC Janaseba Kendra • Operator & Public Suite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: "#eff6ff",
+              100: "#dbeafe",
+              500: "#3b82f6",
+              600: "#2563eb",
+              700: "#1d4ed8",
+              800: "#1e40af",
+              900: "#1e3a8a",
+              950: "#0a192f",
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="h-full flex flex-col text-slate-800 bg-slate-100">
+
+  <!-- TOP BAR -->
+  <header class="bg-brand-950 text-white sticky top-0 z-40 border-b border-brand-900 shadow-md">
+    <div class="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+      
+      <!-- Mobile menu button & Brand -->
+      <div class="flex items-center gap-3">
+        <button id="mobile-menu-btn" class="lg:hidden p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-brand-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-white to-emerald-600 p-0.5 shadow flex items-center justify-center flex-shrink-0">
+            <div class="w-full h-full bg-brand-950 rounded-[10px] flex items-center justify-center text-amber-400 font-extrabold text-sm">
+              CSC
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white leading-none kendra-display-name">JANASEBA KENDRA</h1>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">VLE SUITE</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-hindi mt-0.5 leading-none">डिजिटल सेवा केंद्र • ग्रामीण उद्यमी पोर्टल</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Global Search Bar -->
+      <div class="relative flex-1 max-w-md hidden md:block">
+        <div class="relative">
+          <input
+            id="global-search-input"
+            type="text"
+            placeholder="Search tools, offline forms (जाति, आय, राशन), sarkari updates..."
+            class="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl bg-brand-900/80 text-slate-100 placeholder-slate-400 border border-brand-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-brand-900"
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <div id="global-search-results" class="absolute left-0 right-0 top-10 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 overflow-hidden hidden z-50 max-h-96 overflow-y-auto"></div>
+      </div>
+
+      <!-- Right Header Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="hidden sm:flex flex-col text-right pr-3 border-r border-brand-900">
+          <span id="live-clock" class="text-xs font-mono font-bold text-amber-400">--:--:--</span>
+          <span id="live-date" class="text-[10px] text-slate-400">---, -- ---</span>
+        </div>
+
+        <a href="admin.html" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span>Admin Portal</span>
+        </a>
+
+        <button id="open-add-lead-btn" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          <span class="hidden sm:inline">New</span> Lead
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 z-20 hidden lg:hidden"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-slate-300 flex flex-col transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-200 ease-in-out border-r border-slate-800">
+      
+      <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <a href="#dashboard" data-tab-target="dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-blue-800 text-white transition-all">
+          <svg class="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+          <div>
+            <p class="leading-none">Dashboard Overview</p>
+            <p class="text-[10px] text-blue-200 font-normal mt-0.5">डैशबोर्ड व पोर्टल लिंक</p>
+          </div>
+        </a>
+
+        <div class="pt-3 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Quick Utility Tools</div>
+
+        <a href="#passport-photo" data-tab-target="passport-photo" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <div>
+            <p class="leading-none">Passport Photo Maker</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">35x45mm & 4x6 प्रिंट शीट</p>
+          </div>
+        </a>
+
+        <a href="#pan-resizer" data-tab-target="pan-resizer" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <div>
+            <p class="leading-none">PAN Photo & Sign Resizer</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">UTI / NSDL (&lt;30KB, &lt;60KB)</p>
+          </div>
+        </a>
+
+        <a href="#pdf-toolkit" data-tab-target="pdf-toolkit" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <div>
+            <p class="leading-none">PDF Toolkit & Compress</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">मर्ज, कंप्रेस (&lt;200KB), स्प्लिट</p>
+          </div>
+        </a>
+
+        <div class="pt-3 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Citizen Services</div>
+
+        <a href="#offline-forms" data-tab-target="offline-forms" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          <div>
+            <p class="leading-none">Offline Forms Library</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">10+ सरकारी फॉर्म व चेकलिस्ट</p>
+          </div>
+        </a>
+
+        <a href="#sarkari-updates" data-tab-target="sarkari-updates" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <div>
+            <p class="leading-none">Sarkari Jobs & Schemes</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">योजनाएं व व्हाट्सएप ब्रॉडकास्ट</p>
+          </div>
+        </a>
+
+        <a href="#leads-tracker" data-tab-target="leads-tracker" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <div>
+            <p class="leading-none">Citizen Leads CRM</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">ग्राहक बहीखाता व एक्सेल एक्सपोर्ट</p>
+          </div>
+        </a>
+
+        <a href="#rate-card" data-tab-target="rate-card" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <div>
+            <p class="leading-none">Rate Card & Receipts</p>
+            <p class="text-[10px] text-slate-400 font-normal mt-0.5">सेवा दर सूची व रसीद प्रिंटर</p>
+          </div>
+        </a>
+
+        <div class="pt-3 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Administration</div>
+
+        <a href="admin.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-indigo-300 bg-indigo-950/40 border border-indigo-800/40 hover:bg-indigo-900/50 hover:text-white transition-all">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <div>
+            <p class="leading-none font-semibold">Admin Center ↗</p>
+            <p class="text-[10px] text-indigo-300/70 font-normal mt-0.5">खाता, स्टाफ, बैकअप व सेटिंग्स</p>
+          </div>
+        </a>
+      </nav>
+
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <div>
+          <p class="font-medium text-slate-300">100% Client-Side</p>
+          <p class="text-[10px] text-emerald-400">● Safe for Citizen Data</p>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-slate-800 font-mono text-[10px] text-slate-300 csc-display-id">OD-92014</span>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLLABLE CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-6 lg:p-8">
+﻿      <!-- ============================================== -->
+      <!-- TAB 1: DASHBOARD OVERVIEW -->
+      <!-- ============================================== -->
+      <section id="tab-dashboard" class="tab-pane space-y-6">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-brand-950 via-brand-900 to-blue-900 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
+          <div class="relative z-10 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-800/80 border border-blue-700/60 text-xs font-semibold text-blue-200 mb-3">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Digital India CSC Service Center Active
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+              Welcome, <span class="vle-display-name text-amber-400">Jagannath Das</span>!
+            </h2>
+            <p class="text-sm text-blue-200 mt-1 font-hindi">
+              <span class="kendra-display-name font-semibold text-white">Maa Tarini Janaseba Kendra</span> • दैनिक नागरिक सेवा व उपयोगिता पोर्टल
+            </p>
+            <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+              Instant 35x45mm photo prints, UTI/NSDL PAN resizer, &lt;200KB PDF compression, 10+ standard offline forms, and client CRM with zero server latency.
+            </p>
+            
+            <div class="mt-5 flex flex-wrap items-center gap-3">
+              <button id="hero-add-lead-btn" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-lg transition-all flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Record Citizen Inquiry
+              </button>
+              <a href="#passport-photo" onclick="window.app.switchTab('passport-photo')" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold transition-all">
+                Create 4x6 Photo Sheet
+              </a>
+              <a href="admin.html" target="_blank" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-semibold transition-all">
+                Open Admin DayBook ↗
+              </a>
+            </div>
+          </div>
+
+          <div class="absolute -right-8 -bottom-10 opacity-10 pointer-events-none text-white font-black text-9xl">
+            CSC
+          </div>
+        </div>
+
+        <!-- 4 Key Daily Stats Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Total Inquiries</p>
+              <h3 id="stat-total-leads" class="text-xl font-extrabold text-slate-900">5</h3>
+              <p class="text-[10px] text-blue-600 font-medium">Citizen Register</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Pending Processing</p>
+              <h3 id="stat-pending-leads" class="text-xl font-extrabold text-amber-700">3</h3>
+              <p class="text-[10px] text-amber-600 font-medium">Need Follow-up</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Completed Today</p>
+              <h3 id="stat-done-today" class="text-xl font-extrabold text-emerald-700">2</h3>
+              <p class="text-[10px] text-emerald-600 font-medium">Delivered to Citizen</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Service Revenue</p>
+              <h3 id="stat-total-revenue" class="text-xl font-extrabold text-purple-700">₹150</h3>
+              <p class="text-[10px] text-purple-600 font-medium">Today Completed</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK PORTAL LAUNCHER -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Essential Government Portals Launcher</h3>
+              <p class="text-xs text-slate-500 font-hindi">सीधा लिंक • डिजिटल सेवा, आधार, पैन, परिवहन व ई-डिस्ट्रिक्ट पोर्टल</p>
+            </div>
+            <span class="text-xs text-slate-400">Direct Official Links</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <a href="https://digitalseva.csc.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">CSC</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">Digital Seva</p>
+              <p class="text-[10px] text-slate-400">CSC Connect</p>
+            </a>
+
+            <a href="https://myaadhaar.uidai.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">UIDAI</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">myAadhaar</p>
+              <p class="text-[10px] text-slate-400">Download & eKYC</p>
+            </a>
+
+            <a href="https://pan.utiitsl.com" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-amber-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">UTI</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">UTIITSL PAN</p>
+              <p class="text-[10px] text-slate-400">49A & Change</p>
+            </a>
+
+            <a href="https://onlineservices.nsdl.com/paam/endUserRegisterContact.html" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-orange-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">NSDL</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">Protean PAN</p>
+              <p class="text-[10px] text-slate-400">Instant e-PAN</p>
+            </a>
+
+            <a href="https://sarathi.parivahan.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">RTO</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">Parivahan</p>
+              <p class="text-[10px] text-slate-400">DL & RC Services</p>
+            </a>
+
+            <a href="https://pmkisan.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-lime-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">KISAN</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">PM-Kisan</p>
+              <p class="text-[10px] text-slate-400">e-KYC & Status</p>
+            </a>
+
+            <a href="https://web.umang.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">UMANG</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">Umang Services</p>
+              <p class="text-[10px] text-slate-400">EPFO & Central</p>
+            </a>
+
+            <a href="https://digilocker.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-sky-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">LOCKER</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">DigiLocker</p>
+              <p class="text-[10px] text-slate-400">Doc Verification</p>
+            </a>
+
+            <a href="https://edistrict.odisha.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-teal-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">e-DIS</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">e-District Portal</p>
+              <p class="text-[10px] text-slate-400">Caste/Income/RoR</p>
+            </a>
+
+            <a href="https://ncs.gov.in" target="_blank" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-2xl text-center group transition-all">
+              <div class="w-10 h-10 mx-auto rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">NCS</div>
+              <p class="text-xs font-bold text-slate-800 mt-2 group-hover:text-blue-700">NCS Job Portal</p>
+              <p class="text-[10px] text-slate-400">Youth Job Cards</p>
+            </a>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 2: PASSPORT PHOTO MAKER -->
+      <!-- ============================================== -->
+      <section id="tab-passport-photo" class="tab-pane hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <span>Passport Photo Maker (35 × 45 mm)</span>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">4x6 Print Ready</span>
+            </h2>
+            <p class="text-xs text-slate-500 font-hindi mt-0.5">पासपोर्ट साइज फोटो बनाएं • बैकग्राउंड बदलें (सफेद / नीला) • 4x6 पेपर पर 6 या 8 फोटो प्रिंट करें</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="passport-sample-btn" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+              Try Sample Photo
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-4 space-y-5">
+            <div id="passport-dropzone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-5 text-center bg-white cursor-pointer transition-all">
+              <input type="file" id="passport-file-input" accept="image/*" class="hidden" />
+              <label for="passport-file-input" class="cursor-pointer block">
+                <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-xs font-bold text-slate-800">Click or Drag Citizen Photo</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Supports JPG, PNG, WebP (Camera click)</p>
+              </label>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <label class="text-xs font-bold text-slate-700 block">Studio Background Color / पृष्ठभूमि</label>
+              <div class="grid grid-cols-5 gap-2">
+                <button data-passport-bg="original" class="p-2 rounded-xl border border-slate-200 text-center text-[10px] font-semibold ring-2 ring-blue-600 ring-offset-2">
+                  Original
+                </button>
+                <button data-passport-bg="#ffffff" class="p-2 rounded-xl border border-slate-300 bg-white text-center text-[10px] font-semibold text-slate-800 shadow-sm">
+                  White
+                </button>
+                <button data-passport-bg="#7eb0d5" class="p-2 rounded-xl border border-blue-300 bg-[#7eb0d5] text-center text-[10px] font-semibold text-white shadow-sm">
+                  Sky Blue
+                </button>
+                <button data-passport-bg="#e5e7eb" class="p-2 rounded-xl border border-slate-300 bg-[#e5e7eb] text-center text-[10px] font-semibold text-slate-800 shadow-sm">
+                  Grey
+                </button>
+                <button data-passport-bg="#1e3a8a" class="p-2 rounded-xl border border-blue-900 bg-[#1e3a8a] text-center text-[10px] font-semibold text-white shadow-sm">
+                  Navy
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1.5">Photo Border Style</label>
+                <select id="passport-border-select" class="w-full text-xs p-2 rounded-xl border border-slate-200 bg-slate-50 font-medium">
+                  <option value="thin-black">Thin Black Cutting Line (Standard)</option>
+                  <option value="white-margin">White Margin Studio Border</option>
+                  <option value="none">No Border</option>
+                </select>
+              </div>
+
+              <div class="pt-2 border-t border-slate-100">
+                <label class="text-xs font-bold text-slate-700 block mb-1.5">4x6 Sheet Grid Layout</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button data-sheet-layout="6" class="py-2 px-3 rounded-xl text-xs font-bold bg-blue-600 text-white text-center">
+                    6 Photos (2 × 3)
+                  </button>
+                  <button data-sheet-layout="8" class="py-2 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 text-center">
+                    8 Photos (2 × 4)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700">Zoom Image</span>
+                <span id="passport-zoom-val" class="text-slate-500 font-mono">100%</span>
+              </div>
+              <input id="passport-zoom-slider" type="range" min="40" max="250" value="100" class="w-full" />
+
+              <div class="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <span class="font-semibold text-slate-600 block mb-1">Brightness</span>
+                  <input id="passport-brightness" type="range" min="-50" max="50" value="0" class="w-full" />
+                </div>
+                <div>
+                  <span class="font-semibold text-slate-600 block mb-1">Contrast</span>
+                  <input id="passport-contrast" type="range" min="-50" max="50" value="0" class="w-full" />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2">
+                <button id="passport-rotate-btn" class="py-1.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 font-semibold text-slate-700 flex items-center gap-1">
+                  ↻ Rotate 90°
+                </button>
+                <button id="passport-reset-btn" class="py-1.5 px-3 rounded-lg text-slate-500 hover:text-slate-800 font-semibold">
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-2 pt-1">
+              <button id="download-4x6-sheet-btn" class="w-full py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download 4x6 Sheet (JPG)
+              </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button id="download-single-photo-btn" class="py-2.5 px-3 rounded-xl border border-slate-300 hover:bg-white text-slate-800 text-xs font-semibold">
+                  Single Photo (35x45)
+                </button>
+                <button id="print-4x6-btn" class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-semibold flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                  Print Direct
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-8 space-y-5">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-slate-900">1. Adjust & Crop (35 × 45 mm Standard)</h3>
+                <span class="text-xs text-slate-400">Drag image with mouse/touch to center face</span>
+              </div>
+              <div class="flex items-center justify-center p-4 bg-slate-50 rounded-2xl canvas-wrapper overflow-hidden min-h-[300px]">
+                <canvas id="passport-crop-canvas" class="shadow-lg rounded border border-slate-300 cursor-grab max-w-full max-h-[290px]"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-slate-900">2. Print Ready 4x6 Sheet Preview</h3>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold">Standard 4x6 Photo Paper</span>
+              </div>
+              <div class="flex items-center justify-center p-4 bg-slate-50 rounded-2xl canvas-wrapper overflow-hidden">
+                <canvas id="passport-sheet-canvas" class="shadow-xl rounded border border-slate-300 max-w-full h-auto"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+﻿      <!-- ============================================== -->
+      <!-- TAB 3: PAN CARD RESIZER -->
+      <!-- ============================================== -->
+      <section id="tab-pan-resizer" class="tab-pane hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <span>UTIITSL & Protean (NSDL) PAN Resizer</span>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">Zero Upload Errors</span>
+            </h2>
+            <p class="text-xs text-slate-500 font-hindi mt-0.5">पैन कार्ड फोटो (213x213 px, &lt;30KB) व हस्ताक्षर (400x200 px, &lt;60KB) रिसाइज़र</p>
+          </div>
+          <button id="pan-sample-btn" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+            Load Demo Scan
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-4 space-y-5">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <label class="text-xs font-bold text-slate-700 block">Select Portal Specification Preset</label>
+              <div class="space-y-2">
+                <button data-pan-preset="photo" class="w-full text-left p-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500 font-semibold text-xs flex items-center justify-between">
+                  <div>
+                    <p class="font-bold">PAN Photo (213 × 213 px)</p>
+                    <p class="text-[11px] text-emerald-700">300 DPI • Strictly Under 30 KB</p>
+                  </div>
+                  <span class="text-xs font-bold">NSDL / UTI</span>
+                </button>
+
+                <button data-pan-preset="signature" class="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-between">
+                  <div>
+                    <p class="font-bold">PAN Signature (400 × 200 px)</p>
+                    <p class="text-[11px] text-slate-500">600 DPI (2:1) • Strictly Under 60 KB</p>
+                  </div>
+                  <span class="text-xs font-bold text-slate-400">NSDL / UTI</span>
+                </button>
+
+                <button data-pan-preset="custom" class="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-between">
+                  <div>
+                    <p class="font-bold">Custom Dimensions</p>
+                    <p class="text-[11px] text-slate-500">State Police / SSC / Scholarship</p>
+                  </div>
+                  <span class="text-xs text-slate-400">Custom</span>
+                </button>
+              </div>
+
+              <div id="pan-custom-controls" class="hidden pt-3 border-t border-slate-100 space-y-2">
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span class="text-[11px] text-slate-500">Width (px)</span>
+                    <input id="pan-custom-w" type="number" value="200" class="w-full p-1.5 border rounded text-xs">
+                  </div>
+                  <div>
+                    <span class="text-[11px] text-slate-500">Height (px)</span>
+                    <input id="pan-custom-h" type="number" value="200" class="w-full p-1.5 border rounded text-xs">
+                  </div>
+                  <div>
+                    <span class="text-[11px] text-slate-500">Max KB</span>
+                    <input id="pan-custom-kb" type="number" value="50" class="w-full p-1.5 border rounded text-xs">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="pan-dropzone" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-5 text-center bg-white cursor-pointer transition-all">
+              <input type="file" id="pan-file-input" accept="image/*" class="hidden" />
+              <label for="pan-file-input" class="cursor-pointer block">
+                <div class="w-10 h-10 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <p class="text-xs font-bold text-slate-800">Upload Photo or Signature</p>
+                <p class="text-[11px] text-slate-400">Auto crops to exact dimensions & byte limit</p>
+              </label>
+            </div>
+
+            <div id="pan-clean-sig-container" class="hidden bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200">
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-emerald-900">
+                <input type="checkbox" id="pan-clean-signature" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                <span>Clean Scanned Signature (B&W Ink Boost)</span>
+              </label>
+              <p class="text-[11px] text-emerald-700 mt-1">
+                Strips yellow/grey shadows from phone camera photos, leaving pure dark ink on white.
+              </p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+              <span class="font-bold text-slate-700 block">Zoom & Rotation</span>
+              <input id="pan-zoom-slider" type="range" min="30" max="300" value="100" class="w-full" />
+
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <span class="text-[11px] text-slate-500 block mb-1">Brightness</span>
+                  <input id="pan-brightness" type="range" min="-50" max="50" value="0" class="w-full" />
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-500 block mb-1">Contrast</span>
+                  <input id="pan-contrast" type="range" min="-50" max="50" value="0" class="w-full" />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1">
+                <button id="pan-rotate-btn" class="py-1 px-2.5 rounded border text-slate-700 text-xs">↻ Rotate 90°</button>
+                <button id="pan-reset-btn" class="py-1 px-2.5 text-slate-500 text-xs">Reset</button>
+              </div>
+            </div>
+
+            <button id="pan-download-btn" class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download Portal-Ready File (JPG)
+            </button>
+          </div>
+
+          <div class="lg:col-span-8 space-y-5">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Real-Time File Size Compliance Gauge</h3>
+                  <p class="text-xs text-slate-500">Government Portal rejects files if size exceeds limit</p>
+                </div>
+                <div id="pan-status-badge">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                    Compliant
+                  </span>
+                </div>
+              </div>
+
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="pan-gauge-bar" class="h-3 rounded-full bg-emerald-500 transition-all duration-300" style="width: 70%;"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-500 font-medium">Output Dimensions: <b id="pan-dim-val" class="text-slate-800">213 × 213 px</b></span>
+                <span class="text-slate-500 font-medium">File Size: <b id="pan-size-val" class="text-emerald-700 font-mono">24.5 KB / Max 30 KB</b></span>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+              <p class="text-xs text-slate-400 mb-3">Live Cropped Output Preview (Drag with mouse to adjust alignment)</p>
+              <div class="flex items-center justify-center p-6 bg-slate-50 rounded-2xl canvas-wrapper overflow-hidden min-h-[280px]">
+                <canvas id="pan-canvas" class="shadow-xl rounded border border-slate-300 cursor-grab max-w-full max-h-[260px]"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 4: PDF TOOLKIT -->
+      <!-- ============================================== -->
+      <section id="tab-pdf-toolkit" class="tab-pane hidden space-y-6">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900">Client-Side PDF Toolkit</h2>
+            <p class="text-xs text-slate-500 font-hindi mt-0.5">पीडीएफ मर्ज करें • साइज कम करें (&lt;200KB / &lt;100KB) • फोटो से पीडीएफ बनाएं • पेज स्प्लिट करें</p>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl text-xs">
+            <button data-pdf-subtool="merge" class="px-3 py-1.5 rounded-xl border-blue-600 text-blue-600 font-semibold bg-white shadow-sm">
+              Merge PDFs
+            </button>
+            <button data-pdf-subtool="compress" class="px-3 py-1.5 rounded-xl border-transparent text-gray-500 font-medium hover:text-slate-800">
+              Compress &lt;200KB
+            </button>
+            <button data-pdf-subtool="img2pdf" class="px-3 py-1.5 rounded-xl border-transparent text-gray-500 font-medium hover:text-slate-800">
+              Image to PDF
+            </button>
+            <button data-pdf-subtool="split" class="px-3 py-1.5 rounded-xl border-transparent text-gray-500 font-medium hover:text-slate-800">
+              Split PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. MERGE PANEL -->
+        <div id="pdf-panel-merge" class="pdf-subtool-panel space-y-5">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-slate-50 cursor-pointer">
+              <input type="file" id="pdf-merge-input" accept="application/pdf" multiple class="hidden" />
+              <label for="pdf-merge-input" class="cursor-pointer block">
+                <div class="w-12 h-12 mx-auto rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                </div>
+                <p class="text-sm font-bold text-slate-800">Select Multiple PDF Documents to Combine</p>
+                <p class="text-xs text-slate-400 mt-0.5">Combine Aadhaar card, marksheet, land records into one single file</p>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span id="pdf-merge-count">0 files selected</span>
+              <span>Use arrows ↑ ↓ to reorder pages</span>
+            </div>
+
+            <div id="pdf-merge-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+
+            <button id="pdf-do-merge-btn" disabled class="w-full py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-xs shadow transition-all">
+              Merge Selected PDFs & Download
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. COMPRESS PANEL -->
+        <div id="pdf-panel-compress" class="pdf-subtool-panel hidden space-y-5">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-slate-50 cursor-pointer">
+              <input type="file" id="pdf-compress-input" accept="application/pdf" class="hidden" />
+              <label for="pdf-compress-input" class="cursor-pointer block">
+                <div class="w-12 h-12 mx-auto rounded-full bg-rose-100 text-rose-700 flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                </div>
+                <p class="text-sm font-bold text-slate-800">Select PDF File to Compress</p>
+                <p class="text-xs text-slate-400 mt-0.5">Shrinks file size for state service portals</p>
+              </label>
+            </div>
+
+            <div id="pdf-compress-file-info"></div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-700 block mb-2">Target Compression Limit (Portal Requirement)</label>
+              <div class="grid grid-cols-3 gap-3">
+                <button data-compress-target="200" class="py-2.5 px-3 rounded-xl text-xs font-bold bg-blue-600 text-white text-center">
+                  &lt; 200 KB (Standard)
+                </button>
+                <button data-compress-target="100" class="py-2.5 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 text-center">
+                  &lt; 100 KB (High)
+                </button>
+                <button data-compress-target="50" class="py-2.5 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 text-center">
+                  &lt; 50 KB (Max)
+                </button>
+              </div>
+            </div>
+
+            <div id="pdf-compress-result" class="hidden"></div>
+
+            <button id="pdf-do-compress-btn" disabled class="w-full py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-xs shadow transition-all">
+              Compress PDF & Download
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. IMAGE TO PDF PANEL -->
+        <div id="pdf-panel-img2pdf" class="pdf-subtool-panel hidden space-y-5">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-slate-50 cursor-pointer">
+              <input type="file" id="pdf-img2pdf-input" accept="image/*" multiple class="hidden" />
+              <label for="pdf-img2pdf-input" class="cursor-pointer block">
+                <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-sm font-bold text-slate-800">Select Image Scans (Aadhaar Front/Back, Marks, PAN)</p>
+                <p class="text-xs text-slate-400 mt-0.5">Converts JPG & PNG scans into standard clean A4 size PDF</p>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span id="pdf-img-count">0 image(s) selected</span>
+              <span>A4 Standard Page Layout</span>
+            </div>
+
+            <div id="pdf-img-list" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-64 overflow-y-auto"></div>
+
+            <button id="pdf-do-img2pdf-btn" disabled class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-xs shadow transition-all">
+              Convert Scans to A4 PDF & Download
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. SPLIT PDF PANEL -->
+        <div id="pdf-panel-split" class="pdf-subtool-panel hidden space-y-5">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-slate-50 cursor-pointer">
+              <input type="file" id="pdf-split-input" accept="application/pdf" class="hidden" />
+              <label for="pdf-split-input" class="cursor-pointer block">
+                <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mb-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                </div>
+                <p class="text-sm font-bold text-slate-800">Select PDF File to Split Pages</p>
+                <p class="text-xs text-slate-400 mt-0.5">Extract specific pages or page ranges (e.g. 1-2, 4)</p>
+              </label>
+            </div>
+
+            <div id="pdf-split-info"></div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-700 block mb-1">Page Range to Extract</label>
+              <input id="pdf-split-range" type="text" placeholder="e.g. 1-2, 4 (Leave empty for all pages)" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono" />
+            </div>
+
+            <button id="pdf-do-split-btn" disabled class="w-full py-3 px-4 rounded-2xl bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white font-bold text-xs shadow transition-all">
+              Extract Pages & Download
+            </button>
+          </div>
+        </div>
+
+      </section>
+﻿      <!-- ============================================== -->
+      <!-- TAB 5: OFFLINE FORMS LIBRARY -->
+      <!-- ============================================== -->
+      <section id="tab-offline-forms" class="tab-pane hidden space-y-6">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Standard Offline Forms Library</h2>
+              <p class="text-xs text-slate-500 font-hindi mt-0.5">प्रमाण पत्र, राशन कार्ड, भूमि दाखिल-खारिज, पेंशन व बैंकिंग फॉर्म डाउनलोड व प्रिंट करें</p>
+            </div>
+            
+            <div class="relative w-full sm:w-72">
+              <input id="forms-search-input" type="text" placeholder="Search forms (जाति, आय, पेंशन)..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <button data-form-cat="All" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold flex-shrink-0">All Forms</button>
+            <button data-form-cat="Certificates" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Certificates</button>
+            <button data-form-cat="Revenue & Land" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Revenue & Land</button>
+            <button data-form-cat="Ration & Food" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Ration & Food</button>
+            <button data-form-cat="Welfare & Pension" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Welfare & Pension</button>
+            <button data-form-cat="Banking & Finance" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Banking & KYC</button>
+            <button data-form-cat="Agriculture & Schemes" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">PM-Kisan</button>
+          </div>
+        </div>
+
+        <div id="forms-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 6: SARKARI UPDATES & SCHEMES -->
+      <!-- ============================================== -->
+      <section id="tab-sarkari-updates" class="tab-pane hidden space-y-6">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Latest Sarkari Schemes & Job Alerts</h2>
+              <p class="text-xs text-slate-500 font-hindi mt-0.5">सरकारी योजना, भर्ती, रिजल्ट व 1-क्लिक व्हाट्सएप ब्रॉडकास्ट नोटिस</p>
+            </div>
+            
+            <div class="relative w-full sm:w-72">
+              <input id="updates-search-input" type="text" placeholder="Search schemes & jobs..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <button data-update-filter="All" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold flex-shrink-0">All Updates</button>
+            <button data-update-filter="Scheme" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Govt Schemes</button>
+            <button data-update-filter="Job" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Govt Jobs</button>
+            <button data-update-filter="Results" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 flex-shrink-0">Results & Merit</button>
+          </div>
+        </div>
+
+        <div id="updates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 7: CITIZEN LEADS CRM -->
+      <!-- ============================================== -->
+      <section id="tab-leads-tracker" class="tab-pane hidden space-y-6">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Citizen Inquiry & Lead Tracker</h2>
+              <p class="text-xs text-slate-500 font-hindi mt-0.5">नागरिक आवेदन रजिस्टर • व्हाट्सएप अपडेट भेजें • एक्सेल/सीएसवी एक्सपोर्ट</p>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <button id="export-leads-csv-btn" class="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Export CSV
+              </button>
+              <button onclick="document.getElementById('open-add-lead-btn').click()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow flex items-center gap-1.5">
+                + Add Citizen
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2 relative">
+              <input id="lead-search-input" type="text" placeholder="Search by citizen name, mobile number, or service..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <div>
+              <select id="lead-status-filter" class="w-full py-2 px-3 text-xs rounded-xl border border-slate-200 bg-slate-50 font-medium">
+                <option value="All">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Done">Done</option>
+                <option value="Follow-up">Follow-up</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="px-4 py-3">Token</th>
+                  <th class="px-4 py-3">Citizen Name</th>
+                  <th class="px-4 py-3">Mobile</th>
+                  <th class="px-4 py-3">Service Requested</th>
+                  <th class="px-4 py-3">Date</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 8: RATE CARD & RECEIPT GENERATOR -->
+      <!-- ============================================== -->
+      <section id="tab-rate-card" class="tab-pane hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left: Receipt Maker -->
+          <div class="lg:col-span-5 space-y-5">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Print Customer Receipt</h3>
+                <p class="text-xs text-slate-500 font-hindi">ग्राहक रसीद प्रिंटर • टोकन व रसीद बनाएं</p>
+              </div>
+
+              <div class="space-y-3 text-xs">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Citizen Full Name</label>
+                  <input id="rc-citizen-name" type="text" placeholder="e.g. Ramesh Sahoo" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                </div>
+
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Mobile Number</label>
+                  <input id="rc-citizen-mobile" type="text" placeholder="10-digit mobile" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono" />
+                </div>
+
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Service Delivered</label>
+                  <select id="rc-service-select" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium">
+                    <option value="80">Aadhaar Demographic Update (₹80)</option>
+                    <option value="120">Aadhaar Biometric Update (₹120)</option>
+                    <option value="150">New PAN Card Application (₹150)</option>
+                    <option value="50">Passport Photo Print (6 Copies) (₹50)</option>
+                    <option value="70">Caste / Income Certificate Application (₹70)</option>
+                    <option value="30">Subhadra / PM-Kisan eKYC (₹30)</option>
+                    <option value="20">Color Printout & Lamination (₹20)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Fee Amount (₹)</label>
+                  <input id="rc-fee-amount" type="number" value="80" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-emerald-700 font-mono" />
+                </div>
+              </div>
+
+              <button id="generate-receipt-btn" class="w-full py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow flex items-center justify-center gap-2 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Print Citizen Receipt (Slip)
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Official Kendra Rate Board -->
+          <div class="lg:col-span-7">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-slate-900">Standard Service Rate Card (दर सूची)</h3>
+                  <p class="text-xs text-slate-500">Government approved rates + VLE convenience fees</p>
+                </div>
+                <a href="admin.html" target="_blank" class="text-xs text-indigo-600 hover:underline font-semibold">
+                  Edit Rates in Admin ↗
+                </a>
+              </div>
+
+              <div class="overflow-hidden rounded-2xl border border-slate-100">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                    <tr>
+                      <th class="p-3">Service Name</th>
+                      <th class="p-3">Govt Fee</th>
+                      <th class="p-3">VLE Fee</th>
+                      <th class="p-3">Total Rate</th>
+                      <th class="p-3">Avg. Delivery</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">Aadhaar Demographic Update</td>
+                      <td class="p-3 font-mono text-slate-500">₹50</td>
+                      <td class="p-3 font-mono text-blue-600">₹30</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹80</td>
+                      <td class="p-3 text-slate-500">3-5 Days</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">Aadhaar Biometric Update (15+ yrs)</td>
+                      <td class="p-3 font-mono text-slate-500">₹100</td>
+                      <td class="p-3 font-mono text-blue-600">₹20</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹120</td>
+                      <td class="p-3 text-slate-500">Instant</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">New PAN Card (NSDL / UTI)</td>
+                      <td class="p-3 font-mono text-slate-500">₹107</td>
+                      <td class="p-3 font-mono text-blue-600">₹50</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹157</td>
+                      <td class="p-3 text-slate-500">10-15 Days</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">Passport Photo Print (6 Copies 4x6)</td>
+                      <td class="p-3 font-mono text-slate-500">₹0</td>
+                      <td class="p-3 font-mono text-blue-600">₹50</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹50</td>
+                      <td class="p-3 text-slate-500">5 Mins</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">Caste / Income / Resident Certificate</td>
+                      <td class="p-3 font-mono text-slate-500">₹30</td>
+                      <td class="p-3 font-mono text-blue-600">₹40</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹70</td>
+                      <td class="p-3 text-slate-500">15-20 Days</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50/60">
+                      <td class="p-3 font-semibold text-slate-800">Subhadra / PM-Kisan eKYC</td>
+                      <td class="p-3 font-mono text-slate-500">₹0</td>
+                      <td class="p-3 font-mono text-blue-600">₹30</td>
+                      <td class="p-3 font-mono font-bold text-emerald-700">₹30</td>
+                      <td class="p-3 text-slate-500">Instant</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: ADD CITIZEN LEAD -->
+  <div id="add-lead-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Record New Citizen Inquiry</h3>
+          <p class="text-xs text-slate-500">Citizen inquiry entry for Janaseba Kendra register</p>
+        </div>
+        <button id="close-lead-modal-btn" class="text-slate-400 hover:text-slate-600 p-1 text-lg">✕</button>
+      </div>
+
+      <form id="add-lead-form" class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Citizen Full Name *</label>
+          <input type="text" id="lead-name" required placeholder="e.g. Ramesh Chandra Sahoo" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Mobile Number (for WhatsApp) *</label>
+          <input type="tel" id="lead-mobile" required placeholder="10-digit mobile number" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono" />
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Service Needed *</label>
+          <select id="lead-service" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium">
+            <option value="Aadhaar Biometric / Update">Aadhaar Biometric / Update</option>
+            <option value="New PAN Card (NSDL/UTI)">New PAN Card (NSDL/UTI)</option>
+            <option value="Subhadra Yojana e-KYC">Subhadra Yojana e-KYC</option>
+            <option value="PM Surya Ghar Muft Bijli">PM Surya Ghar Muft Bijli</option>
+            <option value="Caste / Income / Residence Cert">Caste / Income / Residence Cert</option>
+            <option value="Old Age / Widow Pension">Old Age / Widow Pension</option>
+            <option value="Land Mutation / RoR">Land Mutation / RoR</option>
+            <option value="Vehicle Insurance / Fastag">Vehicle Insurance / Fastag</option>
+            <option value="Passport Photo Printing">Passport Photo Printing</option>
+            <option value="Other Service">Other Service</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Fee (₹)</label>
+            <input type="number" id="lead-fee" value="50" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono" />
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Date</label>
+            <input type="date" id="lead-form-date" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Notes / Documents Pending</label>
+          <input type="text" id="lead-notes" placeholder="e.g. Waiting for electricity bill copy" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="document.getElementById('add-lead-modal').classList.add('hidden')" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow">Save Inquiry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: OFFLINE FORM CHECKLIST -->
+  <div id="form-checklist-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="form-checklist-title" class="text-base font-bold text-slate-900">Required Documents Checklist</h3>
+          <p class="text-xs text-slate-500">Verify these documents before filing citizen application</p>
+        </div>
+        <button onclick="document.getElementById('form-checklist-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1 text-lg">✕</button>
+      </div>
+
+      <div id="form-checklist-body"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/forms-data.js"></script>
+  <script src="js/updates-data.js"></script>
+  <script src="js/photo-maker.js"></script>
+  <script src="js/pan-resizer.js"></script>
+  <script src="js/pdf-toolkit.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
