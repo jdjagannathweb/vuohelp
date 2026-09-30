@@ -185,6 +185,47 @@ body {
   box-shadow: 0 15px 35px -5px rgba(11, 30, 54, 0.25), 0 5px 15px rgba(0, 0, 0, 0.08);
 }
 
+/* Photoshop Free Transform (Ctrl+T) Studio Styles */
+.wa-ps-box {
+  box-sizing: border-box;
+  outline: 1.5px solid #10b981;
+  outline-offset: -1px;
+}
+.wa-ps-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background-color: #ffffff;
+  border: 1.5px solid #059669;
+  border-radius: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  transition: transform 0.08s ease, background-color 0.08s;
+}
+.wa-ps-handle:hover {
+  background-color: #10b981;
+  transform: scale(1.35);
+}
+.wa-ps-rotate-zone {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  z-index: 25;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+.wa-ps-pivot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  margin-top: -7px;
+  pointer-events: none;
+  z-index: 28;
+}
+
 /* Print Styles */
 @media print {
   body * {
@@ -4187,154 +4228,530 @@ body {
 
       <!-- Main Workspace (Hidden until photo loaded) -->
       <div id="waWorkspace" class="space-y-6">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-          <!-- Left Column: Source Image & Corner Adjustment -->
-          <div class="lg:col-span-6 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
-              <div>
-                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs">1</span>
-                  <span>Adjust 4 Corners (କର୍ଣ୍ଣର୍ ଧରି ଟାଣନ୍ତୁ)</span>
-                </h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">Drag TL, TR, BR, BL handles to the 4 corners of the document.</p>
+          <!-- Left Column (lg:col-span-5): Step 1 Straighten + Step 2 Filters & Cleanup -->
+          <div class="lg:col-span-5 space-y-5">
+
+            <!-- Card 1: Step 1 - Straighten & Perspective Warp -->
+            <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-black">1</span>
+                    <span>Adjust 4 Corners (କର୍ଣ୍ଣର୍ ସିଧା କରନ୍ତୁ)</span>
+                  </h3>
+                  <p class="text-[10.5px] text-slate-500 mt-0.5">Drag 4 corner circles to paper boundaries.</p>
+                </div>
+
+                <!-- Aspect Ratio Presets -->
+                <div class="flex flex-wrap items-center gap-1 text-xs">
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('a4_portrait')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-emerald-600 text-white shadow-xs transition" data-ratio="a4_portrait">A4 Port</button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('a4_landscape')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="a4_landscape">A4 Land</button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('id_card')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="id_card">ID Card</button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('free')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="free">Free</button>
+                </div>
               </div>
 
-              <!-- Aspect Ratio Presets -->
-              <div class="flex items-center gap-1.5 text-xs">
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('a4_portrait')" class="wa-ratio-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 text-white shadow-md transition" data-ratio="a4_portrait">A4 Portrait</button>
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('a4_landscape')" class="wa-ratio-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="a4_landscape">A4 Land</button>
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('id_card')" class="wa-ratio-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="id_card">ID Card (Aadhaar/PAN)</button>
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('free')" class="wa-ratio-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="free">Free</button>
+              <!-- Corner Pinning Canvas Container -->
+              <div class="relative bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px] max-h-[420px] border border-slate-800 shadow-inner">
+                <canvas id="waSourceCanvas" class="max-w-full max-h-[400px] object-contain cursor-crosshair"></canvas>
+              </div>
+
+              <div class="flex items-center justify-between text-[10.5px] text-slate-400">
+                <span class="flex items-center gap-1">
+                  <i class="fa-solid fa-hand-pointer text-emerald-500"></i>
+                  <span>Drag glowing circles to corners</span>
+                </span>
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.resetCorners()" class="text-emerald-700 font-bold hover:underline cursor-pointer">Reset Pins</button>
               </div>
             </div>
 
-            <!-- Canvas Container -->
-            <div class="relative bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center min-h-[420px] max-h-[620px] border border-slate-800 shadow-inner">
-              <canvas id="waSourceCanvas" class="max-w-full max-h-[600px] object-contain cursor-crosshair"></canvas>
+            <!-- Card 2: Step 2 - Magic Filters, Whiteness & Dark Cleaner -->
+            <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black">2</span>
+                    <span>Toner Ink Saver &amp; Magic Filters</span>
+                  </h3>
+                  <p class="text-[10.5px] text-slate-500 mt-0.5">Cleans background to 100% white, saving 90% printer toner.</p>
+                </div>
+              </div>
+
+              <!-- Magic Filter Presets -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs">
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('bw_laser')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-black text-left flex items-center gap-2 transition" data-filter="bw_laser">
+                  <i class="fa-solid fa-print text-emerald-600"></i>
+                  <div>
+                    <p class="text-xs leading-none">Laser B&amp;W</p>
+                    <p class="text-[9px] text-emerald-600 font-normal mt-0.5">90% Ink Saver</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('magic_color')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="magic_color">
+                  <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
+                  <div>
+                    <p class="text-xs leading-none">Magic Color</p>
+                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Photos &amp; Stamp</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('photocopy')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="photocopy">
+                  <i class="fa-solid fa-copy text-amber-600"></i>
+                  <div>
+                    <p class="text-xs leading-none">Photocopy</p>
+                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Xerox Mode</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('grayscale')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="grayscale">
+                  <i class="fa-solid fa-circle-half-stroke text-indigo-600"></i>
+                  <div>
+                    <p class="text-xs leading-none">Grayscale</p>
+                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Clean Gray</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('original')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="original">
+                  <i class="fa-solid fa-image text-slate-500"></i>
+                  <div>
+                    <p class="text-xs leading-none">Original</p>
+                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Straightened</p>
+                  </div>
+                </button>
+
+                <!-- Crop Output Button -->
+                <button type="button" id="waCropToggleBtn" onclick="VUO_WHATSAPP_RESIZER.toggleCropMode()" class="px-2.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-left flex items-center gap-2 transition cursor-pointer shadow-xs">
+                  <i class="fa-solid fa-crop-simple text-amber-600"></i>
+                  <div>
+                    <p class="text-xs leading-none">✂️ Crop Tool</p>
+                    <p class="text-[9px] text-amber-700 font-normal mt-0.5">Trim Edges</p>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Sliders Panel -->
+              <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
+                      <span>Paper Whiteness:</span>
+                      <span id="waThresholdSliderVal" class="text-emerald-700 font-mono">135</span>
+                    </div>
+                    <input type="range" id="waThresholdSlider" min="50" max="220" value="135" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
+                      <span>Brightness:</span>
+                      <span id="waBrightnessSliderVal" class="text-emerald-700 font-mono">10</span>
+                    </div>
+                    <input type="range" id="waBrightnessSlider" min="-50" max="50" value="10" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
+                      <span>Contrast:</span>
+                      <span id="waContrastSliderVal" class="text-emerald-700 font-mono">25</span>
+                    </div>
+                    <input type="range" id="waContrastSlider" min="-50" max="50" value="25" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
+                      <span>Text Sharpness:</span>
+                      <span id="waSharpnessSliderVal" class="text-emerald-700 font-mono">20</span>
+                    </div>
+                    <input type="range" id="waSharpnessSlider" min="0" max="80" value="20" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Crop Controls Panel (Appears when Crop mode is Active) -->
+              <div id="waCropPanel" class="hidden p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-2 text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="font-black text-amber-900 mr-1">Crop Ratio:</span>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.setCropRatio('free')" class="wa-crop-ratio-btn px-2 py-1 rounded-md bg-amber-600 text-white font-bold text-[11px] shadow-xs" data-ratio="free">Free</button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.setCropRatio('1:1')" class="wa-crop-ratio-btn px-2 py-1 rounded-md bg-white text-slate-700 font-bold text-[11px] border border-amber-200" data-ratio="1:1">1:1</button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.setCropRatio('id_card')" class="wa-crop-ratio-btn px-2 py-1 rounded-md bg-white text-slate-700 font-bold text-[11px] border border-amber-200" data-ratio="id_card">ID Card</button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.setCropRatio('a4_p')" class="wa-crop-ratio-btn px-2 py-1 rounded-md bg-white text-slate-700 font-bold text-[11px] border border-amber-200" data-ratio="a4_p">A4 Port</button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.setCropRatio('a4_l')" class="wa-crop-ratio-btn px-2 py-1 rounded-md bg-white text-slate-700 font-bold text-[11px] border border-amber-200" data-ratio="a4_l">A4 Land</button>
+                  </div>
+
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.applyCrop()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition flex items-center gap-1 cursor-pointer">
+                      <i class="fa-solid fa-check"></i>
+                      <span>Apply</span>
+                    </button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.cancelCrop()" class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                      Cancel
+                    </button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.resetCrop()" class="px-2 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs border border-rose-200 transition cursor-pointer" title="Revert crop">
+                      🔄 Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Crop Canvas Container (Hidden unless Crop mode is Active) -->
+              <div id="waResultContainer" class="hidden relative bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center min-h-[220px] max-h-[340px] border border-slate-300 shadow-md p-1">
+                <div id="waResultWrapper" class="relative inline-block max-w-full">
+                  <canvas id="waResultCanvas" class="max-w-full max-h-[320px] object-contain shadow-lg bg-white block"></canvas>
+
+                  <!-- Interactive Crop Overlay -->
+                  <div id="waCropOverlay" class="absolute inset-0 hidden select-none touch-none pointer-events-auto">
+                    <div id="waCropShadeTop" class="absolute bg-slate-950/60 pointer-events-none"></div>
+                    <div id="waCropShadeBottom" class="absolute bg-slate-950/60 pointer-events-none"></div>
+                    <div id="waCropShadeLeft" class="absolute bg-slate-950/60 pointer-events-none"></div>
+                    <div id="waCropShadeRight" class="absolute bg-slate-950/60 pointer-events-none"></div>
+
+                    <!-- Draggable Crop Box with Rule-of-Thirds Grid and Handles -->
+                    <div id="waCropBox" class="absolute cursor-move border-2 border-amber-400 shadow-[0_0_0_1px_rgba(0,0,0,0.5)] box-border">
+                      <div class="w-full h-full pointer-events-none" style="background-image: linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px); background-size: 33.333% 33.333%;"></div>
+                      <div class="wa-crop-handle absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-nwse-resize" data-crop-handle="nw"></div>
+                      <div class="wa-crop-handle absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-ns-resize" data-crop-handle="n"></div>
+                      <div class="wa-crop-handle absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-nesw-resize" data-crop-handle="ne"></div>
+                      <div class="wa-crop-handle absolute top-1/2 -right-1.5 -translate-y-1/2 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-ew-resize" data-crop-handle="e"></div>
+                      <div class="wa-crop-handle absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-nwse-resize" data-crop-handle="se"></div>
+                      <div class="wa-crop-handle absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-ns-resize" data-crop-handle="s"></div>
+                      <div class="wa-crop-handle absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-nesw-resize" data-crop-handle="sw"></div>
+                      <div class="wa-crop-handle absolute top-1/2 -left-1.5 -translate-y-1/2 w-3.5 h-3.5 bg-amber-400 border-2 border-slate-900 rounded-xs cursor-ew-resize" data-crop-handle="w"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p id="waResultInfo" class="text-[10px] text-slate-400 font-mono text-center"></p>
             </div>
 
-            <p class="text-[11px] text-slate-400 text-center">
-              <i class="fa-solid fa-hand-pointer mr-1 text-emerald-500"></i> Touch or click &amp; drag any corner circle to align the glowing box with your paper edges.
-            </p>
           </div>
 
-          <!-- Right Column: Cleaned Document & Print Preview -->
-          <div class="lg:col-span-6 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+          <!-- Right Column (lg:col-span-7): Photoshop Free Transform (Ctrl+T) A4 Print Studio -->
+          <div class="lg:col-span-7 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            
+            <!-- Studio Header Banner -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
-                <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">2</span>
-                  <span>Clear Darkness &amp; Print Preview</span>
+                <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10.5px] font-black tracking-wide mb-1 border border-emerald-200">
+                  <i class="fa-solid fa-crop text-emerald-600"></i>
+                  <span>PHOTOSHOP FREE TRANSFORM (CTRL + T)</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span>A4 କାଗଜରେ ଯେଉଁଠି ଚାହିଁବେ ସେଠି ରଖନ୍ତୁ ଓ ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ</span>
                 </h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">Background becomes 100% white paper, saving expensive toner ink.</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">
+                  Drag anywhere to move • Drag 8 handles to scale • Drag outside corners to rotate freely!
+                </p>
+              </div>
+
+              <!-- Quick Print & Save buttons -->
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.printA4Studio()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 transform hover:scale-105 cursor-pointer">
+                  <i class="fa-solid fa-print"></i>
+                  <span>🖨️ Print A4</span>
+                </button>
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.downloadA4StudioPdf()" class="px-3.5 py-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 transform hover:scale-105 cursor-pointer">
+                  <i class="fa-solid fa-file-pdf"></i>
+                  <span>📄 PDF</span>
+                </button>
               </div>
             </div>
 
-            <!-- Magic Filter Preset Buttons -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('bw_laser')" class="wa-filter-btn px-3 py-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-black text-left flex items-center gap-2 transition" data-filter="bw_laser">
-                <i class="fa-solid fa-print text-emerald-600"></i>
-                <div>
-                  <p class="text-xs leading-none">Laser B&amp;W</p>
-                  <p class="text-[9.5px] text-emerald-600 font-normal mt-0.5">90% Ink Saver</p>
-                </div>
-              </button>
+            <!-- Photoshop Options Bar (HUD) -->
+            <div class="bg-slate-900 text-white p-3 rounded-2xl border border-slate-800 space-y-2.5 shadow-lg">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <!-- Mode Badge / Focus -->
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.focusFreeTransform()" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-black text-[11px] border border-emerald-400/30 flex items-center gap-1.5 hover:bg-emerald-500/30 transition cursor-pointer" title="Focus Free Transform Box (Shortcut: Ctrl+T)">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Ctrl+T Active</span>
+                </button>
 
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('magic_color')" class="wa-filter-btn px-3 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="magic_color">
-                <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
-                <div>
-                  <p class="text-xs leading-none">Magic Color</p>
-                  <p class="text-[9.5px] text-slate-400 font-normal mt-0.5">Stamps &amp; Photos</p>
-                </div>
-              </button>
-
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('photocopy')" class="wa-filter-btn px-3 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="photocopy">
-                <i class="fa-solid fa-copy text-amber-600"></i>
-                <div>
-                  <p class="text-xs leading-none">Photocopy</p>
-                  <p class="text-[9.5px] text-slate-400 font-normal mt-0.5">Xerox Machine</p>
-                </div>
-              </button>
-
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('grayscale')" class="wa-filter-btn px-3 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="grayscale">
-                <i class="fa-solid fa-circle-half-stroke text-indigo-600"></i>
-                <div>
-                  <p class="text-xs leading-none">Grayscale</p>
-                  <p class="text-[9.5px] text-slate-400 font-normal mt-0.5">Clean Gray</p>
-                </div>
-              </button>
-
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('original')" class="wa-filter-btn px-3 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="original">
-                <i class="fa-solid fa-image text-slate-500"></i>
-                <div>
-                  <p class="text-xs leading-none">Original</p>
-                  <p class="text-[9.5px] text-slate-400 font-normal mt-0.5">Straightened only</p>
-                </div>
-              </button>
-            </div>
-
-            <!-- Fine-Tuning Sliders Accordion -->
-            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3 text-xs">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div class="flex justify-between font-bold text-slate-700 mb-1">
-                    <span>Paper Whiteness / Threshold:</span>
-                    <span id="waThresholdSliderVal" class="text-emerald-700 font-mono">135</span>
+                <!-- Dimensions: Width cm, Lock, Height cm -->
+                <div class="flex items-center gap-1.5 text-xs font-mono">
+                  <div class="flex items-center bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+                    <span class="text-slate-400 text-[10px] mr-1">W:</span>
+                    <input type="number" id="waPsOptW" step="0.1" min="1" max="30" class="w-12 bg-transparent text-white font-bold text-xs outline-none" value="18.0" />
+                    <span class="text-slate-400 text-[10px]">cm</span>
                   </div>
-                  <input type="range" id="waThresholdSlider" min="50" max="220" value="135" class="w-full accent-emerald-600 cursor-pointer" />
-                </div>
-                <div>
-                  <div class="flex justify-between font-bold text-slate-700 mb-1">
-                    <span>Brightness:</span>
-                    <span id="waBrightnessSliderVal" class="text-emerald-700 font-mono">10</span>
+
+                  <button type="button" id="waPsOptLockBtn" onclick="VUO_WHATSAPP_RESIZER.toggleLockAspect()" class="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition cursor-pointer text-xs" title="Aspect Ratio Locked (Click to unlock)">
+                    <i class="fa-solid fa-link"></i>
+                  </button>
+
+                  <div class="flex items-center bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+                    <span class="text-slate-400 text-[10px] mr-1">H:</span>
+                    <input type="number" id="waPsOptH" step="0.1" min="1" max="30" class="w-12 bg-transparent text-white font-bold text-xs outline-none" value="12.0" />
+                    <span class="text-slate-400 text-[10px]">cm</span>
                   </div>
-                  <input type="range" id="waBrightnessSlider" min="-50" max="50" value="10" class="w-full accent-emerald-600 cursor-pointer" />
+                </div>
+
+                <!-- Position Coordinates: X mm, Y mm -->
+                <div class="flex items-center gap-1.5 text-xs font-mono">
+                  <div class="flex items-center bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+                    <span class="text-slate-400 text-[10px] mr-1">X:</span>
+                    <input type="number" id="waPsOptX" step="1" min="0" max="290" class="w-10 bg-transparent text-white font-bold text-xs outline-none" value="15" />
+                    <span class="text-slate-400 text-[10px]">mm</span>
+                  </div>
+
+                  <div class="flex items-center bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
+                    <span class="text-slate-400 text-[10px] mr-1">Y:</span>
+                    <input type="number" id="waPsOptY" step="1" min="0" max="290" class="w-10 bg-transparent text-white font-bold text-xs outline-none" value="12" />
+                    <span class="text-slate-400 text-[10px]">mm</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div class="flex justify-between font-bold text-slate-700 mb-1">
-                    <span>Contrast:</span>
-                    <span id="waContrastSliderVal" class="text-emerald-700 font-mono">25</span>
+              <!-- Second Row: Free Rotation Slider + Quick Transforms + Flip -->
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <!-- Rotation Angle Input & Slider -->
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 font-bold text-[11px] flex items-center gap-1">
+                    <i class="fa-solid fa-rotate text-emerald-400"></i>
+                    <span>∠ Angle:</span>
+                  </span>
+                  <div class="flex items-center bg-slate-800 px-1.5 py-0.5 rounded-lg border border-slate-700">
+                    <input type="number" id="waPsOptAngle" step="1" min="0" max="360" class="w-10 bg-transparent text-white font-bold text-xs outline-none font-mono" value="0" />
+                    <span class="text-slate-400 text-[10px]">°</span>
                   </div>
-                  <input type="range" id="waContrastSlider" min="-50" max="50" value="25" class="w-full accent-emerald-600 cursor-pointer" />
+                  <input type="range" id="waPsOptAngleSlider" min="0" max="360" value="0" step="1" class="w-24 accent-emerald-500 cursor-pointer h-1.5" title="Smooth 360° Free Rotate" />
+                  <span id="waPsOptAngleVal" class="text-emerald-400 font-mono font-bold text-[11px]">0°</span>
                 </div>
-                <div>
-                  <div class="flex justify-between font-bold text-slate-700 mb-1">
-                    <span>Text Sharpness:</span>
-                    <span id="waSharpnessSliderVal" class="text-emerald-700 font-mono">20</span>
-                  </div>
-                  <input type="range" id="waSharpnessSlider" min="0" max="80" value="20" class="w-full accent-emerald-600 cursor-pointer" />
+
+                <!-- Quick Buttons -->
+                <div class="flex flex-wrap items-center gap-1">
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.rotateCCW()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition" title="Rotate 90° CCW">
+                    <span>↺ 90°</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.rotateCW()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition" title="Rotate 90° CW">
+                    <span>↻ 90°</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.rotate180()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] cursor-pointer transition" title="Rotate 180°">
+                    <span>180°</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.toggleFlipH()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-bold text-[11px] cursor-pointer transition" title="Flip Horizontal">
+                    <span>↔️ Flip H</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.toggleFlipV()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-bold text-[11px] cursor-pointer transition" title="Flip Vertical">
+                    <span>↕️ Flip V</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.resetTransforms()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 font-bold text-[11px] cursor-pointer transition" title="Reset Transforms">
+                    <i class="fa-solid fa-undo"></i>
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- Cleaned Output Canvas Preview -->
-            <div class="relative bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center min-h-[360px] max-h-[520px] border border-slate-300 shadow-md">
-              <canvas id="waResultCanvas" class="max-w-full max-h-[500px] object-contain shadow-lg bg-white"></canvas>
+            <!-- VLE One-Click Instant Presets -->
+            <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-2.5 sm:p-3 rounded-2xl border border-emerald-200/80 space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-black text-emerald-950 flex items-center gap-1 text-[11.5px]">
+                  <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+                  <span>Quick Presets (ଦ୍ରୁତ ପ୍ରିଣ୍ଟ୍ ମାପ):</span>
+                </span>
+                <span class="text-[10px] text-emerald-700 font-bold hidden sm:inline">1-Click placement</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('top_half')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-300 text-slate-800 text-left transition shadow-xs group" data-preset="top_half">
+                  <div class="flex items-center gap-1 text-emerald-700 font-black text-[11px]">
+                    <i class="fa-solid fa-arrow-up text-[10px]"></i>
+                    <span>Top Half</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ଉପର (Paper Saver)</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('bottom_half')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="bottom_half">
+                  <div class="flex items-center gap-1 text-teal-700 font-black text-[11px]">
+                    <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                    <span>Bottom Half</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ତଳ (Reuse Paper)</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('center')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="center">
+                  <div class="flex items-center gap-1 text-indigo-700 font-black text-[11px]">
+                    <i class="fa-solid fa-arrows-to-dot text-[10px]"></i>
+                    <span>Center</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ପେଜ୍ ମଝିରେ</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('full_page')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="full_page">
+                  <div class="flex items-center gap-1 text-sky-700 font-black text-[11px]">
+                    <i class="fa-solid fa-expand text-[10px]"></i>
+                    <span>Full Page</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ସମ୍ପୂର୍ଣ୍ଣ ପେଜ୍ ମାପ</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('id_card')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="id_card">
+                  <div class="flex items-center gap-1 text-amber-700 font-black text-[11px]">
+                    <i class="fa-solid fa-id-card text-[10px]"></i>
+                    <span>ID Card</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">8.5 × 5.4 cm Wallet</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('two_copies')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="two_copies">
+                  <div class="flex items-center gap-1 text-purple-700 font-black text-[11px]">
+                    <i class="fa-solid fa-clone text-[10px]"></i>
+                    <span>2 Copies</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ଉପର ଓ ତଳ (୨ କପି)</p>
+                </button>
+              </div>
             </div>
 
-            <p id="waResultInfo" class="text-[11px] text-slate-500 font-medium text-center"></p>
+            <!-- Live A4 Sheet Container Area -->
+            <div class="w-full bg-slate-950 p-4 sm:p-6 rounded-3xl border border-slate-800 flex flex-col items-center justify-center overflow-hidden shadow-2xl relative min-h-[500px]">
+              
+              <!-- Watermark Status Pill -->
+              <div class="absolute top-3 left-4 text-[10px] font-mono font-bold text-slate-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>LIVE A4 PRINT PREVIEW (Exact Millimeters 1:1)</span>
+              </div>
 
-            <!-- Export Buttons -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.printDocument()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] cursor-pointer">
-                <i class="fa-solid fa-print text-sm"></i>
-                <span>🖨️ Print A4 Document</span>
+              <!-- A4 Sheet Outer Box -->
+              <div class="relative py-2 px-1 w-full flex items-center justify-center">
+                <div id="waA4Sheet" class="relative bg-white shadow-2xl rounded-xs select-none transition-all duration-150 overflow-hidden border border-slate-300" style="width: 420px; height: 594px; max-width: 100%;">
+                  
+                  <!-- Safe 5mm Printable Margin Guide -->
+                  <div class="absolute inset-[10px] border border-dashed border-emerald-400/40 pointer-events-none rounded-xs flex items-start justify-end p-1">
+                    <span class="text-[8px] font-bold text-emerald-600/70 tracking-tight font-mono">5mm Margin</span>
+                  </div>
+
+                  <!-- Mid-Page Fold Line at 50% (A5 Half Page Indicator) -->
+                  <div id="waA4MidFoldLine" class="absolute left-0 right-0 top-1/2 border-t border-dashed border-slate-300 pointer-events-none flex items-center justify-between px-3 -translate-y-1/2">
+                    <span class="text-[9px] font-bold text-slate-400 bg-white/90 px-1 rounded flex items-center gap-1 font-mono">
+                      <i class="fa-solid fa-scissors text-[9px]"></i> A5 Fold / Cut (148.5 mm)
+                    </span>
+                    <span class="text-[8px] text-slate-400 bg-white/90 px-1 rounded font-mono">Half</span>
+                  </div>
+
+                  <!-- Photoshop Transform Object #1 (waA4DocItem) -->
+                  <div id="waA4DocItem" class="wa-ps-box absolute cursor-move select-none touch-none group" style="left: 30px; top: 24px; width: 360px; height: 240px; transform-origin: 50% 50%;">
+                    
+                    <!-- Floating Live HUD Badge -->
+                    <div id="waA4DocBadge" class="absolute -top-7 left-0 bg-slate-900/95 text-white text-[9.5px] px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap font-mono flex items-center gap-1.5 border border-slate-700 z-40">
+                      <i class="fa-solid fa-crop text-emerald-400 text-[9px]"></i>
+                      <span id="waA4DocBadgeText">W: 18.0cm H: 12.0cm | ∠ 0.0° | X: 15mm Y: 12mm</span>
+                    </div>
+
+                    <!-- Rendered Document Image -->
+                    <div class="w-full h-full overflow-hidden bg-white select-none pointer-events-none">
+                      <img id="waA4DocImg" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Document Placement" />
+                    </div>
+
+                    <!-- Center Pivot Crosshair -->
+                    <div id="waA4DocPivot" class="wa-ps-pivot flex items-center justify-center pointer-events-none" title="Center Pivot">
+                      <div class="w-3.5 h-3.5 rounded-full border border-emerald-500/80 bg-white/50 flex items-center justify-center shadow-xs">
+                        <div class="w-1 h-1 rounded-full bg-emerald-700"></div>
+                      </div>
+                    </div>
+
+                    <!-- 8 Handles (4 Corners + 4 Side Midpoints) -->
+                    <div class="wa-ps-handle wa-ps-nw -top-1.5 -left-1.5 cursor-nwse-resize" data-handle="nw" title="Scale Corner"></div>
+                    <div class="wa-ps-handle wa-ps-n -top-1.5 left-1/2 -translate-x-1/2 cursor-ns-resize" data-handle="n" title="Scale Height"></div>
+                    <div class="wa-ps-handle wa-ps-ne -top-1.5 -right-1.5 cursor-nesw-resize" data-handle="ne" title="Scale Corner"></div>
+                    <div class="wa-ps-handle wa-ps-e top-1/2 -translate-y-1/2 -right-1.5 cursor-ew-resize" data-handle="e" title="Scale Width"></div>
+                    <div class="wa-ps-handle wa-ps-se -bottom-1.5 -right-1.5 cursor-nwse-resize" data-handle="se" title="Scale Corner"></div>
+                    <div class="wa-ps-handle wa-ps-s -bottom-1.5 left-1/2 -translate-x-1/2 cursor-ns-resize" data-handle="s" title="Scale Height"></div>
+                    <div class="wa-ps-handle wa-ps-sw -bottom-1.5 -left-1.5 cursor-nesw-resize" data-handle="sw" title="Scale Corner"></div>
+                    <div class="wa-ps-handle wa-ps-w top-1/2 -translate-y-1/2 -left-1.5 cursor-ew-resize" data-handle="w" title="Scale Width"></div>
+
+                    <!-- 4 Corner Rotation Hit Zones (Photoshop Free Rotate) -->
+                    <div class="wa-ps-rotate-zone -top-5 -left-5" data-handle="rot-nw" title="Rotate Document (Shift for 15° snap)"></div>
+                    <div class="wa-ps-rotate-zone -top-5 -right-5" data-handle="rot-ne" title="Rotate Document (Shift for 15° snap)"></div>
+                    <div class="wa-ps-rotate-zone -bottom-5 -right-5" data-handle="rot-se" title="Rotate Document (Shift for 15° snap)"></div>
+                    <div class="wa-ps-rotate-zone -bottom-5 -left-5" data-handle="rot-sw" title="Rotate Document (Shift for 15° snap)"></div>
+                  </div>
+
+                  <!-- Document Item #2 (For 2 Copies Preset) -->
+                  <div id="waA4DocItem2" class="wa-ps-box absolute cursor-move select-none touch-none group hidden border-purple-500" style="left: 30px; top: 320px; width: 360px; height: 240px; transform-origin: 50% 50%;">
+                    <div class="absolute -top-6 left-0 bg-purple-950 text-white text-[9.5px] px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap font-mono flex items-center gap-1 border border-purple-700 z-40">
+                      <i class="fa-solid fa-clone text-purple-300 text-[9px]"></i>
+                      <span id="waA4DocBadgeText2">Copy #2 (Duplicate)</span>
+                    </div>
+                    <div class="w-full h-full overflow-hidden bg-white select-none pointer-events-none">
+                      <img id="waA4DocImg2" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Copy 2 Preview" />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Quick Helper Bar Below Paper -->
+              <div class="mt-3 flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-400 font-medium">
+                <span class="flex items-center gap-1 text-slate-300">
+                  <i class="fa-solid fa-hand-pointer text-emerald-400"></i>
+                  <span>Click &amp; Drag to Move</span>
+                </span>
+                <span class="flex items-center gap-1 text-slate-300">
+                  <i class="fa-solid fa-up-right-and-down-left-from-center text-sky-400"></i>
+                  <span>Drag 8 Handles to Scale</span>
+                </span>
+                <span class="flex items-center gap-1 text-slate-300">
+                  <i class="fa-solid fa-rotate text-amber-400"></i>
+                  <span>Drag Outside Corners to Rotate (Shift = 15° snap)</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Page Orientation & Print Options -->
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <!-- Orientation Buttons -->
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-700 flex items-center gap-1">
+                  <span>📄 Orientation:</span>
+                </span>
+                <button type="button" id="waA4OrientPortraitBtn" onclick="VUO_WHATSAPP_RESIZER.setA4Orientation('portrait')" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-600 bg-emerald-50 text-emerald-800 flex items-center gap-1 transition shadow-xs">
+                  <i class="fa-solid fa-file"></i>
+                  <span>Portrait (ଉଭା)</span>
+                </button>
+                <button type="button" id="waA4OrientLandscapeBtn" onclick="VUO_WHATSAPP_RESIZER.setA4Orientation('landscape')" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-100 flex items-center gap-1 transition">
+                  <i class="fa-solid fa-file fa-rotate-90"></i>
+                  <span>Landscape (ଶୋଇବା)</span>
+                </button>
+                <span id="waA4PaperDimBadge" class="text-[10px] font-mono text-slate-400 hidden sm:inline">210 × 297 mm</span>
+              </div>
+
+              <!-- Print Checkboxes -->
+              <div class="flex flex-wrap items-center gap-3">
+                <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer select-none">
+                  <input type="checkbox" id="waA4CutBorderCheck" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer" />
+                  <span>✂️ Dotted Cut Line (କାଟିବା ଲାଇନ୍)</span>
+                </label>
+                <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer select-none">
+                  <input type="checkbox" id="waA4TwoCopiesCheck" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer" />
+                  <span>👥 2 Copies (ଉପର ଓ ତଳ)</span>
+                </label>
+              </div>
+
+              <!-- Hidden/Legacy compatibility inputs to avoid any null errors -->
+              <div class="hidden">
+                <span id="waA4ScaleVal">85%</span>
+                <input type="range" id="waA4ScaleSlider" min="15" max="100" value="85" />
+                <input type="number" id="waA4WidthInput" />
+                <input type="number" id="waA4HeightInput" />
+                <input type="number" id="waA4XInput" />
+                <input type="number" id="waA4YInput" />
+              </div>
+            </div>
+
+            <!-- Big Final Print & Download Action Buttons -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              <button type="button" onclick="VUO_WHATSAPP_RESIZER.printA4Studio()" class="sm:col-span-2 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 transform hover:scale-[1.01] cursor-pointer">
+                <i class="fa-solid fa-print text-lg"></i>
+                <span>🖨️ ସିଧାସଳଖ A4 ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ (Print Exact A4)</span>
               </button>
 
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.downloadA4Pdf()" class="w-full py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] cursor-pointer">
-                <i class="fa-solid fa-file-pdf text-sm"></i>
-                <span>📄 Save Clean A4 PDF</span>
-              </button>
-
-              <button type="button" onclick="VUO_WHATSAPP_RESIZER.downloadImage()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02] cursor-pointer">
-                <i class="fa-solid fa-download text-sm"></i>
-                <span>💾 Download PNG Image</span>
+              <button type="button" onclick="VUO_WHATSAPP_RESIZER.downloadA4StudioPdf()" class="py-3.5 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 hover:from-sky-500 hover:to-blue-500 text-white font-black text-xs rounded-2xl shadow-xl shadow-sky-600/20 transition-all flex items-center justify-center gap-2 transform hover:scale-[1.01] cursor-pointer">
+                <i class="fa-solid fa-file-pdf text-base"></i>
+                <span>📄 ସଠିକ୍ A4 PDF</span>
               </button>
             </div>
+
           </div>
 
         </div>
