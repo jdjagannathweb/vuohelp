@@ -5817,14 +5817,14 @@ body {
             <i class="fa-solid fa-palette text-sky-600 text-xs"></i>
             <span class="text-xs font-bold text-slate-700">HD Background:</span>
           </div>
-          <button type="button" id="pvcBgToggleBtn" onclick="VUO_PVCPRINT.toggleBackground()" class="relative inline-flex h-7 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-sky-600 shadow-inner" role="switch" aria-checked="true" title="Turn Clean HD Background ON / OFF">
+          <button type="button" id="pvcBgToggleBtn" onclick="VUO_PVCPRINT.toggleBackground()" class="relative inline-flex h-7 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-300 shadow-inner" role="switch" aria-checked="false" title="Turn Clean HD Background ON / OFF">
             <span class="sr-only">Toggle Background</span>
-            <span id="pvcBgToggleKnob" class="pointer-events-none inline-flex h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-9 items-center justify-center text-[10px] font-black text-sky-600">ON</span>
+            <span id="pvcBgToggleKnob" class="pointer-events-none inline-flex h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 items-center justify-center text-[10px] font-black text-slate-500">OFF</span>
           </button>
-          <span id="pvcBgToggleStatusText" class="text-xs font-extrabold text-sky-700">ON (Clean HD)</span>
+          <span id="pvcBgToggleStatusText" class="text-xs font-bold text-slate-500">OFF (Direct White)</span>
 
           <!-- Light to Dark Tone Slider -->
-          <div id="pvcBgToneBox" class="flex items-center gap-2 pl-3 border-l border-slate-300">
+          <div id="pvcBgToneBox" class="flex items-center gap-2 pl-3 border-l border-slate-300 opacity-40 pointer-events-none">
             <span class="text-[11px] font-bold text-slate-500">Tone:</span>
             <span class="text-[10px] font-bold text-emerald-600 cursor-pointer hover:underline" onclick="VUO_PVCPRINT.setBgTone(30)" title="Set Light Tone (Ultra Clear)">Light</span>
             <input type="range" id="pvcBgToneSlider" min="15" max="100" value="45" class="w-20 sm:w-28 accent-sky-600 h-1.5 cursor-pointer" title="Adjust background intensity (Light to Dark)" />
@@ -5875,23 +5875,35 @@ body {
                   <p class="text-xs text-slate-500 mt-0.5">Crop 4 sides &amp; corners freely &bull; Output auto-fits CR-80 &bull; 🖱️ Wheel to Zoom &bull; ⌨️ Arrows to Nudge / Alt+Arrows to Resize</p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center flex-wrap gap-2">
                   <!-- Zoom Controls -->
-                  <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    <button type="button" onclick="VUO_PVCPRINT.setZoom(-0.15)" title="Zoom Out (or Mouse Wheel Down)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-all">
+                  <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-xs">
+                    <button type="button" onclick="VUO_PVCPRINT.setZoom(-0.15)" title="Zoom Out (or Mouse Wheel Down)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-all cursor-pointer">
                       <i class="fa-solid fa-magnifying-glass-minus"></i>
                     </button>
-                    <span id="pvcZoomLevelText" onclick="VUO_PVCPRINT.setZoom(0)" title="Reset Zoom" class="px-2 text-[11px] font-black text-slate-700 cursor-pointer">100%</span>
-                    <button type="button" onclick="VUO_PVCPRINT.setZoom(0.15)" title="Zoom In (or Mouse Wheel Up)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-all">
+                    <span id="pvcZoomLevelText" onclick="VUO_PVCPRINT.setZoom(0)" title="Reset to 100%" class="px-2 text-[11px] font-black text-slate-700 cursor-pointer hover:text-sky-600 transition-colors">100%</span>
+                    <button type="button" onclick="VUO_PVCPRINT.setZoom(0.15)" title="Zoom In (or Mouse Wheel Up)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-all cursor-pointer">
                       <i class="fa-solid fa-magnifying-glass-plus"></i>
                     </button>
                   </div>
 
-                  <button type="button" id="pvcAutoPresetCropBtn" class="px-3 py-2 rounded-xl bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200 text-xs font-black flex items-center gap-1.5 transition-all">
+                  <!-- Focus Active Card Button (Keeps card centered & zoomed for clean crop) -->
+                  <button type="button" onclick="VUO_PVCPRINT.focusActiveCard()" title="Center & zoom onto card so all 4 edges are clearly visible" class="px-3 py-2 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300 text-xs font-black flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
+                    <i class="fa-solid fa-crosshairs text-amber-600"></i>
+                    <span>Focus Card (କାର୍ଡ ଦେଖନ୍ତୁ)</span>
+                  </button>
+
+                  <!-- Fit Screen Button -->
+                  <button type="button" onclick="VUO_PVCPRINT.zoomFitScreen()" title="Fit full document in view" class="px-2.5 py-2 rounded-xl bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer">
+                    <i class="fa-solid fa-expand text-slate-500"></i>
+                    <span>Fit</span>
+                  </button>
+
+                  <button type="button" id="pvcAutoPresetCropBtn" class="px-3 py-2 rounded-xl bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer">
                     <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
                     <span>Auto Preset</span>
                   </button>
-                  <button type="button" id="pvcSwapCropsBtn" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-black flex items-center gap-1.5 transition-all">
+                  <button type="button" id="pvcSwapCropsBtn" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer">
                     <i class="fa-solid fa-repeat"></i>
                     <span>Swap</span>
                   </button>
@@ -5929,9 +5941,13 @@ body {
                 </button>
               </div>
 
-              <!-- Large Canvas Crop Viewport -->
-              <div id="pvcCanvasWrapper" tabindex="0" title="Click here to use Arrow Keys to nudge crop" class="relative bg-slate-950 rounded-2xl overflow-auto border-2 border-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 outline-none flex items-center justify-center min-h-[580px] lg:min-h-[660px] p-4 select-none shadow-2xl">
-                <canvas id="pvcCropOverlayCanvas" class="max-w-full max-h-[750px] object-contain cursor-crosshair rounded-xl shadow-2xl transition-transform duration-100"></canvas>
+              <!-- Large Canvas Crop Viewport (With generous padding stage & Pan/Scroll support) -->
+              <div id="pvcCanvasWrapper" tabindex="0" title="Click &amp; Drag to crop. Drag background or hold Space to Pan. Mouse Wheel to Zoom." class="relative bg-slate-950 rounded-2xl overflow-auto border-2 border-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 outline-none min-h-[580px] lg:min-h-[660px] select-none shadow-2xl" style="scroll-behavior: smooth;">
+                <div id="pvcCanvasScrollStage" class="min-w-full min-h-full w-max h-max p-12 sm:p-20 flex items-center justify-center m-auto">
+                  <div id="pvcZoomContainer" class="relative inline-block">
+                    <canvas id="pvcCropOverlayCanvas" class="block cursor-crosshair rounded-xl shadow-2xl select-none"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -6469,6 +6485,36 @@ body {
             <i class="fa-solid fa-arrows-rotate text-sky-600"></i>
             <span>Sync Latest Videos</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Video Search Bar & Results Counter -->
+      <div class="max-w-2xl mx-auto mb-6 px-2">
+        <div class="relative flex items-center shadow-xs">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          </div>
+          <input 
+            type="text" 
+            id="trainingSearchInput" 
+            placeholder="Search videos (e.g. Subhadra, PMAY, KALIA, Ration, Bank, Krushak, CSC)..." 
+            class="w-full pl-10 pr-24 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all shadow-xs"
+            autocomplete="off"
+            oninput="VUO_TRAINING.handleSearchInput(event)"
+          />
+          <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1.5">
+            <button 
+              id="trainingSearchClearBtn" 
+              onclick="VUO_TRAINING.clearSearch()" 
+              class="hidden px-2 py-1 text-slate-400 hover:text-slate-600 rounded-md text-xs transition-colors cursor-pointer"
+              title="Clear Search"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <span id="trainingVideoCountBadge" class="hidden sm:inline-flex px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded-md text-[11px] border border-slate-200">
+              30 videos
+            </span>
+          </div>
         </div>
       </div>
 
