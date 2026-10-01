@@ -7028,7 +7028,10 @@ body {
             </select>
             <input type="text" id="adminVideoDesc" placeholder="Tutorial description and steps..." class="sm:col-span-2 px-2.5 py-1.5 text-xs border rounded focus:ring-1 focus:ring-sky-500" />
           </div>
-          <div class="flex justify-end pt-1">
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button type="button" onclick="VUO_TRAINING.syncFromYouTubeChannel(false)" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-arrows-rotate text-sky-600"></i> Sync YouTube Channel
+            </button>
             <button type="submit" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5">
               <i class="fa-solid fa-upload"></i> Upload Training Video
             </button>

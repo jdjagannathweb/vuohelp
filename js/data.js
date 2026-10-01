@@ -840,6 +840,18 @@ const VUO_DATA = {
   // Training Videos - Official "Odia Digital Sikhya" Channel (Jagannath Dash)
   trainingVideos: [
     {
+      id: "tr-pgQLz2USvhw",
+      title: "CSC ID Block ହୋଇଯାଇଛି କି? Physical Verification କିପରି କରିବେ | CSC Unblock Step-by-Step",
+      titleOdia: "CSC ID Block ହୋଇଯାଇଛି କି? Physical Verification କିପରି କରିବେ | CSC Unblock Step-by-Step",
+      category: "CSC Training",
+      youtubeId: "pgQLz2USvhw",
+      desc: "CSC ID unblock physical verification process, district coordinator verification and reactivation tutorial.",
+      duration: "07:38 min",
+      views: "88",
+      badge: "NEW",
+      link: "https://www.youtube.com/watch?v=pgQLz2USvhw"
+    },
+    {
       id: "tr-1",
       title: "CSC Tip Of Day 1 (Smart CSC Tips & Tools)",
       titleOdia: "CSC ଟିପ୍ ଅଫ୍ ଦି ଡେ ୧ | ସ୍ମାର୍ଟ CSC ଟିପ୍ସ",
@@ -848,7 +860,8 @@ const VUO_DATA = {
       desc: "CSC VLE service tricks, portal speedup and online center productivity tips by Jagannath Dash.",
       duration: "08:15 min",
       views: "1.2K",
-      badge: "Featured"
+      badge: "Featured",
+      link: "https://www.youtube.com/watch?v=U3jaSv9zad4"
     },
     {
       id: "tr-2",
