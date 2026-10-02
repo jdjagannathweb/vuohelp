@@ -18,7 +18,7 @@
  */
 
 const VUO_PVCPRINT = {
-  bgEnabled: true,          // true (Clean HD Color PVC) or false (Original 1:1 Scan Direct)
+  bgEnabled: false,         // Default false (Direct Print / Clean White scan mode)
   bgTone: 45,               // percentage (15% = Ultra Light & clear, 45% = balanced crystal clear, 100% = Deep Dark)
   printLayout: 'epson_tray', // 'epson_tray', 'a4_single', 'a4_multi'
   sourceType: null,         // 'pdf' or 'image'
@@ -142,7 +142,7 @@ const VUO_PVCPRINT = {
       knob.textContent = 'OFF';
       if (text) {
         text.className = 'text-xs font-bold text-slate-500';
-        text.textContent = 'OFF (Original)';
+        text.textContent = 'OFF (Direct White)';
       }
     }
     const toneBox = document.getElementById('pvcBgToneBox');
@@ -767,17 +767,153 @@ const VUO_PVCPRINT = {
 
   setZoom(delta) {
     if (delta === 0) {
-      this.zoomLevel = 1.0;
+      this.setZoomTo(1.0, true);
     } else {
-      this.zoomLevel = Math.max(0.6, Math.min(2.2, parseFloat((this.zoomLevel + delta).toFixed(2))));
+      const target = Math.max(0.5, Math.min(3.0, parseFloat((this.zoomLevel + delta).toFixed(2))));
+      this.setZoomTo(target, true);
     }
-    const canvas = document.getElementById('pvcCropOverlayCanvas');
+  },
+
+  updateBaseDisplaySize() {
+    if (!this.sourceCanvas) return;
+    const wrapper = document.getElementById('pvcCanvasWrapper');
+    const availableW = wrapper ? Math.max(380, wrapper.clientWidth - 140) : 680;
+    const availableH = wrapper ? Math.max(320, wrapper.clientHeight - 140) : 560;
+
+    const aspect = this.sourceCanvas.width / this.sourceCanvas.height;
+    let baseW, baseH;
+    if (aspect >= availableW / availableH) {
+      baseW = Math.min(availableW, this.sourceCanvas.width);
+      baseH = Math.round(baseW / aspect);
+    } else {
+      baseH = Math.min(availableH, this.sourceCanvas.height);
+      baseW = Math.round(baseH * aspect);
+    }
+    this.baseDisplayWidth = Math.max(340, baseW);
+    this.baseDisplayHeight = Math.max(240, baseH);
+  },
+
+  setZoomTo(targetZoom, keepCardVisible = true) {
+    this.zoomLevel = Math.max(0.5, Math.min(3.0, parseFloat(targetZoom.toFixed(2))));
+    
     const zoomText = document.getElementById('pvcZoomLevelText');
     if (zoomText) zoomText.textContent = `${Math.round(this.zoomLevel * 100)}%`;
-    if (canvas) {
-      canvas.style.transform = `scale(${this.zoomLevel})`;
-      canvas.style.transformOrigin = 'top center';
+
+    if (!this.baseDisplayWidth || !this.baseDisplayHeight) {
+      this.updateBaseDisplaySize();
     }
+
+    const displayW = Math.round(this.baseDisplayWidth * this.zoomLevel);
+    const displayH = Math.round(this.baseDisplayHeight * this.zoomLevel);
+
+    const canvas = document.getElementById('pvcCropOverlayCanvas');
+    if (canvas) {
+      canvas.style.width = `${displayW}px`;
+      canvas.style.height = `${displayH}px`;
+      canvas.style.maxWidth = 'none';
+      canvas.style.maxHeight = 'none';
+    }
+
+    const zoomContainer = document.getElementById('pvcZoomContainer');
+    if (zoomContainer) {
+      zoomContainer.style.width = `${displayW}px`;
+      zoomContainer.style.height = `${displayH}px`;
+      zoomContainer.style.transform = 'none';
+    }
+
+    if (keepCardVisible) {
+      setTimeout(() => this.centerActiveCropInView(), 40);
+    }
+  },
+
+  zoomAtPoint(delta, clientX, clientY) {
+    const wrapper = document.getElementById('pvcCanvasWrapper');
+    const canvas = document.getElementById('pvcCropOverlayCanvas');
+    if (!wrapper || !canvas || !this.baseDisplayWidth) {
+      this.setZoom(delta);
+      return;
+    }
+
+    const oldZoom = this.zoomLevel;
+    const newZoom = Math.max(0.5, Math.min(3.0, parseFloat((oldZoom + delta).toFixed(2))));
+    if (newZoom === oldZoom) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let relX = 0.5;
+    let relY = 0.5;
+    if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom && rect.width > 0 && rect.height > 0) {
+      relX = (clientX - rect.left) / rect.width;
+      relY = (clientY - rect.top) / rect.height;
+    }
+
+    this.setZoomTo(newZoom, false);
+
+    const newRect = canvas.getBoundingClientRect();
+    const targetScrollLeft = wrapper.scrollLeft + (relX * (newRect.width - rect.width));
+    const targetScrollTop = wrapper.scrollTop + (relY * (newRect.height - rect.height));
+
+    wrapper.scrollLeft = Math.max(0, targetScrollLeft);
+    wrapper.scrollTop = Math.max(0, targetScrollTop);
+  },
+
+  zoomFitScreen() {
+    this.updateBaseDisplaySize();
+    this.setZoomTo(1.0, false);
+    const wrapper = document.getElementById('pvcCanvasWrapper');
+    const canvas = document.getElementById('pvcCropOverlayCanvas');
+    if (wrapper && canvas) {
+      setTimeout(() => {
+        const wrapRect = wrapper.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        const shiftX = (canvasRect.left + canvasRect.width / 2) - (wrapRect.left + wrapRect.width / 2);
+        const shiftY = (canvasRect.top + canvasRect.height / 2) - (wrapRect.top + wrapRect.height / 2);
+        wrapper.scrollTo({
+          left: Math.max(0, Math.round(wrapper.scrollLeft + shiftX)),
+          top: Math.max(0, Math.round(wrapper.scrollTop + shiftY)),
+          behavior: 'smooth'
+        });
+      }, 50);
+    }
+  },
+
+  focusActiveCard() {
+    // Zoom in to comfortable 1.35x and center directly on active card for precision cropping
+    const targetZoom = Math.max(1.35, this.zoomLevel);
+    this.setZoomTo(targetZoom, false);
+    setTimeout(() => {
+      this.centerActiveCropInView();
+    }, 60);
+  },
+
+  centerActiveCropInView() {
+    const wrapper = document.getElementById('pvcCanvasWrapper');
+    const canvas = document.getElementById('pvcCropOverlayCanvas');
+    if (!wrapper || !canvas || !this.sourceCanvas) return;
+
+    const box = this.activeCropSide === 'front' ? this.frontCrop : (this.activeCropSide === 'back' ? this.backCrop : this.qrCrop);
+    if (!box || box.width <= 0) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    if (canvasRect.width <= 0 || canvasRect.height <= 0 || wrapRect.width <= 0) return;
+
+    const relCenterX = (box.x + box.width / 2) / this.sourceCanvas.width;
+    const relCenterY = (box.y + box.height / 2) / this.sourceCanvas.height;
+
+    const boxScreenCenterX = canvasRect.left + (canvasRect.width * relCenterX);
+    const boxScreenCenterY = canvasRect.top + (canvasRect.height * relCenterY);
+
+    const wrapScreenCenterX = wrapRect.left + (wrapRect.width / 2);
+    const wrapScreenCenterY = wrapRect.top + (wrapRect.height / 2);
+
+    const shiftX = boxScreenCenterX - wrapScreenCenterX;
+    const shiftY = boxScreenCenterY - wrapScreenCenterY;
+
+    wrapper.scrollTo({
+      left: Math.max(0, Math.round(wrapper.scrollLeft + shiftX)),
+      top: Math.max(0, Math.round(wrapper.scrollTop + shiftY)),
+      behavior: 'smooth'
+    });
   },
 
   setLayout(layout) {
@@ -832,6 +968,9 @@ const VUO_PVCPRINT = {
     }
 
     this.drawCropOverlay();
+
+    // Auto-scroll gently to keep the active card centered in view
+    setTimeout(() => this.centerActiveCropInView(), 50);
   },
 
   loadFile(file) {
@@ -892,9 +1031,15 @@ const VUO_PVCPRINT = {
     // Always clone buffer using slice(0) so the PDF.js Web Worker never detaches our master buffer
     const freshBytes = new Uint8Array(this.pdfRawBuffer.slice(0));
 
+    // Ensure robust standard fonts & CMap handling for Indian Govt ID PDFs (Ayushman, Aadhaar, Parivahan)
+    // Disabling system fonts and providing standard fonts URL forces PDF.js to load official LiberationSans for Helvetica
     const loadingTask = pdfjsLib.getDocument({
       data: freshBytes,
-      password: (this.pdfPassword || '').trim().toUpperCase()
+      password: (this.pdfPassword || '').trim().toUpperCase(),
+      cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+      useSystemFonts: false
     });
 
     loadingTask.promise.then(pdf => {
@@ -949,7 +1094,7 @@ const VUO_PVCPRINT = {
   renderPdfPage(pageNum) {
     if (!this.pdfDoc) return;
 
-    this.pdfDoc.getPage(pageNum).then(page => {
+    this.pdfDoc.getPage(pageNum).then(async page => {
       const scale = 2.5;
       const viewport = page.getViewport({ scale });
 
@@ -963,11 +1108,17 @@ const VUO_PVCPRINT = {
         viewport: viewport
       };
 
-      page.render(renderContext).promise.then(() => {
-        this.sourceCanvas = canvas;
-        this.sourceCtx = ctx;
-        this.onSourceReady();
-      });
+      await page.render(renderContext).promise;
+
+      if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_) {}
+      }
+
+      this.sourceCanvas = canvas;
+      this.sourceCtx = ctx;
+      this.onSourceReady();
     });
   },
 
@@ -989,7 +1140,13 @@ const VUO_PVCPRINT = {
     if (promptZone) promptZone.classList.add('hidden');
     if (editorWorkspace) editorWorkspace.classList.remove('hidden');
 
+    this.updateBaseDisplaySize();
+    this.zoomLevel = 1.0;
     this.applySmartPresetCrops();
+    this.setZoomTo(1.0, false);
+    setTimeout(() => {
+      this.centerActiveCropInView();
+    }, 80);
 
     if (typeof showToast === 'function') {
       showToast('Document loaded successfully! Front & Back crop boxes positioned.', 'success');
@@ -1027,7 +1184,10 @@ const VUO_PVCPRINT = {
         height: cardHeight
       };
     } else {
-      // Landscape or side-by-side scanned card photo
+      // Landscape or side-by-side scanned card photo (e.g. Ayushman Bharat, Voter ID, PAN, Ration)
+      // Automatically disable HD Aadhaar background so Aadhaar mandala lines do not overlap citizen card
+      this.toggleBackground(false);
+
       const cardWidth = Math.round(w * 0.44);
       const cardHeight = Math.round(cardWidth / cr80Ratio);
       const startY = Math.round((h - cardHeight) / 2);
@@ -1055,6 +1215,13 @@ const VUO_PVCPRINT = {
     const overlayCanvas = document.getElementById('pvcCropOverlayCanvas');
     const canvasWrapper = document.getElementById('pvcCanvasWrapper');
     if (!overlayCanvas) return;
+
+    this.isDraggingCrop = false;
+    this.isResizingCrop = false;
+    this.isPanningView = false;
+    this.isSpacePressed = false;
+    this.dragHandle = null;
+    this.initialCrop = null;
 
     const getCanvasPoint = (e) => {
       const rect = overlayCanvas.getBoundingClientRect();
@@ -1099,9 +1266,14 @@ const VUO_PVCPRINT = {
       return this.qrCrop;
     };
 
-    // Update cursor based on hover over 8 handles
+    // Update cursor based on hover over 8 handles or empty background
     overlayCanvas.addEventListener('mousemove', (e) => {
-      if (this.isDraggingCrop || this.isResizingCrop) return;
+      if (this.isDraggingCrop || this.isResizingCrop || this.isPanningView) return;
+      if (this.isSpacePressed) {
+        overlayCanvas.style.cursor = 'grab';
+        return;
+      }
+
       const pt = getCanvasPoint(e);
       const activeBox = getActiveBox();
 
@@ -1110,11 +1282,28 @@ const VUO_PVCPRINT = {
       else if (handle === 'tr' || handle === 'bl') overlayCanvas.style.cursor = 'nesw-resize';
       else if (handle === 't' || handle === 'b') overlayCanvas.style.cursor = 'ns-resize';
       else if (handle === 'l' || handle === 'r') overlayCanvas.style.cursor = 'ew-resize';
-      else if (isInsideBox(pt, activeBox) || isInsideBox(pt, this.frontCrop) || isInsideBox(pt, this.backCrop) || isInsideBox(pt, this.qrCrop)) overlayCanvas.style.cursor = 'move';
-      else overlayCanvas.style.cursor = 'crosshair';
+      else if (isInsideBox(pt, activeBox) || isInsideBox(pt, this.frontCrop) || isInsideBox(pt, this.backCrop) || isInsideBox(pt, this.qrCrop)) {
+        overlayCanvas.style.cursor = 'move';
+      } else {
+        overlayCanvas.style.cursor = 'grab'; // Empty backdrop can be clicked to pan
+      }
     });
 
     overlayCanvas.addEventListener('mousedown', (e) => {
+      // Middle click (button 1) or Spacebar held initiates Pan
+      if (e.button === 1 || this.isSpacePressed) {
+        this.isPanningView = true;
+        this.panStartX = e.clientX;
+        this.panStartY = e.clientY;
+        this.panStartScrollLeft = canvasWrapper ? canvasWrapper.scrollLeft : 0;
+        this.panStartScrollTop = canvasWrapper ? canvasWrapper.scrollTop : 0;
+        overlayCanvas.style.cursor = 'grabbing';
+        e.preventDefault();
+        return;
+      }
+
+      if (e.button !== 0) return;
+
       const pt = getCanvasPoint(e);
       const activeBox = getActiveBox();
 
@@ -1152,9 +1341,41 @@ const VUO_PVCPRINT = {
           return;
         }
       }
+
+      // Clicked outside any crop box on canvas: initiate smooth pan!
+      if (canvasWrapper) {
+        this.isPanningView = true;
+        this.panStartX = e.clientX;
+        this.panStartY = e.clientY;
+        this.panStartScrollLeft = canvasWrapper.scrollLeft;
+        this.panStartScrollTop = canvasWrapper.scrollTop;
+        overlayCanvas.style.cursor = 'grabbing';
+      }
     });
 
+    // Wrapper backdrop mousedown (outside canvas) initiates pan
+    if (canvasWrapper) {
+      canvasWrapper.addEventListener('mousedown', (e) => {
+        if (e.target !== overlayCanvas) {
+          this.isPanningView = true;
+          this.panStartX = e.clientX;
+          this.panStartY = e.clientY;
+          this.panStartScrollLeft = canvasWrapper.scrollLeft;
+          this.panStartScrollTop = canvasWrapper.scrollTop;
+          canvasWrapper.style.cursor = 'grabbing';
+        }
+      });
+    }
+
     window.addEventListener('mousemove', (e) => {
+      if (this.isPanningView && canvasWrapper) {
+        const dx = e.clientX - this.panStartX;
+        const dy = e.clientY - this.panStartY;
+        canvasWrapper.scrollLeft = this.panStartScrollLeft - dx;
+        canvasWrapper.scrollTop = this.panStartScrollTop - dy;
+        return;
+      }
+
       if (!this.isDraggingCrop && !this.isResizingCrop) return;
       const pt = getCanvasPoint(e);
       const dx = pt.x - this.dragStartX;
@@ -1239,6 +1460,12 @@ const VUO_PVCPRINT = {
     });
 
     window.addEventListener('mouseup', () => {
+      if (this.isPanningView) {
+        this.isPanningView = false;
+        overlayCanvas.style.cursor = this.isSpacePressed ? 'grab' : 'crosshair';
+        if (canvasWrapper) canvasWrapper.style.cursor = 'default';
+      }
+
       if (this.isDraggingCrop || this.isResizingCrop) {
         this.isDraggingCrop = false;
         this.isResizingCrop = false;
@@ -1272,9 +1499,9 @@ const VUO_PVCPRINT = {
           this.renderCardOutputs();
         }
       } else {
-        // Standard Mouse Wheel: Smooth Zoom In / Zoom Out
-        const delta = e.deltaY < 0 ? 0.12 : -0.12;
-        this.setZoom(delta);
+        // Standard Mouse Wheel: Smooth Zoom centered at mouse position
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        this.zoomAtPoint(delta, e.clientX, e.clientY);
       }
     };
 
@@ -1290,6 +1517,13 @@ const VUO_PVCPRINT = {
 
       const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || document.activeElement.isContentEditable) return;
+
+      if (e.code === 'Space') {
+        this.isSpacePressed = true;
+        overlayCanvas.style.cursor = 'grab';
+        e.preventDefault();
+        return;
+      }
 
       const activeBox = getActiveBox();
       const step = e.shiftKey ? 10 : 1; // 1px default, 10px with Shift
@@ -1351,6 +1585,22 @@ const VUO_PVCPRINT = {
       } else if (e.key === '0') {
         e.preventDefault();
         this.setZoom(0);
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        this.isSpacePressed = false;
+        if (!this.isPanningView) {
+          overlayCanvas.style.cursor = 'crosshair';
+        }
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (this.sourceCanvas) {
+        this.updateBaseDisplaySize();
+        this.setZoomTo(this.zoomLevel, false);
       }
     });
   },
@@ -1581,6 +1831,10 @@ const VUO_PVCPRINT = {
   renderSingleCard(ctx, side, cropBox, targetW, targetH) {
     ctx.save();
 
+    // Default clean pure white card base (prevents any transparency or dark artifacts)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
+
     if (this.bgEnabled) {
       // 1. Draw Clean HD Color PVC Card Background (Tricolor Waves, Ashok Stambha & Security Mandala)
       this.drawHdAadhaarBackground(ctx, side, targetW, targetH);
@@ -1612,7 +1866,10 @@ const VUO_PVCPRINT = {
       ctx.globalCompositeOperation = 'source-over';
 
     } else {
-      // Original 1:1 Direct Scan Mode (Pure scan without background template)
+      // Original 1:1 Direct Scan Mode (Pure scan on solid pure white card)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetW, targetH);
+
       ctx.drawImage(
         this.sourceCanvas,
         cropBox.x, cropBox.y, cropBox.width, cropBox.height,
@@ -1812,47 +2069,51 @@ const VUO_PVCPRINT = {
       printCanvas.height = trayH;
       const ctx = printCanvas.getContext('2d');
 
-      ctx.fillStyle = '#1e293b';
+      // Default Pure White Sheet Background (Never wastes ink on dark background)
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, trayW, trayH);
 
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([10, 10]);
+      // Subtle center divider guide
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 8]);
       ctx.beginPath();
       ctx.moveTo(trayW / 2, 0);
       ctx.lineTo(trayW / 2, trayH);
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 36px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 28px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('EPSON PVC 2-CARD TRAY (L805 / L8050 / T50)', trayW / 2, 80);
+      ctx.fillText('EPSON PVC 2-CARD TRAY (CR-80 85.6 × 54 mm)', trayW / 2, 75);
 
       const xOffsetPx = Math.round((this.trayCalibration.xOffset / 25.4) * 300);
       const yOffsetPx = Math.round((this.trayCalibration.yOffset / 25.4) * 300);
 
       const slotX = Math.round((trayW - 1011) / 2) + xOffsetPx;
-      const slot1Y = 200 + yOffsetPx;
-      const slot2Y = 1260 + yOffsetPx;
+      const slot1Y = 170 + yOffsetPx;
+      const slot2Y = 1230 + yOffsetPx;
 
-      // Card 1
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(slotX - 10, slot1Y - 10, 1011 + 20, 638 + 20);
+      // Card 1: Slot 1 Front Card on clean white
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(slotX - 1, slot1Y - 1, 1011 + 2, 638 + 2);
       ctx.drawImage(frontCanvas, slotX, slot1Y, 1011, 638);
 
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('SLOT 1: FRONT CARD', trayW / 2, slot1Y - 20);
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('SLOT 1: FRONT CARD', trayW / 2, slot1Y - 16);
 
-      // Card 2
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(slotX - 10, slot2Y - 10, 1011 + 20, 638 + 20);
+      // Card 2: Slot 2 Back Card on clean white
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(slotX - 1, slot2Y - 1, 1011 + 2, 638 + 2);
       ctx.drawImage(backCanvas, slotX, slot2Y, 1011, 638);
 
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('SLOT 2: BACK CARD', trayW / 2, slot2Y - 20);
+      ctx.fillStyle = '#059669';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('SLOT 2: BACK CARD', trayW / 2, slot2Y - 16);
 
     } else if (this.printLayout === 'a4_single') {
       const a4W = 2480;
@@ -1946,19 +2207,25 @@ const VUO_PVCPRINT = {
             size: ${isEpsonTray ? '140mm 200mm' : 'A4 portrait'};
             margin: 0;
           }
-          body {
+          html, body {
             margin: 0;
             padding: 0;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          body {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #fff;
+            background: #ffffff;
           }
           img {
             width: 100%;
             height: auto;
             max-height: 100vh;
             object-fit: contain;
+            background: #ffffff;
           }
         </style>
       </head>
