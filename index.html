@@ -193,18 +193,19 @@ body {
 }
 .wa-ps-handle {
   position: absolute;
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
   background-color: #ffffff;
   border: 1.5px solid #059669;
-  border-radius: 1px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   z-index: 30;
   transition: transform 0.08s ease, background-color 0.08s;
+  touch-action: none;
 }
 .wa-ps-handle:hover {
   background-color: #10b981;
-  transform: scale(1.35);
+  transform: scale(1.4);
 }
 .wa-ps-rotate-zone {
   position: absolute;
@@ -3156,27 +3157,28 @@ body {
         </div>
       </div>
 
-      <!-- ROW 1: Upload Customer Photograph (Left) + Live Print Preview A4 Sheet (Right) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mb-6">
+      <!-- UNIFIED 2-COLUMN PASSPHOTO WORKSPACE: Controls (Left) + Live Sheet & HD Single Previews (Right) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-6">
         
-        <!-- Left: Photo Format Mode & Upload Box -->
-        <div class="space-y-4">
+        <!-- ================= LEFT COLUMN: UPLOAD & ALL PRINT/PAPER SETTINGS ================= -->
+        <div class="space-y-5">
+          
           <!-- Mode Selector: Single vs Husband & Wife (Joint Couple) -->
-          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
             <div>
               <span class="text-xs font-black text-slate-800 uppercase tracking-wider block">Photo Format Mode</span>
               <span class="text-[10px] text-slate-500">Single person or Husband &amp; Wife joint passport</span>
             </div>
             <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
-              <button type="button" id="passPhotoModeSingle" onclick="VUO_PASSPHOTO.setStudioMode('single')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5">
+              <button type="button" id="passPhotoModeSingle" onclick="VUO_PASSPHOTO.setStudioMode('single')" class="px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-user"></i>
                 <span>Single Photo</span>
               </button>
-              <button type="button" id="passPhotoModeMulti" onclick="VUO_PASSPHOTO.setStudioMode('multi')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
+              <button type="button" id="passPhotoModeMulti" onclick="VUO_PASSPHOTO.setStudioMode('multi')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-users text-indigo-600"></i>
                 <span>2 Persons on Sheet (୨ ଜଣଙ୍କ ଫଟୋ)</span>
               </button>
-              <button type="button" id="passPhotoModeCouple" onclick="VUO_PASSPHOTO.setStudioMode('couple')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
+              <button type="button" id="passPhotoModeCouple" onclick="VUO_PASSPHOTO.setStudioMode('couple')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-user-group text-pink-500"></i>
                 <span>Husband &amp; Wife (Joint)</span>
               </button>
@@ -3218,13 +3220,13 @@ body {
                   <label for="passPhotoFileInput" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 rounded-lg font-bold text-sky-700 border border-sky-200 text-xs flex items-center gap-1 cursor-pointer select-none" title="Upload a different photo">
                     <i class="fa-solid fa-camera"></i> Change Photo
                   </label>
-                  <button type="button" onclick="VUO_PASSPHOTO.rotate(-90)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700">
+                  <button type="button" onclick="VUO_PASSPHOTO.rotate(-90)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700 cursor-pointer">
                     <i class="fa-solid fa-rotate-left mr-1"></i> Rotate Left
                   </button>
-                  <button type="button" onclick="VUO_PASSPHOTO.rotate(90)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700">
+                  <button type="button" onclick="VUO_PASSPHOTO.rotate(90)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700 cursor-pointer">
                     <i class="fa-solid fa-rotate-right mr-1"></i> Rotate Right
                   </button>
-                  <button type="button" onclick="VUO_PASSPHOTO.resetCrop()" class="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-semibold">
+                  <button type="button" onclick="VUO_PASSPHOTO.resetCrop()" class="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-semibold cursor-pointer">
                     <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Reset
                   </button>
                 </div>
@@ -3312,10 +3314,10 @@ body {
                   <i class="fa-solid fa-camera mr-1"></i> Change
                 </label>
                 <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="VUO_PASSPHOTO.rotateWife(-90)" class="px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg font-semibold text-slate-700 border border-slate-200">
+                  <button type="button" onclick="VUO_PASSPHOTO.rotateWife(-90)" class="px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg font-semibold text-slate-700 border border-slate-200 cursor-pointer">
                     <i class="fa-solid fa-rotate-left mr-1"></i> Rotate Left
                   </button>
-                  <button type="button" onclick="VUO_PASSPHOTO.rotateWife(90)" class="px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg font-semibold text-slate-700 border border-slate-200">
+                  <button type="button" onclick="VUO_PASSPHOTO.rotateWife(90)" class="px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg font-semibold text-slate-700 border border-slate-200 cursor-pointer">
                     <i class="fa-solid fa-rotate-right mr-1"></i> Rotate Right
                   </button>
                 </div>
@@ -3323,79 +3325,129 @@ body {
             </div>
           </div>
 
-        </div>
+          <!-- ================= BOX 2: PAPER SIZE, ORIENTATION, COPIES, DIMENSIONS & OPTIMIZER ================= -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">2</span>
+                <span>Paper Size, Copies &amp; Adjustments</span>
+              </h3>
+              <span id="passPhotoPaperBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                A4 Sheet (Portrait)
+              </span>
+            </div>
 
-        <!-- Right: Live Print Preview (A4 Sheet) [EXACTLY WHERE USER'S RED ARROW POINTS!] -->
-        <div class="space-y-4">
-          <!-- Card 1: Live A4 Print Sheet Preview (UPAR RIGHT SIDE ME) -->
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Live Print Preview (A4 Sheet)</h3>
-                <!-- View Mode Switch -->
-                <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-[11px] font-bold">
-                  <button type="button" id="passPhotoViewFit" onclick="VUO_PASSPHOTO.setViewMode('fit')" class="px-2.5 py-1 rounded-md bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1">
-                    <i class="fa-solid fa-file"></i> Full A4 View
-                  </button>
-                  <button type="button" id="passPhotoViewZoom" onclick="VUO_PASSPHOTO.setViewMode('zoom')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i> 100% Zoom
-                  </button>
+            <!-- 1. PHOTO PAPER OPTION (A4 / 4*6) -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-invoice text-emerald-600"></i>
+                  <span>1. Photo Paper Size (କାଗଜ ସାଇଜ୍ ବାଛନ୍ତୁ):</span>
+                </label>
+                <span class="text-[10px] text-slate-500 font-bold">1-Click Fast Switch</span>
+              </div>
+
+              <!-- Quick 2-Paper Prominent Toggle Buttons (A4 / 4*6) -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" id="passPhotoQuickPaperA4" onclick="VUO_PASSPHOTO.setPaperSize('a4')" class="py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 flex items-center justify-center gap-2 cursor-pointer transition-all">
+                  <i class="fa-solid fa-file-lines text-sm"></i>
+                  <div class="text-left">
+                    <div class="leading-tight text-xs font-black">A4 Sheet (210×297)</div>
+                    <div class="text-[9.5px] opacity-90 font-medium">6 Copies Default</div>
+                  </div>
+                </button>
+
+                <button type="button" id="passPhotoQuickPaper4x6" onclick="VUO_PASSPHOTO.setPaperSize('4x6')" class="py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all">
+                  <i class="fa-solid fa-camera-retro text-amber-500 text-sm"></i>
+                  <div class="text-left">
+                    <div class="leading-tight text-xs font-black">4 × 6 Inch (4R Paper)</div>
+                    <div class="text-[9.5px] text-slate-500 font-medium">4 Copies Default</div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Paper Size Dropdown (includes 5x7, 3.5x5, A6) -->
+              <div class="pt-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold text-slate-600 shrink-0">Other Sizes:</span>
+                  <select id="passPhotoPaperSize" onchange="VUO_PASSPHOTO.setPaperSize(this.value)" class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-xl font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                    <option value="a4" selected>📑 A4 Paper Sheet (210 × 297 mm - Cyber Cafe / Plain)</option>
+                    <option value="4x6">📸 4 × 6 Inch (4R Photo Paper - 10×15 cm - Studio Standard)</option>
+                    <option value="5x7">🖼️ 5 × 7 Inch (5R Photo Paper - 13×18 cm)</option>
+                    <option value="3.5x5">🪪 3.5 × 5 Inch (3R Photo Paper - 9×13 cm)</option>
+                    <option value="a6">📮 A6 Postcard (105 × 148 mm - 1/4 A4 Cut)</option>
+                  </select>
                 </div>
               </div>
+            </div>
 
-              <div class="flex flex-wrap items-center gap-2">
-                <button onclick="VUO_PASSPHOTO.downloadSheetJpg()" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1">
-                  <i class="fa-solid fa-file-image"></i> A4 JPG
+            <!-- 2. PAPER ORIENTATION (Portrait or Landscape) -->
+            <div class="space-y-1.5 pt-3 border-t border-slate-100">
+              <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-rotate text-sky-600"></i>
+                <span>2. Paper Orientation (କାଗଜ ସ୍ଥିତି - Portrait / Landscape):</span>
+              </label>
+              <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                <button type="button" id="passPhotoOrientPortraitBtn" onclick="VUO_PASSPHOTO.setPaperOrientation('portrait')" class="px-3 py-2 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center justify-center gap-2 transition cursor-pointer" title="Portrait (ଉଭା ଠିଆ)">
+                  <i class="fa-solid fa-file text-xs"></i>
+                  <span>Portrait (ଉଭା ଠିଆ)</span>
                 </button>
-                <button onclick="VUO_PASSPHOTO.downloadSheetPdf()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1">
-                  <i class="fa-solid fa-file-pdf"></i> A4 PDF
-                </button>
-                <button onclick="VUO_PASSPHOTO.printSheet()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 transform hover:scale-105">
-                  <i class="fa-solid fa-print"></i> Print A4 Sheet
+                <button type="button" id="passPhotoOrientLandscapeBtn" onclick="VUO_PASSPHOTO.setPaperOrientation('landscape')" class="px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 transition cursor-pointer" title="Landscape (ଶୋଇବା ଆଡୁଆ)">
+                  <i class="fa-solid fa-file fa-rotate-90 text-xs"></i>
+                  <span>Landscape (ଶୋଇବା ଆଡୁଆ)</span>
                 </button>
               </div>
             </div>
 
-            <!-- Sheet Canvas Container (Clean A4 Paper Frame) -->
-            <div id="passPhotoSheetContainer" class="flex flex-col items-center justify-center p-3 bg-slate-200/70 rounded-xl overflow-hidden min-h-[250px] max-h-[340px] border border-slate-200">
-              
-              <div id="passPhotoEmptyNotice" class="text-center py-8 text-slate-400">
-                <i class="fa-solid fa-image text-5xl mb-3 text-slate-300"></i>
-                <p class="text-xs font-bold text-slate-600">Upload customer photograph to see live A4 print preview.</p>
-                <p class="text-[11px] text-slate-400 mt-1">Supports 1.2" x 1.5" (6 per line), Indian Passport, PAN, Stamp &amp; Aadhaar.</p>
+            <!-- 3. COPIES ON SHEET (6 Copy on A4 / 4 Copy on 4*6) -->
+            <div class="space-y-2 pt-3 border-t border-slate-100">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-clone text-indigo-600"></i>
+                  <span>3. Copies on Sheet (କପି ସଂଖ୍ୟା ଓ ଧାଡ଼ି ମାପ):</span>
+                </label>
+                <span id="passPhotoGridInfo" class="text-[10.5px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                  1 Line of 6 (6 Photos)
+                </span>
               </div>
 
-              <!-- Live A4 Sheet Canvas -->
-              <canvas id="passPhotoSheetCanvas" class="passphoto-sheet rounded shadow-xl border border-slate-300"></canvas>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-center">
+                <div class="sm:col-span-2">
+                  <select id="passPhotoCopies" class="w-full px-3 py-2 text-xs border-2 border-emerald-500 rounded-xl font-bold text-slate-900 bg-emerald-50/30 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                    <option value="6" selected>6 Copies on A4 (1 Line of 6 - Recommended)</option>
+                    <option value="12">12 Copies on A4 (2 Lines of 6)</option>
+                    <option value="18">18 Copies on A4 (3 Lines of 6)</option>
+                    <option value="24">24 Copies on A4 (4 Lines of 6)</option>
+                    <option value="30">30 Copies on A4 (5 Lines of 6)</option>
+                    <option value="36">36 Copies on A4 (6 Lines / Full A4 Sheet)</option>
+                    <option value="8">8 Copies on A4 (2 Lines of 4)</option>
+                    <option value="16">16 Copies on A4 (4 Lines of 4)</option>
+                    <option value="32">32 Copies on A4 (8 Lines of 4)</option>
+                    <option value="4">4 Copies on A4 (2 Lines of 2)</option>
+                    <option value="1">1 Single Photo Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer select-none transition">
+                    <input type="checkbox" id="passPhotoBorder" checked class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer" />
+                    <span>✂️ Cut Line (କାଟିବା ଲାଇନ୍)</span>
+                  </label>
+                </div>
+              </div>
             </div>
 
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ROW 2: Dimensions & Studio Background (Left) + Single Photo HD Preview & Cutout Downloads (Right) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        
-        <!-- Left: Box 2 (Dimensions, Presets, Copies, Background Color) -->
-        <div class="space-y-4">
-          <!-- Box 2: Dimensions & Studio Background Colors -->
-          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px]">2</span>
-              <span>Dimensions &amp; Studio Background</span>
-            </h3>
-
-            <!-- Presets -->
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Passport Size Preset</label>
-              <select id="passPhotoPreset" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-bold bg-white text-slate-800 focus:ring-2 focus:ring-sky-500">
-                <option value="size_12x15" selected>1.2 x 1.5 Inch (6 Photos Per Line on A4 - Recommended)</option>
+            <!-- 4. PASSPORT DIMENSIONS PRESET -->
+            <div class="space-y-1.5 pt-3 border-t border-slate-100">
+              <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-ruler-combined text-purple-600"></i>
+                <span>4. Passport Dimensions (ଫଟୋ ମାପ / ସାଇଜ୍):</span>
+              </label>
+              <select id="passPhotoPreset" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 cursor-pointer">
+                <option value="size_12x15" selected>1.2 x 1.5 Inch (Standard Passport - 6 Per Line on A4 - Recommended)</option>
+                <option value="passport">Indian Passport Size (3.5 x 4.5 cm / 35x45 mm)</option>
                 <option value="joint_40x31">4.00 x 3.10 cm (Joint / Couple Photo - Default)</option>
                 <option value="joint_18x15">1.8 x 1.5 Inch (Joint Photo)</option>
-                <option value="joint_2x3">2 x 3 Inch (50.8 x 76.2 mm) - Joint / Couple Photo</option>
-                <option value="passport">Indian Passport Size (3.5 x 4.5 cm / 35x45 mm)</option>
+                <option value="joint_2x3">2 x 3 Inch (50.8 x 76.2 mm) - Joint Photo</option>
                 <option value="pan">PAN Card Size (2.5 x 3.5 cm / 25x35 mm)</option>
                 <option value="stamp">Stamp Size (2.0 x 2.5 cm / 20x25 mm)</option>
                 <option value="aadhaar">Aadhaar / Exam Size (3.5 x 3.5 cm / Square)</option>
@@ -3403,52 +3455,12 @@ body {
               </select>
             </div>
 
-            <!-- Background Color Presets (Cutout.pro Style) -->
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-bold text-slate-700">Studio Background Color</label>
-                <span id="passPhotoBgLabel" class="text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">Original (No Change)</span>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <!-- Original Background (No Change) Button -->
-                <button type="button" class="passphoto-bg-btn px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold ring-2 ring-sky-500 scale-105 shadow-sm flex items-center gap-1.5 transition-all" data-color="original" title="Keep Original Photo Background (No Change)">
-                  <i class="fa-solid fa-image text-sky-600"></i>
-                  <span>Original (No Change)</span>
-                </button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-white shadow-sm" data-color="#ffffff" title="Studio White"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-[#bae6fd]" data-color="#87CEEB" title="Light Sky Blue (#87CEEB)"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-[#1e40af]" data-color="#1e40af" title="Studio Navy"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-[#e2e8f0]" data-color="#e2e8f0" title="Neutral Gray"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-[#dc2626]" data-color="#dc2626" title="Studio Red"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-[#fce7f3]" data-color="#fce7f3" title="Soft Pink"></button>
-                <button type="button" class="passphoto-bg-btn w-7 h-7 rounded-full border border-slate-300 bg-transparent flex items-center justify-center text-[10px] text-slate-500 font-bold" data-color="transparent" title="Transparent PNG">PNG</button>
-                
-                <div class="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-full px-2 py-0.5" title="Pick Custom Background Color">
-                  <span class="text-[10px] text-slate-500 font-semibold">Custom:</span>
-                  <input type="color" id="passPhotoCustomBg" value="#ffffff" class="w-5 h-5 rounded-full border-0 p-0 cursor-pointer" />
-                </div>
-              </div>
-
-              <!-- Background Cutout Tolerance Slider -->
-              <div id="passPhotoTolContainer" class="hidden pt-2.5 mt-2.5 border-t border-slate-100 space-y-1">
-                <div class="flex justify-between text-[11px] font-semibold text-slate-600">
-                  <span class="flex items-center gap-1">
-                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
-                    <span>Background Cutout Sensitivity:</span>
-                  </span>
-                  <span id="passPhotoBgToleranceVal" class="font-bold text-sky-600 font-mono">48</span>
-                </div>
-                <input type="range" id="passPhotoBgTolerance" min="20" max="90" value="48" class="w-full accent-sky-600" />
-                <p class="text-[10px] text-slate-400">Slide to adjust background edge removal around hair and shoulders.</p>
-              </div>
-            </div>
-
-                        <!-- Photo Tone & Skin Tone Enhancement Card (Gemini AI & Camera Red-Face Fix) -->
-            <div class="pt-3 border-t border-slate-100 space-y-3">
+            <!-- 5. SKIN TONE & CONTRAST OPTIMIZER -->
+            <div class="space-y-3 pt-3 border-t border-slate-100">
               <div class="flex items-center justify-between">
                 <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
                   <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
-                  <span>Skin Tone &amp; Contrast Optimizer</span>
+                  <span>5. Skin Tone &amp; Contrast Optimizer (ଚେହେରା ଓ ଟୋନ୍ ସୁଧାର)</span>
                 </label>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Anti-Red Face</span>
               </div>
@@ -3487,7 +3499,7 @@ body {
                   <span id="passPhotoRedToneVal" class="font-bold text-rose-600 font-mono">25%</span>
                 </div>
                 <input type="range" id="passPhotoRedTone" min="0" max="60" value="25" class="w-full accent-rose-500 cursor-pointer" />
-                <p class="text-[10px] text-slate-400">Controls Gemini AI over-saturation &amp; camera red casts on face.</p>
+                <p class="text-[10px] text-slate-400">Controls camera redness, warm tint and flash sunburn on customer face.</p>
               </div>
 
               <!-- Contrast Slider -->
@@ -3539,39 +3551,61 @@ body {
               </div>
             </div>
 
-            <!-- Print Sheet Copies -->
-            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Copies on A4 Sheet</label>
-                <select id="passPhotoCopies" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-bold text-slate-800 bg-white">
-                  <option value="6" selected>6 Copies (1 Line of 6)</option>
-                  <option value="12">12 Copies (2 Lines of 6)</option>
-                  <option value="18">18 Copies (3 Lines of 6)</option>
-                  <option value="24">24 Copies (4 Lines of 6)</option>
-                  <option value="30">30 Copies (5 Lines of 6)</option>
-                  <option value="36">36 Copies (6 Lines / Full A4 Sheet)</option>
-                  <option value="1">1 Single Photo Only</option>
-                  <option value="4">4 Copies (2x2 Grid)</option>
-                  <option value="8">8 Copies (4x2 Standard)</option>
-                  <option value="16">16 Copies (4x4 Grid)</option>
-                  <option value="32">32 Copies (4x8 Mini)</option>
-                </select>
+          </div>
+
+        </div>
+
+        <!-- ================= RIGHT COLUMN: LIVE PRINT SHEET PREVIEW & SINGLE HD PREVIEW ================= -->
+        <div class="space-y-5 lg:sticky lg:top-4">
+          
+          <!-- Card 1: Live Print Sheet Preview (UPAR RIGHT SIDE ME) -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Live Print Preview</span>
+                  <span id="passPhotoSheetHeaderBadge" class="text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md text-[10.5px] font-sans normal-case">(A4 Sheet)</span>
+                </h3>
+                <!-- View Mode Switch -->
+                <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-[11px] font-bold">
+                  <button type="button" id="passPhotoViewFit" onclick="VUO_PASSPHOTO.setViewMode('fit')" class="px-2.5 py-1 rounded-md bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-file"></i> Full Sheet
+                  </button>
+                  <button type="button" id="passPhotoViewZoom" onclick="VUO_PASSPHOTO.setViewMode('zoom')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i> 100% Zoom
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Cutting Border Guide</label>
-                <label class="flex items-center gap-2 mt-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="passPhotoBorder" checked class="rounded text-sky-600 focus:ring-sky-500" />
-                  <span>Add Cutting Line</span>
-                </label>
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="VUO_PASSPHOTO.downloadSheetJpg()" id="passPhotoDownloadJpgBtn" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-file-image"></i> <span>A4 JPG</span>
+                </button>
+                <button onclick="VUO_PASSPHOTO.downloadSheetPdf()" id="passPhotoDownloadPdfBtn" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-file-pdf"></i> <span>A4 PDF</span>
+                </button>
+                <button onclick="VUO_PASSPHOTO.printSheet()" id="passPhotoPrintBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 transform hover:scale-105 cursor-pointer">
+                  <i class="fa-solid fa-print"></i> <span>Print A4 Sheet</span>
+                </button>
               </div>
             </div>
 
-          </div>
-        </div>
+            <!-- Sheet Canvas Container (Clean Paper Frame) -->
+            <div id="passPhotoSheetContainer" class="flex flex-col items-center justify-center p-3 bg-slate-200/70 rounded-xl overflow-hidden min-h-[250px] max-h-[380px] border border-slate-200">
+              
+              <div id="passPhotoEmptyNotice" class="text-center py-8 text-slate-400">
+                <i class="fa-solid fa-image text-5xl mb-3 text-slate-300"></i>
+                <p class="text-xs font-bold text-slate-600">Upload customer photograph to see live print preview.</p>
+                <p class="text-[11px] text-slate-400 mt-1">Supports A4 Sheet (6/12/36 copies), 4×6 Photo Paper (4/8 copies), 5×7, 3.5×5 &amp; A6 with exact lines.</p>
+              </div>
 
-        <!-- Right: Single Photo HD Preview & Cutout PNG Downloads -->
-        <div class="space-y-4">
+              <!-- Live Sheet Canvas -->
+              <canvas id="passPhotoSheetCanvas" class="passphoto-sheet rounded shadow-xl border border-slate-300"></canvas>
+            </div>
+
+          </div>
+
           <!-- Card 2: Single Passport Photo HD Preview & Cutout PNG Download -->
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
@@ -3583,7 +3617,7 @@ body {
                   <span class="text-xs font-black uppercase text-slate-900 tracking-wider">Single Photo HD Preview</span>
                   <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">300 DPI HQ</span>
                 </div>
-                <p class="text-[11px] text-slate-500 mt-0.5">Live portrait with selected studio background (#87CEEB Light Sky Blue).</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">High definition single passport portrait with auto skin balance.</p>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-[10px] text-sky-700 font-semibold"><i class="fa-solid fa-check text-emerald-500 mr-1"></i>Print Ready</span>
                   <span class="text-[10px] text-slate-400">•</span>
@@ -3592,16 +3626,17 @@ body {
               </div>
             </div>
             <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-              <button onclick="VUO_PASSPHOTO.downloadSinglePng()" class="w-full sm:w-auto px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5" title="Download Transparent / Cutout PNG without background">
+              <button onclick="VUO_PASSPHOTO.downloadSinglePng()" class="w-full sm:w-auto px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer" title="Download Transparent / Cutout PNG without background">
                 <i class="fa-solid fa-file-image text-emerald-300"></i>
                 <span>Cutout PNG (No BG)</span>
               </button>
-              <button onclick="VUO_PASSPHOTO.downloadSingleJpg()" class="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 transform hover:scale-105">
+              <button onclick="VUO_PASSPHOTO.downloadSingleJpg()" class="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 transform hover:scale-105 cursor-pointer">
                 <i class="fa-solid fa-download text-sky-400"></i>
                 <span>Download HD JPG</span>
               </button>
             </div>
           </div>
+
         </div>
 
       </div>
@@ -4281,51 +4316,51 @@ body {
 
               <!-- Magic Filter Presets -->
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs">
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('bw_laser')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-black text-left flex items-center gap-2 transition" data-filter="bw_laser">
-                  <i class="fa-solid fa-print text-emerald-600"></i>
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('photocopy')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="photocopy">
+                  <i class="fa-solid fa-copy text-amber-600 text-base"></i>
                   <div>
-                    <p class="text-xs leading-none">Laser B&amp;W</p>
-                    <p class="text-[9px] text-emerald-600 font-normal mt-0.5">90% Ink Saver</p>
+                    <p class="text-xs leading-none font-bold">Xerox Copy</p>
+                    <p class="text-[9px] text-amber-700 font-semibold mt-0.5">ଜେରକ୍ସ କପି (Crisp Black)</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('bw_laser')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 font-black text-left flex items-center gap-2 transition" data-filter="bw_laser">
+                  <i class="fa-solid fa-print text-emerald-600 text-base"></i>
+                  <div>
+                    <p class="text-xs leading-none font-bold">Laser Clean</p>
+                    <p class="text-[9px] text-emerald-700 font-semibold mt-0.5">ସଫା କାଗଜ (Toner Saver)</p>
                   </div>
                 </button>
 
                 <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('magic_color')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="magic_color">
-                  <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
+                  <i class="fa-solid fa-wand-magic-sparkles text-sky-600 text-base"></i>
                   <div>
-                    <p class="text-xs leading-none">Magic Color</p>
-                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Photos &amp; Stamp</p>
-                  </div>
-                </button>
-
-                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('photocopy')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="photocopy">
-                  <i class="fa-solid fa-copy text-amber-600"></i>
-                  <div>
-                    <p class="text-xs leading-none">Photocopy</p>
-                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Xerox Mode</p>
+                    <p class="text-xs leading-none font-bold">Magic Color</p>
+                    <p class="text-[9px] text-sky-700 font-semibold mt-0.5">Photo, Stamp &amp; Text</p>
                   </div>
                 </button>
 
                 <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('grayscale')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="grayscale">
-                  <i class="fa-solid fa-circle-half-stroke text-indigo-600"></i>
+                  <i class="fa-solid fa-circle-half-stroke text-indigo-600 text-base"></i>
                   <div>
-                    <p class="text-xs leading-none">Grayscale</p>
-                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Clean Gray</p>
+                    <p class="text-xs leading-none font-bold">Grayscale</p>
+                    <p class="text-[9px] text-slate-500 font-normal mt-0.5">Clean Gray</p>
                   </div>
                 </button>
 
                 <button type="button" onclick="VUO_WHATSAPP_RESIZER.setFilterMode('original')" class="wa-filter-btn px-2.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-left flex items-center gap-2 transition" data-filter="original">
-                  <i class="fa-solid fa-image text-slate-500"></i>
+                  <i class="fa-solid fa-image text-slate-500 text-base"></i>
                   <div>
-                    <p class="text-xs leading-none">Original</p>
-                    <p class="text-[9px] text-slate-400 font-normal mt-0.5">Straightened</p>
+                    <p class="text-xs leading-none font-bold">Original</p>
+                    <p class="text-[9px] text-slate-500 font-normal mt-0.5">Straightened</p>
                   </div>
                 </button>
 
                 <!-- Crop Output Button -->
                 <button type="button" id="waCropToggleBtn" onclick="VUO_WHATSAPP_RESIZER.toggleCropMode()" class="px-2.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-left flex items-center gap-2 transition cursor-pointer shadow-xs">
-                  <i class="fa-solid fa-crop-simple text-amber-600"></i>
+                  <i class="fa-solid fa-crop-simple text-amber-600 text-base"></i>
                   <div>
-                    <p class="text-xs leading-none">✂️ Crop Tool</p>
+                    <p class="text-xs leading-none font-bold">✂️ Crop Tool</p>
                     <p class="text-[9px] text-amber-700 font-normal mt-0.5">Trim Edges</p>
                   </div>
                 </button>
@@ -4336,14 +4371,14 @@ body {
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Paper Whiteness:</span>
-                      <span id="waThresholdSliderVal" class="text-emerald-700 font-mono">135</span>
+                      <span>Paper Whiteness (କାଗଜ ସଫା):</span>
+                      <span id="waThresholdSliderVal" class="text-emerald-700 font-mono">140</span>
                     </div>
-                    <input type="range" id="waThresholdSlider" min="50" max="220" value="135" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                    <input type="range" id="waThresholdSlider" min="50" max="220" value="140" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
                   </div>
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Brightness:</span>
+                      <span>Brightness (ଉଜ୍ଜ୍ୱଳତା):</span>
                       <span id="waBrightnessSliderVal" class="text-emerald-700 font-mono">10</span>
                     </div>
                     <input type="range" id="waBrightnessSlider" min="-50" max="50" value="10" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
@@ -4353,17 +4388,17 @@ body {
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Contrast:</span>
-                      <span id="waContrastSliderVal" class="text-emerald-700 font-mono">25</span>
+                      <span>Text Contrast (ଟେକ୍ସଟ୍ ଗାଢ଼):</span>
+                      <span id="waContrastSliderVal" class="text-emerald-700 font-mono">35</span>
                     </div>
-                    <input type="range" id="waContrastSlider" min="-50" max="50" value="25" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                    <input type="range" id="waContrastSlider" min="-50" max="50" value="35" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
                   </div>
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Text Sharpness:</span>
-                      <span id="waSharpnessSliderVal" class="text-emerald-700 font-mono">20</span>
+                      <span>Text Clarity/Sharpness (ଧାରୁଆ):</span>
+                      <span id="waSharpnessSliderVal" class="text-emerald-700 font-mono">40</span>
                     </div>
-                    <input type="range" id="waSharpnessSlider" min="0" max="80" value="20" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                    <input type="range" id="waSharpnessSlider" min="0" max="100" value="40" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
                   </div>
                 </div>
               </div>
@@ -4468,7 +4503,7 @@ body {
                   <span>Ctrl+T Active</span>
                 </button>
 
-                <!-- Dimensions: Width cm, Lock, Height cm -->
+                <!-- Dimensions: Width cm, Lock, Height cm, Quick Scale -->
                 <div class="flex items-center gap-1.5 text-xs font-mono">
                   <div class="flex items-center bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
                     <span class="text-slate-400 text-[10px] mr-1">W:</span>
@@ -4484,6 +4519,18 @@ body {
                     <span class="text-slate-400 text-[10px] mr-1">H:</span>
                     <input type="number" id="waPsOptH" step="0.1" min="1" max="30" class="w-12 bg-transparent text-white font-bold text-xs outline-none" value="12.0" />
                     <span class="text-slate-400 text-[10px]">cm</span>
+                  </div>
+
+                  <!-- Quick Enlarge / Shrink (+10% / -10%) -->
+                  <div class="flex items-center gap-1 font-sans">
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.scaleDocBy(1.10)" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition cursor-pointer flex items-center gap-0.5" title="ଡକ୍ୟୁମେଣ୍ଟ୍ ବଡ଼ କରନ୍ତୁ (+10%)">
+                      <i class="fa-solid fa-magnifying-glass-plus text-[10px]"></i>
+                      <span>+ ବଡ଼</span>
+                    </button>
+                    <button type="button" onclick="VUO_WHATSAPP_RESIZER.scaleDocBy(0.90)" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-black text-[11px] transition cursor-pointer flex items-center gap-0.5" title="ଡକ୍ୟୁମେଣ୍ଟ୍ ଛୋଟ କରନ୍ତୁ (-10%)">
+                      <i class="fa-solid fa-magnifying-glass-minus text-[10px]"></i>
+                      <span>- ଛୋଟ</span>
+                    </button>
                   </div>
                 </div>
 
@@ -4552,7 +4599,7 @@ body {
                 </span>
                 <span class="text-[10px] text-emerald-700 font-bold hidden sm:inline">1-Click placement</span>
               </div>
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+              <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-1.5">
                 <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('top_half')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-300 text-slate-800 text-left transition shadow-xs group" data-preset="top_half">
                   <div class="flex items-center gap-1 text-emerald-700 font-black text-[11px]">
                     <i class="fa-solid fa-arrow-up text-[10px]"></i>
@@ -4567,6 +4614,22 @@ body {
                     <span>Bottom Half</span>
                   </div>
                   <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ତଳ (Reuse Paper)</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('fit_width')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="fit_width">
+                  <div class="flex items-center gap-1 text-emerald-700 font-black text-[11px]">
+                    <i class="fa-solid fa-arrows-left-right text-[10px]"></i>
+                    <span>Fit Width</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ଚଉଡ଼ା (19 cm)</p>
+                </button>
+
+                <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('max_fit')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="max_fit">
+                  <div class="flex items-center gap-1 text-rose-700 font-black text-[11px]">
+                    <i class="fa-solid fa-maximize text-[10px]"></i>
+                    <span>Max Fit</span>
+                  </div>
+                  <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ସର୍ବାଧିକ ବଡ଼ (Max)</p>
                 </button>
 
                 <button type="button" onclick="VUO_WHATSAPP_RESIZER.setA4Preset('center')" class="wa-a4-preset-btn p-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-slate-200 text-slate-800 text-left transition shadow-xs group" data-preset="center">
@@ -4600,6 +4663,28 @@ body {
                   </div>
                   <p class="text-[9px] text-slate-500 leading-tight mt-0.5">ଉପର ଓ ତଳ (୨ କପି)</p>
                 </button>
+              </div>
+
+              <!-- Document Size Zoom Slider & Quick Scale Buttons -->
+              <div class="flex flex-wrap items-center justify-between gap-2 p-2 bg-white/95 rounded-xl border border-emerald-300 shadow-xs">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-slate-800 flex items-center gap-1 whitespace-nowrap">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-emerald-600"></i>
+                    <span>ଡକ୍ୟୁମେଣ୍ଟ୍ ସାଇଜ୍ (Size):</span>
+                  </span>
+                  <input type="range" id="waA4ScaleSlider" min="20" max="100" value="85" class="w-32 sm:w-44 accent-emerald-600 cursor-pointer h-2" title="ଡକ୍ୟୁମେଣ୍ଟ୍ ବଡ଼ / ଛୋଟ କରନ୍ତୁ" />
+                  <span id="waA4ScaleVal" class="text-emerald-700 font-mono font-black text-xs min-w-[38px] text-right">85%</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.scaleDocBy(1.10)" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xs transition flex items-center gap-1 cursor-pointer" title="ଡକ୍ୟୁମେଣ୍ଟ୍ ବଡ଼ କରନ୍ତୁ (+10%)">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    <span>+ ବଡ଼ କରନ୍ତୁ (+10%)</span>
+                  </button>
+                  <button type="button" onclick="VUO_WHATSAPP_RESIZER.scaleDocBy(0.90)" class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs transition flex items-center gap-1 cursor-pointer" title="ଡକ୍ୟୁମେଣ୍ଟ୍ ଛୋଟ କରନ୍ତୁ (-10%)">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                    <span>- ଛୋଟ (-10%)</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -4640,7 +4725,7 @@ body {
 
                     <!-- Rendered Document Image -->
                     <div class="w-full h-full overflow-hidden bg-white select-none pointer-events-none">
-                      <img id="waA4DocImg" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Document Placement" />
+                      <img id="waA4DocImg" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Document Placement" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
                     </div>
 
                     <!-- Center Pivot Crosshair -->
@@ -4674,7 +4759,7 @@ body {
                       <span id="waA4DocBadgeText2">Copy #2 (Duplicate)</span>
                     </div>
                     <div class="w-full h-full overflow-hidden bg-white select-none pointer-events-none">
-                      <img id="waA4DocImg2" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Copy 2 Preview" />
+                      <img id="waA4DocImg2" src="" class="w-full h-full object-contain pointer-events-none select-none block" alt="Copy 2 Preview" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
                     </div>
                   </div>
 
@@ -4730,8 +4815,6 @@ body {
 
               <!-- Hidden/Legacy compatibility inputs to avoid any null errors -->
               <div class="hidden">
-                <span id="waA4ScaleVal">85%</span>
-                <input type="range" id="waA4ScaleSlider" min="15" max="100" value="85" />
                 <input type="number" id="waA4WidthInput" />
                 <input type="number" id="waA4HeightInput" />
                 <input type="number" id="waA4XInput" />

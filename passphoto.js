@@ -7,20 +7,28 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   cropper: null,
   uploadedImage: null,
   currentPreset: 'size_12x15', // 'size_12x15', 'passport', 'stamp', 'pan', 'aadhaar', 'custom'
-  bgColor: 'original', // 'original' (no change), '#ffffff', '#bae6fd', '#1e40af', '#e2e8f0', '#dc2626', or custom hex
+  currentPaper: 'a4', // 'a4' (A4 Sheet - Default), '4x6' (4R Photo Paper), '5x7', '3.5x5', 'a6'
+  paperOrientation: 'portrait', // 'portrait', 'landscape'
+  bgColor: 'original', // 'original' (no change) - preserve photo background
   bgTolerance: 45,
   selectedSuit: 'none',
   suitOffsetY: 0, // Vertical adjustment for suit neck line (-80px to +80px)
   suitScale: 1.0, // Scale multiplier for suit shoulder width (0.75 to 1.35) // 'none', 'suit_black', 'suit_navy', 'suit_grey', 'women_blazer', 'shirt_white'
   copies: 6,
+  copiesValue: '6',
   addBorder: true,
-  brightness: 100,
-  contrast: 100,
-  sharpness: 25, // 0 to 100%
-  clarity: 15, // 0 to 100%
-  autoEnhance: false,
+  brightness: 100, // Natural 100% (No artificial blowout)
+  contrast: 100,   // Balanced 100% (Avoids harsh red contrast from AI photos)
+  sharpness: 30,  // 0 to 100% crisp facial focus
+  clarity: 15,    // 0 to 100%
+  redTone: 25,    // 0 to 100% excess red reduction (fixes red face from Gemini/cameras)
+  naturalSkin: true, // Auto skin tone balancer for natural Indian skin complexion
+  autoEnhance: false, // Replaced by smart skin tone balance; gentle mode
   viewMode: 'fit', // 'fit' (entire A4 visible) or 'zoom' (100% actual pixels)
-  studioMode: 'single', // 'single' or 'couple' (husband & wife)
+  studioMode: 'single', // 'single', 'couple' (husband & wife), 'multi' (2 persons on same sheet)
+  person1Copies: 4,
+  person2Copies: 2,
+  multiSplit: '4_2',
   wifeCropper: null,
   wifeUploadedImage: null,
 
@@ -37,7 +45,117 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     custom: { name: 'Custom Dimension', w: 35, h: 45, ratio: 35 / 45, cols: 4 }
   },
 
+  // Standard photo paper sizes (A4 cyber cafe standard, 4x6 photo studio standard, 5x7, 3.5x5, A6)
+  paperSizes: {
+    '4x6': {
+      name: '4 × 6 Inch (4R Photo Paper - 10×15 cm)',
+      shortName: '4×6 Photo Paper',
+      wMm: 152.4, // 6 inch (landscape)
+      hMm: 101.6, // 4 inch
+      defaultOrientation: 'landscape',
+      widthPx: 1800,
+      heightPx: 1200,
+      cssSize: '6in 4in',
+      pdfFormat: [152.4, 101.6],
+      defaultCopies: 4,
+      copiesOptions: [
+        { value: '4', label: '4 Copies on 4×6 (1 Line of 4 - Recommended)', cols: 4, rows: 1 },
+        { value: '4_grid', label: '4 Copies on 4×6 (2 Lines of 2 - 2×2 Grid)', cols: 2, rows: 2 },
+        { value: '8', label: '8 Copies on 4×6 (2 Lines of 4 - Standard Studio)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies on 4×6 (2 Lines of 3 - Studio 4×6)', cols: 3, rows: 2 },
+        { value: '2', label: '2 Copies on 4×6 (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '12', label: '12 Copies on 4×6 (3 Lines of 4 / 4 Lines of 3 - Max Fit)', cols: 4, rows: 3 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    'a4': {
+      name: 'A4 Sheet (210 × 297 mm)',
+      shortName: 'A4 Sheet',
+      wMm: 210,
+      hMm: 297,
+      defaultOrientation: 'portrait',
+      widthPx: 2480,
+      heightPx: 3508,
+      cssSize: 'A4',
+      pdfFormat: 'a4',
+      defaultCopies: 6,
+      copiesOptions: [
+        { value: '6', label: '6 Copies (1 Line of 6)', cols: 6, rows: 1 },
+        { value: '12', label: '12 Copies (2 Lines of 6)', cols: 6, rows: 2 },
+        { value: '18', label: '18 Copies (3 Lines of 6)', cols: 6, rows: 3 },
+        { value: '24', label: '24 Copies (4 Lines of 6)', cols: 6, rows: 4 },
+        { value: '30', label: '30 Copies (5 Lines of 6)', cols: 6, rows: 5 },
+        { value: '36', label: '36 Copies (6 Lines / Full A4 Sheet)', cols: 6, rows: 6 },
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '16', label: '16 Copies (4 Lines of 4)', cols: 4, rows: 4 },
+        { value: '32', label: '32 Copies (8 Lines of 4)', cols: 4, rows: 8 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    '5x7': {
+      name: '5 × 7 Inch (5R Photo Paper - 13×18 cm)',
+      shortName: '5×7 Photo Paper',
+      wMm: 177.8,
+      hMm: 127.0,
+      defaultOrientation: 'landscape',
+      widthPx: 2100,
+      heightPx: 1500,
+      cssSize: '7in 5in',
+      pdfFormat: [177.8, 127.0],
+      defaultCopies: 12,
+      copiesOptions: [
+        { value: '12', label: '12 Copies (3 Lines of 4)', cols: 4, rows: 3 },
+        { value: '15', label: '15 Copies (3 Lines of 5)', cols: 5, rows: 3 },
+        { value: '10', label: '10 Copies (2 Lines of 5)', cols: 5, rows: 2 },
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    '3.5x5': {
+      name: '3.5 × 5 Inch (3R Photo Paper - 9×13 cm)',
+      shortName: '3.5×5 Photo Paper',
+      wMm: 127.0,
+      hMm: 88.9,
+      defaultOrientation: 'landscape',
+      widthPx: 1500,
+      heightPx: 1050,
+      cssSize: '5in 3.5in',
+      pdfFormat: [127.0, 88.9],
+      defaultCopies: 4,
+      copiesOptions: [
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    'a6': {
+      name: 'A6 Sheet (105 × 148 mm - A4 1/4 Cut)',
+      shortName: 'A6 Sheet',
+      wMm: 148,
+      hMm: 105,
+      defaultOrientation: 'landscape',
+      widthPx: 1748,
+      heightPx: 1240,
+      cssSize: 'A6',
+      pdfFormat: 'a6',
+      defaultCopies: 8,
+      copiesOptions: [
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    }
+  },
+
   init() {
+    try { this.updateGeminiStudioUi(); } catch(e) {}
     if (this.geminiApiKey && (this.geminiApiKey.startsWith('AQ.Ab8RN6') || !this.geminiApiKey.startsWith('AIza'))) {
       this.geminiApiKey = '';
       try { localStorage.removeItem('vuo_gemini_api_key'); } catch(e) {}
@@ -59,6 +177,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         });
       }
     }
+    this.updatePaperSelectorButtons();
+    this.populateCopiesDropdown();
+    this.updateOrientationButtons();
+    this.updateSheetTitleAndButtons();
+
     if (!this._initialized) {
       this.bindEvents();
       this._initialized = true;
@@ -67,6 +190,160 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       this.loadSamplePhoto();
     } else {
       this.generateSheet();
+    }
+  },
+
+  setPaperSize(size) {
+    if (!this.paperSizes[size]) size = 'a4';
+    this.currentPaper = size;
+    const paper = this.paperSizes[size];
+    this.paperOrientation = paper.defaultOrientation;
+
+    const select = document.getElementById('passPhotoPaperSize');
+    if (select && select.value !== size) select.value = size;
+
+    // Reset copies to default for selected paper: 6 for A4, 4 for 4x6
+    this.copies = paper.defaultCopies;
+    this.copiesValue = String(paper.defaultCopies);
+
+    this.updatePaperSelectorButtons();
+    this.updateOrientationButtons();
+    this.populateCopiesDropdown();
+    this.updateSheetTitleAndButtons();
+    this.generateSheet();
+
+    if (typeof showToast === 'function') {
+      showToast(`Paper: ${paper.shortName} (${paper.defaultCopies} Copies • ${this.paperOrientation.toUpperCase()}) ସେଟ୍ ହେଲା!`, 'success');
+    }
+  },
+
+  updatePaperSelectorButtons() {
+    const a4Btn = document.getElementById('passPhotoQuickPaperA4');
+    const p4x6Btn = document.getElementById('passPhotoQuickPaper4x6');
+    if (a4Btn && p4x6Btn) {
+      if (this.currentPaper === 'a4') {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      } else if (this.currentPaper === '4x6') {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      } else {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      }
+    }
+  },
+
+  setPaperOrientation(orient) {
+    this.paperOrientation = orient;
+    this.updateOrientationButtons();
+    this.populateCopiesDropdown();
+    this.updateSheetTitleAndButtons();
+    this.generateSheet();
+    if (typeof showToast === 'function') {
+      showToast(`Orientation: ${orient === 'landscape' ? 'Landscape (ଶୋଇବା)' : 'Portrait (ଉଭା)'} ସେଟ୍ ହେଲା`, 'info');
+    }
+  },
+
+  updateOrientationButtons() {
+    const lBtn = document.getElementById('passPhotoOrientLandscapeBtn');
+    const pBtn = document.getElementById('passPhotoOrientPortraitBtn');
+    const isLandscape = this.paperOrientation === 'landscape';
+
+    if (lBtn && pBtn) {
+      if (isLandscape) {
+        lBtn.className = 'px-3 py-2 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center justify-center gap-2 transition cursor-pointer';
+        pBtn.className = 'px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 transition cursor-pointer';
+      } else {
+        lBtn.className = 'px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 transition cursor-pointer';
+        pBtn.className = 'px-3 py-2 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center justify-center gap-2 transition cursor-pointer';
+      }
+    }
+  },
+
+  populateCopiesDropdown() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const select = document.getElementById('passPhotoCopies');
+    if (!select) return;
+
+    const currentVal = this.copiesValue || select.value || String(paper.defaultCopies);
+    select.innerHTML = '';
+
+    const isLandscape = this.paperOrientation === 'landscape';
+
+    paper.copiesOptions.forEach(opt => {
+      const el = document.createElement('option');
+      el.value = opt.value;
+
+      let label = opt.label;
+      if (this.currentPaper === '4x6') {
+        if (!isLandscape) {
+          if (opt.value === '8') label = '8 Copies (4 Lines of 2 - 4×6 Portrait)';
+          else if (opt.value === '6') label = '6 Copies (3 Lines of 2)';
+          else if (opt.value === '4') label = '4 Copies (2 Lines of 2 - 2×2 Grid)';
+          else if (opt.value === '12') label = '12 Copies (4 Lines of 3 - Max Fit)';
+        }
+      }
+      el.textContent = label;
+      select.appendChild(el);
+    });
+
+    const exists = paper.copiesOptions.some(o => o.value === currentVal);
+    if (exists) {
+      select.value = currentVal;
+      this.copiesValue = currentVal;
+      this.copies = parseInt(currentVal, 10) || paper.defaultCopies;
+    } else {
+      select.value = String(paper.defaultCopies);
+      this.copiesValue = String(paper.defaultCopies);
+      this.copies = paper.defaultCopies;
+    }
+
+    this.updateGridInfoText();
+  },
+
+  updateGridInfoText() {
+    const infoEl = document.getElementById('passPhotoGridInfo');
+    if (!infoEl) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const opt = paper.copiesOptions.find(o => o.value === this.copiesValue || o.value == this.copies);
+    if (opt) {
+      const isLandscape = this.paperOrientation === 'landscape';
+      const c = (this.currentPaper === '4x6' && !isLandscape) ? opt.rows : opt.cols;
+      const r = (this.currentPaper === '4x6' && !isLandscape) ? opt.cols : opt.rows;
+      const photoCount = String(opt.value).replace('_grid', '');
+      infoEl.textContent = `${r} Line${r > 1 ? 's' : ''} of ${c} (${photoCount} Photos)`;
+    }
+  },
+
+  updateSheetTitleAndButtons() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const badgeEl = document.getElementById('passPhotoPaperBadge');
+    if (badgeEl) {
+      badgeEl.textContent = `${paper.shortName} (${this.paperOrientation === 'landscape' ? 'Landscape' : 'Portrait'})`;
+    }
+
+    const headerBadge = document.getElementById('passPhotoSheetHeaderBadge');
+    if (headerBadge) {
+      headerBadge.textContent = `(${paper.shortName})`;
+    }
+
+    const jpgBtn = document.getElementById('passPhotoDownloadJpgBtn');
+    if (jpgBtn) {
+      const span = jpgBtn.querySelector('span');
+      if (span) span.textContent = `${paper.shortName} JPG`;
+    }
+
+    const pdfBtn = document.getElementById('passPhotoDownloadPdfBtn');
+    if (pdfBtn) {
+      const span = pdfBtn.querySelector('span');
+      if (span) span.textContent = `${paper.shortName} PDF`;
+    }
+
+    const printBtn = document.getElementById('passPhotoPrintBtn');
+    if (printBtn) {
+      const span = printBtn.querySelector('span');
+      if (span) span.textContent = `Print ${paper.shortName}`;
     }
   },
 
@@ -190,9 +467,10 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
             this.cropper.setAspectRatio(ratio);
           }
         }
-        // Auto-select recommended copies for 1.2x1.5 inch
-        if (this.currentPreset === 'size_12x15' && this.copies === 8) {
+        // Auto-select recommended copies for 1.2x1.5 inch on A4 only
+        if (this.currentPreset === 'size_12x15' && this.currentPaper === 'a4' && this.copies === 8) {
           this.copies = 6;
+          this.copiesValue = "6";
           const copiesSelect = document.getElementById('passPhotoCopies');
           if (copiesSelect) copiesSelect.value = "6";
         }
@@ -200,11 +478,22 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       });
     }
 
+    // Paper size change
+    const paperSelect = document.getElementById('passPhotoPaperSize');
+    if (paperSelect) {
+      paperSelect.value = this.currentPaper;
+      paperSelect.addEventListener('change', (e) => {
+        this.setPaperSize(e.target.value);
+      });
+    }
+
     // Copies change
     const copiesSelect = document.getElementById('passPhotoCopies');
     if (copiesSelect) {
       copiesSelect.addEventListener('change', (e) => {
+        this.copiesValue = e.target.value;
         this.copies = parseInt(e.target.value, 10);
+        this.updateGridInfoText();
         this.generateSheet();
       });
     }
@@ -280,7 +569,155 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       });
     }
 
-    // Manual enhancer sliders removed - All studio styling is driven by Gemini AI Prompt
+    // Ultra-HD Facial Sharpness Slider
+    const sharpnessSlider = document.getElementById('passPhotoSharpness');
+    if (sharpnessSlider) {
+      sharpnessSlider.addEventListener('input', (e) => {
+        this.sharpness = parseInt(e.target.value, 10) || 0;
+        const valEl = document.getElementById('passPhotoSharpnessVal');
+        if (valEl) valEl.textContent = `${this.sharpness}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Studio Soft-Box Lighting (Brightness) Slider
+    const brightnessSlider = document.getElementById('passPhotoBrightness');
+    if (brightnessSlider) {
+      brightnessSlider.addEventListener('input', (e) => {
+        this.brightness = parseInt(e.target.value, 10) || 100;
+        const valEl = document.getElementById('passPhotoBrightnessVal');
+        if (valEl) valEl.textContent = `${this.brightness}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Portrait Depth & Contrast Slider
+    const contrastSlider = document.getElementById('passPhotoContrast');
+    if (contrastSlider) {
+      contrastSlider.addEventListener('input', (e) => {
+        this.contrast = parseInt(e.target.value, 10) || 100;
+        const valEl = document.getElementById('passPhotoContrastVal');
+        if (valEl) valEl.textContent = `${this.contrast}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Redness / Warmth Tone Reduction Slider (Gemini AI & Camera Red-Face Fix)
+    const redToneSlider = document.getElementById('passPhotoRedTone');
+    if (redToneSlider) {
+      redToneSlider.addEventListener('input', (e) => {
+        this.redTone = parseInt(e.target.value, 10) || 0;
+        const valEl = document.getElementById('passPhotoRedToneVal');
+        if (valEl) valEl.textContent = `${this.redTone}%`;
+        this.generateSheet();
+      });
+    }
+
+    // Natural Skin Tone Mode Checkbox
+    const naturalSkinCheck = document.getElementById('passPhotoNaturalSkin');
+    if (naturalSkinCheck) {
+      naturalSkinCheck.addEventListener('change', (e) => {
+        this.naturalSkin = e.target.checked;
+        this.generateSheet();
+      });
+    }
+
+    // Auto-Enhance Skin & Dynamic Range
+    const autoEnhanceCheck = document.getElementById('passPhotoAutoEnhance');
+    if (autoEnhanceCheck) {
+      autoEnhanceCheck.addEventListener('change', (e) => {
+        this.autoEnhance = e.target.checked;
+        this.generateSheet();
+      });
+    }
+  },
+
+  setEnhancePreset(type) {
+    ['naturalskin', 'studio', 'bright', 'sharp', 'reset'].forEach(p => {
+      const btn = document.getElementById(`preset_btn_${p}`);
+      if (btn) {
+        btn.className = 'px-2 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-[11px] font-bold hover:bg-slate-50 transition shadow-2xs flex flex-col items-center gap-0.5 cursor-pointer';
+      }
+    });
+    const activeBtn = document.getElementById(`preset_btn_${type}`);
+    if (activeBtn) {
+      activeBtn.className = 'px-2 py-2 rounded-xl border border-sky-300 bg-sky-50 text-sky-800 text-[11px] font-black hover:bg-sky-100 transition shadow-2xs flex flex-col items-center gap-0.5 ring-2 ring-sky-500 cursor-pointer';
+    }
+
+    if (type === 'naturalskin') {
+      this.brightness = 100;
+      this.contrast = 100;
+      this.sharpness = 30;
+      this.redTone = 35;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'studio') {
+      this.brightness = 104;
+      this.contrast = 102;
+      this.sharpness = 35;
+      this.redTone = 20;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'bright') {
+      this.brightness = 112;
+      this.contrast = 100;
+      this.sharpness = 30;
+      this.redTone = 15;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'sharp') {
+      this.brightness = 102;
+      this.contrast = 104;
+      this.sharpness = 55;
+      this.redTone = 20;
+      this.naturalSkin = true;
+      this.autoEnhance = false;
+    } else if (type === 'reset') {
+      this.brightness = 100;
+      this.contrast = 100;
+      this.sharpness = 0;
+      this.redTone = 0;
+      this.naturalSkin = false;
+      this.autoEnhance = false;
+    }
+
+    const sInput = document.getElementById('passPhotoSharpness');
+    if (sInput) sInput.value = this.sharpness;
+    const sVal = document.getElementById('passPhotoSharpnessVal');
+    if (sVal) sVal.textContent = `${this.sharpness}%`;
+
+    const bInput = document.getElementById('passPhotoBrightness');
+    if (bInput) bInput.value = this.brightness;
+    const bVal = document.getElementById('passPhotoBrightnessVal');
+    if (bVal) bVal.textContent = `${this.brightness}%`;
+
+    const cInput = document.getElementById('passPhotoContrast');
+    if (cInput) cInput.value = this.contrast;
+    const cVal = document.getElementById('passPhotoContrastVal');
+    if (cVal) cVal.textContent = `${this.contrast}%`;
+
+    const rInput = document.getElementById('passPhotoRedTone');
+    if (rInput) rInput.value = this.redTone;
+    const rVal = document.getElementById('passPhotoRedToneVal');
+    if (rVal) rVal.textContent = `${this.redTone}%`;
+
+    const nInput = document.getElementById('passPhotoNaturalSkin');
+    if (nInput) nInput.checked = this.naturalSkin;
+
+    const aInput = document.getElementById('passPhotoAutoEnhance');
+    if (aInput) aInput.checked = this.autoEnhance;
+
+    this.generateSheet();
+    if (typeof showToast === 'function') {
+      const msgs = {
+        naturalskin: "🌸 Natural Skin Tone Applied (Gemini AI Red Face & Contrast Normalizer)",
+        studio: "🌟 Studio HD Enhancer Applied (Balanced Bright & Sharp)",
+        bright: "💡 Shadow Lifter Applied (Clears Dark Shadows)",
+        sharp: "🔍 Ultra-Sharp Applied (Enhances Blurry Eyes & Features)",
+        reset: "🔄 Reset to Raw Original Photo"
+      };
+      showToast(msgs[type] || "Enhancement applied", "info");
+    }
   },
 
   loadFile(file) {
@@ -431,10 +868,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   resetCrop() {
     if (this.cropper) {
       this.cropper.reset();
-      this.brightness = 100;
-      this.contrast = 100;
-      this.sharpness = 0;
-      this.generateSheet();
+      this.setEnhancePreset('reset');
     }
   },
 
@@ -527,16 +961,21 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   renderDefaultPreview() {
     const sheetCanvas = document.getElementById('passPhotoSheetCanvas');
     if (!sheetCanvas) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    const sheetW = isLandscape ? Math.max(paper.widthPx, paper.heightPx) : Math.min(paper.widthPx, paper.heightPx);
+    const sheetH = isLandscape ? Math.min(paper.widthPx, paper.heightPx) : Math.max(paper.widthPx, paper.heightPx);
+
+    sheetCanvas.width = sheetW;
+    sheetCanvas.height = sheetH;
     const ctx = sheetCanvas.getContext('2d');
-    sheetCanvas.width = 794; // A4 at 96 DPI: 794 x 1123 px
-    sheetCanvas.height = 1123;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 18px Inter, sans-serif';
+    ctx.font = '600 24px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Upload or choose a sample photo to generate print-ready A4 sheet', sheetCanvas.width / 2, sheetCanvas.height / 2);
+    ctx.fillText(`Upload or choose a sample photo to generate print-ready ${paper.shortName}`, sheetCanvas.width / 2, sheetCanvas.height / 2);
   },
 
   hexToRgb(hex) {
@@ -951,6 +1390,53 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     return canvas;
   },
 
+  applySkinAndToneEnhance(canvas) {
+    if (!canvas) return canvas;
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    const redFactor = (this.redTone !== undefined ? this.redTone : 25) / 100;
+    const naturalSkin = this.naturalSkin !== false;
+
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+
+      // Detect warm / red dominant tones typical in portraits & Gemini AI photos
+      // Skin tones: Red is highest, Green is middle, Blue is lowest
+      if (r > g && g > (b - 20) && r > 50) {
+        const excessRed = r - Math.max(g, b);
+        if (excessRed > 0 && redFactor > 0) {
+          // Proportionally reduce the red channel to remove over-saturation & "red face"
+          const reduction = excessRed * redFactor * 0.70;
+          r = Math.max(g, Math.round(r - reduction));
+
+          // Soft golden-warmth balance for natural Indian skin undertone
+          if (naturalSkin && g < 240) {
+            g = Math.min(255, Math.round(g + reduction * 0.16));
+          }
+        }
+
+        // Tame harsh highlight burn on forehead/cheeks often generated by Gemini AI
+        if (naturalSkin && r > 215) {
+          const overHighlight = r - 215;
+          r = Math.round(r - overHighlight * 0.35);
+        }
+      }
+
+      data[i] = Math.max(0, Math.min(255, r));
+      data[i + 1] = Math.max(0, Math.min(255, g));
+      data[i + 2] = Math.max(0, Math.min(255, b));
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  },
+
   applyAutoEnhance(canvas) {
     const width = canvas.width;
     const height = canvas.height;
@@ -966,18 +1452,17 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       if (lum > maxLum) maxLum = lum;
     }
 
-    minLum = Math.max(0, minLum - 10);
-    maxLum = Math.min(255, maxLum + 10);
+    minLum = Math.max(0, minLum - 5);
+    maxLum = Math.min(255, maxLum + 5);
     const range = Math.max(1, maxLum - minLum);
 
-    // 2. Dynamic stretch & vibrance boost
+    // 2. Very gentle contrast stretch without polynomial red-burn
     for (let i = 0; i < data.length; i += 4) {
       for (let c = 0; c < 3; c++) {
-        // Contrast stretch
         let val = ((data[i + c] - minLum) / range) * 255;
-        // Gentle S-curve
-        val = val < 128 ? (2 * val * val) / 255 : 255 - (2 * (255 - val) * (255 - val)) / 255;
-        data[i + c] = Math.max(0, Math.min(255, val));
+        // Mild linear blend (85% original, 15% stretched) to avoid destroying skin tones
+        const gentle = 0.85 * data[i + c] + 0.15 * val;
+        data[i + c] = Math.max(0, Math.min(255, Math.round(gentle)));
       }
     }
 
@@ -988,21 +1473,48 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   setStudioMode(mode) {
     this.studioMode = mode;
     const singleBtn = document.getElementById('passPhotoModeSingle');
+    const multiBtn = document.getElementById('passPhotoModeMulti');
     const coupleBtn = document.getElementById('passPhotoModeCouple');
     const wifeBox = document.getElementById('passPhotoWifeBox');
+    const multiSplitBox = document.getElementById('passPhotoMultiSplitBox');
 
-    if (mode === 'couple') {
-      if (coupleBtn) {
-        coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-pink-600 text-white shadow-xs transition-all flex items-center gap-1.5';
-      }
-      if (singleBtn) {
-        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
-      }
+    if (mode === 'multi') {
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
       if (wifeBox) wifeBox.classList.remove('hidden');
+      if (multiSplitBox) multiSplitBox.classList.remove('hidden');
+
+      const husbandTitle = document.getElementById('passPhotoHusbandTitle');
+      if (husbandTitle) husbandTitle.textContent = "Person 1 Photograph (ପ୍ରଥମ ବ୍ୟକ୍ତି)";
+      const wifeTitle = document.getElementById('passPhotoWifeTitle');
+      if (wifeTitle) wifeTitle.textContent = "Person 2 Photograph (ଦ୍ୱିତୀୟ ବ୍ୟକ୍ତି)";
+
+      this.currentPreset = 'size_12x15';
+      const presetSelect = document.getElementById('passPhotoPreset');
+      if (presetSelect) presetSelect.value = 'size_12x15';
+      if (this.cropper) this.cropper.setAspectRatio(this.presets.size_12x15.ratio);
+      if (this.wifeCropper) this.wifeCropper.setAspectRatio(this.presets.size_12x15.ratio);
+
+      if (!this.wifeUploadedImage) {
+        this.loadSampleWifePhoto();
+      }
+      this.setMultiSplit(this.multiSplit || '4_2');
+      if (typeof showToast === 'function') {
+        showToast("Multi-Person Strip Mode (2 Persons on Same Sheet) Activated 👥", "success");
+      }
+    } else if (mode === 'couple') {
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-pink-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (wifeBox) wifeBox.classList.remove('hidden');
+      if (multiSplitBox) multiSplitBox.classList.add('hidden');
 
       // Update titles for Husband & Wife clear identification
       const husbandTitle = document.getElementById('passPhotoHusbandTitle');
       if (husbandTitle) husbandTitle.textContent = "Husband / Groom Photograph (ପତିଙ୍କ ଫଟୋ)";
+      const wifeTitle = document.getElementById('passPhotoWifeTitle');
+      if (wifeTitle) wifeTitle.textContent = "Wife / Bride Photograph (ପତ୍ନୀଙ୍କ ଫଟୋ)";
 
       // DEFAULT JOINT PHOTO SIZE: W-4.00 cm x H-3.10 cm (40mm x 31mm)
       this.currentPreset = 'joint_40x31';
@@ -1011,14 +1523,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
 
       // DEFAULT 4 COPIES for Joint Photo (User Requirement)
       this.copies = 4;
+      this.copiesValue = (this.currentPaper === '4x6') ? "4_grid" : "4";
       const copiesSelect = document.getElementById('passPhotoCopies');
-      if (copiesSelect) copiesSelect.value = "4";
+      if (copiesSelect) copiesSelect.value = this.copiesValue;
+      this.updateGridInfoText();
 
-      // Ratio for each individual portrait slot in 4.00 x 3.10 cm joint frame:
-      // Total frame: 4.00 cm width x 3.10 cm height (Aspect Ratio ~1.29)
-      // Husband gets Left slot: 2.00 cm width x 3.10 cm height => ratio 2.00 / 3.10 = 0.645
-      // Wife gets Right slot: 2.00 cm width x 3.10 cm height => ratio 2.00 / 3.10 = 0.645
-      // Both husband & wife full faces and shoulders are 100% visible side-by-side with zero clipping!
       const individualRatio = (40.0 / 2) / 31.0; // ~0.645
       if (this.cropper) {
         this.cropper.setAspectRatio(individualRatio);
@@ -1031,15 +1540,15 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       if (!this.wifeUploadedImage) {
         this.loadSampleWifePhoto();
       }
-      showToast("Joint Photo Mode (Default: 4.00 x 3.10 cm • 4 Copies • Full Face) Activated 💑", "success");
+      if (typeof showToast === 'function') {
+        showToast("Joint Photo Mode (Default: 4.00 x 3.10 cm • 4 Copies • Full Face) Activated 💑", "success");
+      }
     } else {
-      if (singleBtn) {
-        singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5';
-      }
-      if (coupleBtn) {
-        coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
-      }
+      if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-black bg-white text-sky-700 shadow-xs transition-all flex items-center gap-1.5';
+      if (multiBtn) multiBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
+      if (coupleBtn) coupleBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5';
       if (wifeBox) wifeBox.classList.add('hidden');
+      if (multiSplitBox) multiSplitBox.classList.add('hidden');
 
       const husbandTitle = document.getElementById('passPhotoHusbandTitle');
       if (husbandTitle) husbandTitle.textContent = "Upload Customer Photograph";
@@ -1049,14 +1558,19 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         this.currentPreset = 'size_12x15';
         const presetSelect = document.getElementById('passPhotoPreset');
         if (presetSelect) presetSelect.value = 'size_12x15';
-        this.copies = 6;
+        const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+        this.copies = paper.defaultCopies;
+        this.copiesValue = String(paper.defaultCopies);
         const copiesSelect = document.getElementById('passPhotoCopies');
-        if (copiesSelect) copiesSelect.value = "6";
+        if (copiesSelect) copiesSelect.value = this.copiesValue;
+        this.updateGridInfoText();
         if (this.cropper) {
           this.cropper.setAspectRatio(this.presets.size_12x15.ratio);
         }
       }
-      showToast("Single Passport Photo Mode", "info");
+      if (typeof showToast === 'function') {
+        showToast("Single Passport Photo Mode", "info");
+      }
     }
     this.generateSheet();
   },
@@ -1297,6 +1811,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     ctx.drawImage(photoToDraw, 0, 0);
     ctx.filter = 'none';
 
+    // 2.5 Tone & Skin Balance (Red-Face & Contrast Fix for Gemini / Camera Photos)
+    if (this.naturalSkin || (this.redTone && this.redTone > 0)) {
+      this.applySkinAndToneEnhance(target);
+    }
+
     // 3. Apply Auto-Enhance if enabled
     if (this.autoEnhance) {
       this.applyAutoEnhance(target);
@@ -1337,6 +1856,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       hCtx.filter = `brightness(${this.brightness}%) contrast(${this.contrast}%)`;
       hCtx.drawImage(husbandToDraw, 0, 0, slotW, totalH);
       hCtx.filter = 'none';
+      if (this.naturalSkin || (this.redTone && this.redTone > 0)) this.applySkinAndToneEnhance(husbandTarget);
       if (this.autoEnhance) this.applyAutoEnhance(husbandTarget);
       if (this.sharpness > 0) this.applySharpen(husbandTarget, this.sharpness);
 
@@ -1362,6 +1882,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         wCtx.drawImage(wifeToDraw, 0, 0, slotW, totalH);
         wCtx.filter = 'none';
 
+        if (this.naturalSkin || (this.redTone && this.redTone > 0)) this.applySkinAndToneEnhance(wifeTarget);
         if (this.autoEnhance) this.applyAutoEnhance(wifeTarget);
         if (this.sharpness > 0) this.applySharpen(wifeTarget, this.sharpness);
 
@@ -1402,6 +1923,109 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     }
 
     return target;
+  },
+
+  getPerson2ProcessedPhotoCanvas() {
+    const currentPresetObj = this.presets[this.currentPreset] || this.presets.size_12x15;
+    const targetW = Math.round(currentPresetObj.w * 11.81) || 360;
+    const targetH = Math.round(currentPresetObj.h * 11.81) || 450;
+
+    let cropped = null;
+    if (this.wifeCropper) {
+      try {
+        cropped = this.wifeCropper.getCroppedCanvas({
+          width: targetW,
+          height: targetH,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+      } catch(e) {}
+    }
+
+    if (!cropped && this.wifeUploadedImage) {
+      const fallbackCanvas = document.createElement('canvas');
+      fallbackCanvas.width = targetW;
+      fallbackCanvas.height = targetH;
+      const fCtx = fallbackCanvas.getContext('2d');
+      fCtx.drawImage(this.wifeUploadedImage, 0, 0, targetW, targetH);
+      cropped = fallbackCanvas;
+    }
+
+    if (!cropped) return null;
+
+    let photoToDraw = cropped;
+    if (this.bgColor && this.bgColor !== 'original' && this.bgColor !== 'none') {
+      const tol = this.bgTolerance || 45;
+      photoToDraw = this.replaceBackground(cropped, this.bgColor, tol);
+    }
+
+    const target = document.createElement('canvas');
+    target.width = photoToDraw.width;
+    target.height = photoToDraw.height;
+    const ctx = target.getContext('2d');
+
+    ctx.filter = `brightness(${this.brightness}%) contrast(${this.contrast}%)`;
+    ctx.drawImage(photoToDraw, 0, 0);
+    ctx.filter = 'none';
+
+    if (this.naturalSkin || (this.redTone && this.redTone > 0)) {
+      this.applySkinAndToneEnhance(target);
+    }
+    if (this.autoEnhance) {
+      this.applyAutoEnhance(target);
+    }
+    if (this.sharpness > 0) {
+      this.applySharpen(target, this.sharpness);
+    }
+
+    if (this.addBorder) {
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, target.width - 2, target.height - 2);
+    }
+
+    return target;
+  },
+
+  setMultiSplit(split) {
+    this.multiSplit = split;
+    if (split === '4_2') {
+      this.person1Copies = 4;
+      this.person2Copies = 2;
+    } else if (split === '3_3') {
+      this.person1Copies = 3;
+      this.person2Copies = 3;
+    } else if (split === '5_1') {
+      this.person1Copies = 5;
+      this.person2Copies = 1;
+    } else if (split === '6_6') {
+      this.person1Copies = 6;
+      this.person2Copies = 6;
+    }
+    const p1El = document.getElementById('passPhotoP1Copies');
+    const p2El = document.getElementById('passPhotoP2Copies');
+    if (p1El) p1El.value = this.person1Copies;
+    if (p2El) p2El.value = this.person2Copies;
+
+    document.querySelectorAll('.passphoto-split-btn').forEach(b => {
+      if (b.getAttribute('data-split') === split) {
+        b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-xs cursor-pointer text-center';
+      } else {
+        b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 cursor-pointer text-center';
+      }
+    });
+
+    this.generateSheet();
+  },
+
+  onCustomPersonCopiesChange(p1, p2) {
+    this.person1Copies = Math.max(1, parseInt(p1, 10) || 1);
+    this.person2Copies = Math.max(1, parseInt(p2, 10) || 1);
+    this.multiSplit = 'custom';
+    document.querySelectorAll('.passphoto-split-btn').forEach(b => {
+      b.className = 'passphoto-split-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 cursor-pointer text-center';
+    });
+    this.generateSheet();
   },
 
   selectSuit(suitKey) {
@@ -1833,96 +2457,156 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       sCtx.drawImage(singlePhoto, 0, 0);
     }
 
-    // A4 Dimension at high fidelity: 1240 x 1754 px
-    const a4Canvas = document.getElementById('passPhotoSheetCanvas');
-    if (!a4Canvas) return;
+    const sheetCanvas = document.getElementById('passPhotoSheetCanvas');
+    if (!sheetCanvas) return;
 
-    a4Canvas.width = 1240;
-    a4Canvas.height = 1754;
-    const ctx = a4Canvas.getContext('2d');
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
 
-    // White paper background
+    // 300 DPI exact pixel dimensions
+    const sheetW = isLandscape ? Math.max(paper.widthPx, paper.heightPx) : Math.min(paper.widthPx, paper.heightPx);
+    const sheetH = isLandscape ? Math.min(paper.widthPx, paper.heightPx) : Math.max(paper.widthPx, paper.heightPx);
+
+    sheetCanvas.width = sheetW;
+    sheetCanvas.height = sheetH;
+
+    const ctx = sheetCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Clean white photo paper background
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, a4Canvas.width, a4Canvas.height);
+    ctx.fillRect(0, 0, sheetW, sheetH);
 
     const ratio = singlePhoto.width / singlePhoto.height;
-    const presetName = this.presets[this.currentPreset]?.name || 'Passport Size';
+    const presetObj = this.presets[this.currentPreset] || this.presets.size_12x15;
+    const presetName = presetObj?.name || 'Passport Size';
 
-    // Determine Grid Dimensions (Columns x Rows) with Minimal Margins (25px top, 25px left & right)
-    let cols = 6;
-    let rows = Math.ceil(this.copies / 6);
-    let photoW = 180;
-    let photoH = Math.round(photoW / ratio);
-    let startX = 25; // Minimal tight left margin
-    let startY = 25; // Minimal tight top margin (no wasted paper at top!)
-    let gapX = 22;
-    let gapY = 20;
+    // ---------------- MULTI-PERSON STRIP MODE ----------------
+    if (this.studioMode === 'multi') {
+      const photo1 = singlePhoto;
+      const photo2 = this.getPerson2ProcessedPhotoCanvas() || photo1;
+      const p1Copies = this.person1Copies || 4;
+      const p2Copies = this.person2Copies || 2;
+      const totalCopies = p1Copies + p2Copies;
+      this.copies = totalCopies;
 
-    const is6ColMode = (this.currentPreset === 'size_12x15') || 
-                       (this.copies === 6 || this.copies === 12 || this.copies === 18 || this.copies === 24 || this.copies === 30 || this.copies === 36);
+      let cols = (this.currentPaper === '4x6') ? (totalCopies <= 6 ? 3 : 4) : (this.currentPaper === 'a4' ? 6 : 4);
+      let rows = Math.ceil(totalCopies / cols);
 
+      const mmToPx = 300 / 25.4;
+      const marginX = Math.round(sheetW * 0.035);
+      const marginY = (this.currentPaper === 'a4')
+        ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
+        : Math.round(sheetH * 0.04);
+      const gapX = Math.round(sheetW * 0.02);
+      const gapY = Math.round(sheetH * 0.02);
+
+      const maxPhotoW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+      const maxPhotoH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+      let photoW = maxPhotoW;
+      let photoH = Math.round(photoW / ratio);
+      if (photoH > maxPhotoH) {
+        photoH = maxPhotoH;
+        photoW = Math.round(photoH * ratio);
+      }
+
+      const gridW = cols * photoW + (cols - 1) * gapX;
+      const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
+      const startY = marginY;
+
+      let count = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (count >= totalCopies) break;
+          const posX = startX + c * (photoW + gapX);
+          const posY = startY + r * (photoH + gapY);
+          const curPhoto = (count < p1Copies) ? photo1 : photo2;
+          ctx.drawImage(curPhoto, posX, posY, photoW, photoH);
+
+          if (this.addBorder) {
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
+            ctx.setLineDash([]);
+          }
+          count++;
+        }
+      }
+
+      // No footer text drawn on photo paper per user request: "koi bhi photo paper me botton me kuch bhi likho mat"
+      return;
+    }
+
+    // ---------------- SINGLE PERSON / COUPLE GRID MODE ----------------
+    const opt = paper.copiesOptions.find(o => o.value === this.copiesValue || o.value == this.copies) || paper.copiesOptions[0];
+    let cols = opt.cols;
+    let rows = opt.rows;
+
+    if (this.currentPaper === '4x6' && !isLandscape) {
+      cols = opt.rows;
+      rows = opt.cols;
+    }
+
+    // Joint Photo specific adjustments
     if (this.currentPreset === 'joint_40x31' || this.currentPreset === 'joint_18x15') {
-      // Joint / Couple Photo (4.00 x 3.10 cm or 1.8 x 1.5 Inch)
-      // Default 4 copies = 2 rows x 2 cols or 1 row x 4 cols
-      cols = (this.copies <= 2) ? 2 : 4;
-      rows = Math.ceil(this.copies / cols);
-      photoW = (cols === 2) ? 460 : 268;
-      photoH = Math.round(photoW / ratio);
-      startX = Math.floor((1240 - (cols * photoW + (cols - 1) * 24)) / 2);
-      startY = 35;
-      gapX = 24;
-      gapY = 25;
+      if (this.currentPaper === '4x6') {
+        if (this.copies <= 2) { cols = 2; rows = 1; }
+        else if (this.copies <= 4) { cols = 2; rows = 2; }
+        else { cols = 3; rows = 2; }
+      } else if (this.currentPaper === 'a4') {
+        cols = (this.copies <= 2) ? 2 : 4;
+        rows = Math.ceil(this.copies / cols);
+      }
     } else if (this.currentPreset === 'joint_2x3') {
-      cols = (this.copies <= 2) ? 2 : 3;
-      rows = Math.ceil(this.copies / cols);
-      photoW = (cols === 2) ? 460 : 340;
-      photoH = Math.round(photoW / ratio);
-      startX = Math.floor((1240 - (cols * photoW + (cols - 1) * 30)) / 2);
-      startY = 35;
-      gapX = 30;
-      gapY = 30;
-    } else if (this.copies === 1) {
-      cols = 1; rows = 1;
-      photoW = 280; photoH = Math.round(photoW / ratio);
-      startX = 25;
-      startY = 25;
-    } else if (this.copies === 4) {
-      cols = 2; rows = 2;
-      photoW = 320; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 35; gapY = 30;
-    } else if (is6ColMode) {
-      // 6 Photos in a single line / row layout with minimal margins
-      cols = 6;
-      rows = Math.ceil(this.copies / 6);
-      photoW = 180;
-      photoH = Math.round(photoW / ratio);
-      startX = 25; // 25 + 6*180 + 5*22 = 1215px (25px right margin on 1240px A4)
-      startY = 25; // Clean 25px top margin
-      gapX = 22;
-      gapY = 20;
-    } else if (this.copies === 8) {
-      cols = 4; rows = 2;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 30;
-    } else if (this.copies === 16) {
-      cols = 4; rows = 4;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 25;
-    } else if (this.copies === 32) {
-      cols = 4; rows = 8;
-      photoW = 265; photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 16;
+      if (this.currentPaper === '4x6') {
+        if (this.copies <= 2) { cols = 2; rows = 1; }
+        else { cols = 2; rows = 2; }
+      }
+    }
+
+    // Standard physical mm dimension to 300 DPI pixels (1 mm ~ 11.811 px)
+    const mmToPx = 300 / 25.4;
+    let basePhotoW = Math.round(presetObj.w * mmToPx);
+    let basePhotoH = Math.round(presetObj.h * mmToPx);
+
+    // Margins and gaps
+    const marginX = Math.round(sheetW * 0.035);
+    const marginY = (this.currentPaper === 'a4')
+      ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
+      : Math.round(sheetH * 0.04);
+    const gapX = Math.round(sheetW * 0.02);
+    const gapY = Math.round(sheetH * 0.02);
+
+    const maxAvailW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+    const maxAvailH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+    let photoW = basePhotoW;
+    let photoH = basePhotoH;
+
+    if (photoW > maxAvailW || photoH > maxAvailH) {
+      const scaleW = maxAvailW / photoW;
+      const scaleH = maxAvailH / photoH;
+      const s = Math.min(scaleW, scaleH);
+      photoW = Math.floor(photoW * s);
+      photoH = Math.floor(photoH * s);
+    }
+
+    // Compute grid dimensions and center placement
+    const gridW = cols * photoW + (cols - 1) * gapX;
+    const gridH = rows * photoH + (rows - 1) * gapY;
+    const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
+
+    let startY = marginY;
+    if (this.currentPaper === 'a4') {
+      // User requirement: "jab bhi a4 select ho ta he to photo uparse 0.03cm chod ke photo dikhna chahiye"
+      // 0.03 cm = 0.3 mm (~4 px at 300 DPI). Top cutting border starts at 0 px, photo starts at 4 px (0.03 cm).
+      startY = Math.max(4, Math.round(0.03 * 10 * mmToPx));
     } else {
-      cols = 4;
-      rows = Math.ceil(this.copies / 4);
-      photoW = 265;
-      photoH = Math.round(photoW / ratio);
-      startX = 25; startY = 25;
-      gapX = 40; gapY = 25;
+      // For 4x6 and other dedicated cards, center nicely
+      startY = Math.max(marginY, Math.floor((sheetH - gridH) / 2));
     }
 
     let count = 0;
@@ -1933,27 +2617,22 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         const posX = startX + c * (photoW + gapX);
         const posY = startY + r * (photoH + gapY);
 
-        // Draw photo
         ctx.drawImage(singlePhoto, posX, posY, photoW, photoH);
 
-        // Cutting Guideline crosses around corners
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 0.8;
-        ctx.setLineDash([3, 3]);
-        
-        // Guideline lines
-        ctx.strokeRect(posX - 3, posY - 3, photoW + 6, photoH + 6);
-        ctx.setLineDash([]); // Reset dash
+        // Cutting border lines
+        if (this.addBorder) {
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
+          ctx.setLineDash([]);
+        }
 
         count++;
       }
     }
 
-    // Small footer info placed at the very bottom edge of A4 sheet (No space wasted at top!)
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '500 11px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`VLE HELP DESK — ${presetName} | ${this.copies} Photos | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 1735);
+    // No footer text drawn on photo paper per user request: "koi bhi photo paper me botton me kuch bhi likho mat"
   },
 
   
@@ -1964,19 +2643,82 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       return (k.startsWith('AQ.Ab8RN6') || !k.startsWith('AIza')) ? '' : k;
     } catch(e) { return ''; }
   })(),
-  defaultGeminiPrompt: `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`,
+  defaultGeminiPrompt: `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`,
   geminiPrompt: (function() {
     try {
-      return localStorage.getItem('vuo_gemini_prompt') || `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`;
+      const saved = localStorage.getItem('vuo_gemini_prompt');
+      if (saved && saved.includes('professional standard passport size photo') && saved.includes('reference image')) return saved;
+      return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
     } catch(e) {
-      return `A highly detailed, professional passport-style portrait of the individual provided in the input source image. The person is facing directly forward with a neutral, formal, and professional expression. Ensure facial features remain completely natural, sharp, and true-to-life. No smiling, mouth closed.\n\nThe background must be a perfectly smooth, uniform, light sky blue color (#87CEEB) with no shadows or background objects. The lighting is soft, frontal, and even studio lighting that illuminates the face and neck clearly with no harsh hot spots or deep shadows.\n\nThe person wears the same light blue dress shirt as in the source image, but it is rendered crisp, pressed, and clean-fitting. The composition is a clear head-and-shoulders crop, centered in the frame. The focus is sharp on the face and upper body.\n\nHigh clarity, high-definition sharpness, and fine detail (crisp focus, natural skin texture). This should look like a professional ID photograph. Square aspect ratio.`;
+      return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image. The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. Clean, solid plain off-white background. Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
     }
   })(),
+  geminiAttire: 'same',
+  geminiBg: 'offwhite',
   lastGeminiRecommendation: null,
   _aiSegmenter: null,
   _cachedAiMask: null,
   _cachedWifeAiMask: null,
   _isSegmenting: false,
+
+  buildGeminiPassportPrompt() {
+    const attireMap = {
+      same: 'Keep the exact same clothing, fabric texture, pattern, and color of the dress worn in the reference image.',
+      suit: 'Dress the person in a formal dark navy blue business suit with a crisp white collared shirt and dark tie.',
+      shirt: 'Dress the person in a clean, crisp professional white collared formal dress shirt.',
+      blazer: 'Dress the person in a sharp, modern professional dark formal blazer.',
+      saree: 'Dress the person in an elegant formal traditional attire (neat saree / formal kurta) with visible shoulders.'
+    };
+    const bgMap = {
+      offwhite: 'Clean, solid plain off-white background.',
+      white: 'Clean, solid plain off-white background.',
+      blue: 'Clean, solid plain light sky blue (#87CEEB) studio background.',
+      navy: 'Clean, solid plain studio dark navy blue background.',
+      gray: 'Clean, solid plain neutral light grey studio background.'
+    };
+
+    const dressDesc = attireMap[this.geminiAttire] || attireMap.same;
+    const bgDesc = bgMap[this.geminiBg] || bgMap.offwhite;
+
+    return `A professional standard passport size photo of the person in the reference image. Maintain strict facial identity, exact facial features, skin tone, and face shape from the reference image. ${dressDesc} The subject is directly facing the camera, centered composition, shoulders straight, neutral expression, mouth closed, eyes open and looking straight into the lens. Even studio lighting, soft shadows, sharp focus on the face. ${bgDesc} Ultra-realistic, 8k resolution, photorealistic DSLR portrait, ISO 100, 85mm lens`;
+  },
+
+  updateGeminiStudioUi() {
+    const prompt = this.buildGeminiPassportPrompt();
+    this.geminiPrompt = prompt;
+
+    const promptInput = document.getElementById('geminiPromptInput');
+    if (promptInput) promptInput.value = prompt;
+
+    const promptDisplay = document.getElementById('geminiMasterPromptText');
+    if (promptDisplay) promptDisplay.textContent = `"${prompt}"`;
+
+    // Highlight active Dress button
+    const attireBtns = document.querySelectorAll('.gemini-attire-btn');
+    attireBtns.forEach(btn => {
+      const attireVal = btn.getAttribute('data-attire');
+      if (attireVal === this.geminiAttire) {
+        btn.className = 'gemini-attire-btn px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 text-[11px] font-bold text-slate-950 shadow-md shadow-amber-500/30 ring-2 ring-amber-300 scale-105 transition-all cursor-pointer';
+      } else {
+        btn.className = 'gemini-attire-btn px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 text-[11px] text-indigo-200 border border-indigo-500/30 transition-all cursor-pointer';
+      }
+    });
+
+    // Highlight active Background button
+    const bgBtns = document.querySelectorAll('.gemini-bg-btn');
+    bgBtns.forEach(btn => {
+      const bgVal = btn.getAttribute('data-bg');
+      if (bgVal === this.geminiBg) {
+        btn.className = 'gemini-bg-btn px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-400 to-blue-500 text-[11px] font-bold text-white shadow-md shadow-sky-500/30 ring-2 ring-sky-300 scale-105 transition-all cursor-pointer';
+      } else {
+        btn.className = 'gemini-bg-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-600 transition-all cursor-pointer';
+      }
+    });
+
+    try {
+      localStorage.setItem('vuo_gemini_prompt', prompt);
+    } catch (e) {}
+  },
 
   toggleGeminiAssistant() {
     const panel = document.getElementById('passPhotoGeminiPanel');
@@ -1993,6 +2735,99 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       }
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  },
+
+  copyGeminiPrompt(isQuiet = false) {
+    const promptInput = document.getElementById('geminiPromptInput');
+    const promptDisplay = document.getElementById('geminiMasterPromptText');
+    const textToCopy = (promptInput && promptInput.value.trim()) || 
+                       (promptDisplay && promptDisplay.textContent.trim().replace(/^["']|["']$/g, '')) || 
+                       this.geminiPrompt || 
+                       this.buildGeminiPassportPrompt();
+
+    // 1. Guaranteed synchronous execCommand copy fallback (works directly on click on all devices)
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = textToCopy;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '-9999px';
+      ta.setAttribute('readonly', '');
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (err) {
+      console.warn('execCommand copy fallback error:', err);
+    }
+
+    // 2. Modern navigator.clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        navigator.clipboard.writeText(textToCopy).catch(e => console.warn('writeText caught:', e));
+      } catch (e) {}
+    }
+
+    // Immediate in-place visual feedback on buttons and prompt text box
+    const masterBtn = document.getElementById('geminiMasterCopyBtn');
+    const masterBtnText = document.getElementById('geminiMasterCopyBtnText');
+    const smallBtn = document.getElementById('geminiSmallCopyBtn');
+    const promptBox = document.getElementById('geminiMasterPromptText');
+
+    if (masterBtnText) {
+      masterBtnText.textContent = '✅ PROMPT COPIED!';
+    }
+    if (masterBtn) {
+      masterBtn.classList.remove('from-amber-400', 'to-orange-500', 'shadow-amber-500/25');
+      masterBtn.classList.add('from-emerald-400', 'to-teal-500', 'shadow-emerald-500/25', 'ring-2', 'ring-emerald-300');
+    }
+
+    if (smallBtn) {
+      smallBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-300 font-bold">Copied!</span>';
+    }
+
+    if (promptBox) {
+      promptBox.classList.add('ring-2', 'ring-emerald-400/80', 'bg-emerald-950/40');
+    }
+
+    if (this._copyTimer) clearTimeout(this._copyTimer);
+    this._copyTimer = setTimeout(() => {
+      if (masterBtnText) {
+        masterBtnText.textContent = '📋 Copy Gemini Master Prompt';
+      }
+      if (masterBtn) {
+        masterBtn.classList.remove('from-emerald-400', 'to-teal-500', 'shadow-emerald-500/25', 'ring-2', 'ring-emerald-300');
+        masterBtn.classList.add('from-amber-400', 'to-orange-500', 'shadow-amber-500/25');
+      }
+      if (smallBtn) {
+        smallBtn.innerHTML = '<i class="fa-regular fa-copy"></i> <span>Click to Copy</span>';
+      }
+      if (promptBox) {
+        promptBox.classList.remove('ring-2', 'ring-emerald-400/80', 'bg-emerald-950/40');
+      }
+    }, 2500);
+
+    if (typeof showToast === 'function') {
+      showToast('📋 Gemini AI Passport Prompt copied to clipboard!', 'success');
+    }
+  },
+
+  openGeminiAiStudio() {
+    window.open('https://gemini.google.com/app', '_blank');
+  },
+
+  setGeminiAttire(dressType) {
+    this.geminiAttire = dressType || 'same';
+    this.updateGeminiStudioUi();
+    this.copyGeminiPrompt(true);
+  },
+
+  setGeminiBg(bgType) {
+    this.geminiBg = bgType || 'offwhite';
+    this.updateGeminiStudioUi();
+    this.copyGeminiPrompt(true);
   },
 
   saveGeminiApiKey() {
@@ -2468,24 +3303,30 @@ Examine this portrait photo and return a strict JSON object with:
   },
 
   downloadSheetJpg() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'download', item: `A4 Passport Sheet (${this.copies} copies JPG)`, category: 'photo' }, () => this._doDownloadSheetJpg());
+      return VUO_GATE.requireAccess({ type: 'download', item: `${paperTitle} (${this.copies} copies JPG)`, category: 'photo' }, () => this._doDownloadSheetJpg());
     }
     this._doDownloadSheetJpg();
   },
   _doDownloadSheetJpg() {
     const sheet = document.getElementById('passPhotoSheetCanvas');
     if (!sheet) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const pName = (this.currentPaper || '4x6').replace('*', 'x').toUpperCase();
     const link = document.createElement('a');
-    link.download = `VLE_A4_Passport_Sheet_${this.copies}_Copies_${Date.now()}.jpg`;
-    link.href = sheet.toDataURL('image/jpeg', 0.95);
+    link.download = `VLE_${pName}_Passport_Sheet_${this.copies}_Copies_${Date.now()}.jpg`;
+    link.href = sheet.toDataURL('image/jpeg', 0.96);
     link.click();
-    showToast(`A4 Sheet (${this.copies} copies) downloaded!`, "success");
+    showToast(`${paper.shortName} (${this.copies} copies) downloaded!`, "success");
   },
 
   downloadSheetPdf() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'download', item: `A4 Passport Sheet (${this.copies} copies PDF)`, category: 'photo' }, () => this._doDownloadSheetPdf());
+      return VUO_GATE.requireAccess({ type: 'download', item: `${paperTitle} (${this.copies} copies PDF)`, category: 'photo' }, () => this._doDownloadSheetPdf());
     }
     this._doDownloadSheetPdf();
   },
@@ -2498,24 +3339,57 @@ Examine this portrait photo and return a strict JSON object with:
       return;
     }
 
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    const wMm = isLandscape ? Math.max(paper.wMm, paper.hMm) : Math.min(paper.wMm, paper.hMm);
+    const hMm = isLandscape ? Math.min(paper.wMm, paper.hMm) : Math.max(paper.wMm, paper.hMm);
+    const orientation = isLandscape ? 'l' : 'p';
+
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4'); // A4 is 210 x 297 mm
+    const pdf = new jsPDF({
+      orientation: orientation,
+      unit: 'mm',
+      format: [wMm, hMm]
+    });
     const imgData = sheet.toDataURL('image/jpeg', 0.98);
 
-    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save(`VLE_Passport_Sheet_${this.copies}Copies_${Date.now()}.pdf`);
-    showToast("Print-Ready A4 PDF generated and downloaded!", "success");
+    pdf.addImage(imgData, 'JPEG', 0, 0, wMm, hMm);
+    const safeName = (paper.shortName || 'Sheet').replace(/[^a-zA-Z0-9]/g, '_');
+    pdf.save(`VLE_${safeName}_${this.copies}Copies_${Date.now()}.pdf`);
+    showToast(`Print-Ready ${paper.shortName} PDF generated and downloaded!`, "success");
   },
 
   printSheet() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'print', item: `A4 Passport Sheet (${this.copies} copies Print)`, category: 'photo' }, () => this._doPrintSheet());
+      return VUO_GATE.requireAccess({ type: 'print', item: `${paperTitle} (${this.copies} copies Print)`, category: 'photo' }, () => this._doPrintSheet());
     }
     this._doPrintSheet();
   },
   _doPrintSheet() {
     const sheet = document.getElementById('passPhotoSheetCanvas');
     if (!sheet) return;
+
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    let pageCss = '6in 4in';
+
+    if (this.currentPaper === '4x6') {
+      pageCss = isLandscape ? '6in 4in' : '4in 6in';
+    } else if (this.currentPaper === '5x7') {
+      pageCss = isLandscape ? '7in 5in' : '5in 7in';
+    } else if (this.currentPaper === '3.5x5') {
+      pageCss = isLandscape ? '5in 3.5in' : '3.5in 5in';
+    } else if (this.currentPaper === 'a4') {
+      pageCss = isLandscape ? 'A4 landscape' : 'A4 portrait';
+    } else if (this.currentPaper === 'a6') {
+      pageCss = isLandscape ? 'A6 landscape' : 'A6 portrait';
+    } else {
+      const wMm = isLandscape ? Math.max(paper.wMm, paper.hMm) : Math.min(paper.wMm, paper.hMm);
+      const hMm = isLandscape ? Math.min(paper.wMm, paper.hMm) : Math.max(paper.wMm, paper.hMm);
+      pageCss = `${wMm}mm ${hMm}mm`;
+    }
 
     const dataUrl = sheet.toDataURL('image/jpeg', 1.0);
     const printWindow = window.open('', '_blank');
@@ -2528,9 +3402,9 @@ Examine this portrait photo and return a strict JSON object with:
       <!DOCTYPE html>
       <html>
         <head>
-          <title>VLE HELP DESK - Passport Photo Print</title>
+          <title>VLE HELP DESK - ${paper.shortName} (${this.copies} Copies) Print</title>
           <style>
-            @page { size: A4; margin: 0mm; }
+            @page { size: ${pageCss}; margin: 0mm; }
             body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
             img { width: 100vw; height: auto; max-height: 100vh; object-fit: contain; }
           </style>
@@ -2548,6 +3422,7 @@ Examine this portrait photo and return a strict JSON object with:
     const canvas = document.getElementById('passPhotoSheetCanvas');
     const fitBtn = document.getElementById('passPhotoViewFit');
     const zoomBtn = document.getElementById('passPhotoViewZoom');
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
 
     if (mode === 'zoom') {
       if (canvas) canvas.classList.add('zoom-actual');
@@ -2557,7 +3432,7 @@ Examine this portrait photo and return a strict JSON object with:
       if (fitBtn) {
         fitBtn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1 font-bold';
       }
-      showToast("A4 Sheet: 100% Actual Pixel View", "info");
+      showToast(`${paper.shortName}: 100% Actual Pixel View`, "info");
     } else {
       if (canvas) canvas.classList.remove('zoom-actual');
       if (fitBtn) {
@@ -2566,7 +3441,7 @@ Examine this portrait photo and return a strict JSON object with:
       if (zoomBtn) {
         zoomBtn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1 font-bold';
       }
-      showToast("A4 Sheet: Full Page Fit View", "info");
+      showToast(`${paper.shortName}: Full Sheet Fit View`, "info");
     }
   }
 };
@@ -2577,10 +3452,12 @@ if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       try { VUO_PASSPHOTO.bindEvents(); } catch(e) {}
+      try { VUO_PASSPHOTO.updateGeminiStudioUi(); } catch(e) {}
     });
   } else {
     setTimeout(() => {
       try { VUO_PASSPHOTO.bindEvents(); } catch(e) {}
+      try { VUO_PASSPHOTO.updateGeminiStudioUi(); } catch(e) {}
     }, 50);
   }
 }
