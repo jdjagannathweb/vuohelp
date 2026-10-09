@@ -98,9 +98,8 @@ const VUO_SEARCH = {
     const q = query.toLowerCase().trim();
     const resultsContainer = document.getElementById('globalSearchResults');
     if (!resultsContainer) return;
-
     const tools = [
-      { name: "Pass Photo Maker", nameOdia: "ପାସ ଫଟୋ ମେକର", hash: "#passphoto", type: "Tool", icon: "📷", desc: "Create A4 passport sheets & adjust photo backgrounds" },
+      { name: "Gemini AI Passport Photo Studio", nameOdia: "ଜେମିନି AI ପାସପୋର୍ଟ ଷ୍ଟୁଡିଓ", hash: "#passphoto", type: "Tool", icon: "✨", desc: "Professional 35x45mm passport photo maker with Gemini AI prompt & A4 print sheet" },
       { name: "Image Compressor", nameOdia: "ଫଟୋ କମ୍ପ୍ରେସ୍", hash: "#imagetools", type: "Tool", icon: "🖼️", desc: "Compress image file size for portal limits" },
       { name: "Signature Resizer", nameOdia: "ସାଇନ (Signature) ରିସାଇଜ୍", hash: "#imagetools", type: "Tool", icon: "✍️", desc: "PAN and government portal signature optimizer" },
       { name: "CSC Bill Maker", nameOdia: "CSC ବିଲ୍ ମେକର", hash: "#billmaker", type: "Tool", icon: "🧾", desc: "Generate professional customer receipts with shop details" },
@@ -126,9 +125,22 @@ const VUO_SEARCH = {
       { name: "CGPA to Percentage Calculator", nameOdia: "CGPA କାଲକୁଲେଟର", hash: "#calculators-cgpa", type: "Tool", icon: "🎓", desc: "Convert CGPA to percentage for CBSE & Odisha Universities" },
       { name: "Custom QR Code Generator", nameOdia: "QR କୋଡ୍ ଜେନେରେଟର", hash: "#csctools-qrcode", type: "Tool", icon: "📱", desc: "Create UPI Payment QR, Web URL & Mobile QR standees" },
       { name: "CSC Advertisement Poster Maker", nameOdia: "ପୋଷ୍ଟର ମେକର", hash: "#csctools-poster", type: "Tool", icon: "📢", desc: "Subhadra Yojana, PAN & AEPS banking banner maker with VLE details" },
+      { name: "VLE Udhar Khata (Credit Ledger)", nameOdia: "ଉଧାର ଖାତା (Credit)", hash: "#csctools-credit", type: "Tool", icon: "📒", desc: "Customer credit ledger with auto 7-day WhatsApp overdue reminder" },
       { name: "Word to PDF Converter", nameOdia: "ୱାର୍ଡ ଟୁ PDF", hash: "#pdftools-wordtopdf", type: "Tool", icon: "📝", desc: "Convert Docx and text files to clean A4 PDF documents" },
-      { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdftools-pdfeditor", type: "Tool", icon: "✒️", desc: "Stamp official verified seals & annotations on PDF" }
+      { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdfeditor", type: "Tool", icon: "✒️", desc: "Interactive visual PDF editor, stamps & signatures" },
+      { name: "WhatsApp Image Resizer & Darkness Clear", nameOdia: "ହ୍ୱାଟ୍ସଆପ୍ ଡକ୍ୟୁମେଣ୍ଟ ରିସାଇଜର ଓ ଡାର୍କନେସ କ୍ଲିଅର", hash: "#whatsappresizer", type: "Tool", icon: "🟢", desc: "4-Corner perspective warp, clear darkness for printing & save ink" },
+      { name: "Image to PDF (<200KB Portal Mode)", nameOdia: "ଇମେଜ୍ ଟୁ PDF (<୨୦୦ KB)", hash: "#imgtopdf", type: "Tool", icon: "📑", desc: "Multi-image to PDF with Odisha e-District & Subhadra <200KB preset" },
+      { name: "Job Alert & Online Form Desk", nameOdia: "ଚାକିରି ଆଲର୍ଟ ଓ ଅନଲାଇନ୍ ଫର୍ମ ଡେସ୍କ", hash: "#jobalert", type: "Desk", icon: "📢", desc: "Odisha & Central Govt Jobs with salary, last date, apply link & document checklist" }
     ];
+
+    const jobs = (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function' ? VUO_JOB_ALERT.getAllJobs() : []).map(j => ({
+      name: j.title || j.post || 'Govt Job Notification',
+      nameOdia: j.titleOdia || j.post || 'ଚାକିରି ବିଜ୍ଞପ୍ତି',
+      hash: "#jobalert",
+      type: "Job Alert",
+      icon: "💼",
+      desc: (j.organization ? j.organization + ' • ' : '') + (j.salary ? 'Salary: ' + j.salary + ' • ' : '') + 'Last Date: ' + (j.lastDate || 'N/A')
+    }));
 
     const links = VUO_LINKS.getAllLinks().map(l => ({
       name: l.title,
@@ -157,7 +169,7 @@ const VUO_SEARCH = {
       desc: f.desc || (f.categoryName + " - " + f.size)
     }));
 
-    const allItems = [...tools, ...links, ...videos, ...forms];
+    const allItems = [...tools, ...jobs, ...links, ...videos, ...forms];
 
     const filtered = q ? allItems.filter(item => 
       item.name.toLowerCase().includes(q) || 
@@ -179,7 +191,7 @@ const VUO_SEARCH = {
       const displayName = currentLanguage === 'or' && item.nameOdia ? item.nameOdia : item.name;
       const isExternal = !!item.url;
       const targetAction = isExternal ? 
-        `href="${item.url}" target="_blank"` : 
+        `href="${item.url}" onclick="if (typeof VUO_LINKS !== 'undefined' && VUO_LINKS.openPortalLink) { VUO_SEARCH.close(); return VUO_LINKS.openPortalLink(event, '${item.url}', '${(displayName || '').replace(/'/g, "\\'")}'); }"` : 
         `href="${item.hash}" onclick="VUO_SEARCH.close()"`;
 
       return `
@@ -218,7 +230,9 @@ function openWelcomePopup() {
   const btnEl = document.getElementById('welcomePopupActionBtn');
 
   if (badgeEl) {
-    const bText = popupSettings.badgeText || '📢 OFFICIAL NOTIFICATION';
+    let bText = popupSettings.badgeText || 'OFFICIAL NOTIFICATION';
+    bText = bText.replace(/^[^\w\s\u0900-\u0DFF]+/, '').trim();
+    if (!bText || bText.includes('ð')) bText = 'OFFICIAL NOTIFICATION';
     badgeEl.innerHTML = `<i class="fa-solid fa-bullhorn text-xs"></i> <span>${bText}</span>`;
   }
   if (titleEl) {
@@ -257,10 +271,16 @@ function openWelcomePopup() {
 
   applyPopupImage(popupSettings.imageUrl);
 
-  // Fallback to IndexedDB if image in localStorage was truncated
-  if ((!popupSettings.imageUrl || popupSettings.imageUrl.length < 30) && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
-    window.VUO_IDB.getPdfBlob('vuo_popup_settings').then(entry => {
-      if (entry && entry.data && entry.data.imageUrl) {
+  // Fallback to IndexedDB if image in localStorage was truncated or stored in IDB
+  if ((!popupSettings.imageUrl || popupSettings.imageUrl === 'indexeddb' || popupSettings.imageUrl.length < 30) && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
+    window.VUO_IDB.getPdfBlob('vuo_popup_image').then(entry => {
+      if (entry && entry.data) {
+        applyPopupImage(entry.data);
+      } else {
+        return window.VUO_IDB.getPdfBlob('vuo_popup_settings');
+      }
+    }).then(entry => {
+      if (entry && entry.data && entry.data.imageUrl && entry.data.imageUrl !== 'indexeddb') {
         applyPopupImage(entry.data.imageUrl);
       }
     }).catch(err => console.warn(err));
@@ -296,10 +316,27 @@ function closeWelcomePopup() {
 }
 
 function initWelcomePopup() {
-  // If running on HTTP server, sync latest published popup settings in background
+  const today = new Date().toDateString();
+  const isSuppressed = localStorage.getItem('vle_popup_suppressed_date') === today;
+  const isClosedThisSession = sessionStorage.getItem('vuo_popup_closed') === '1';
+
+  // Helper to trigger popup display if enabled
+  const tryDisplayPopup = () => {
+    if (isSuppressed || isClosedThisSession) return;
+    const pop = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
+    if (pop.enabled !== false) {
+      setTimeout(() => {
+        if (sessionStorage.getItem('vuo_popup_closed') !== '1') {
+          openWelcomePopup();
+        }
+      }, 700);
+    }
+  };
+
+  // If running on HTTP/HTTPS server, sync latest published popup settings in background
   if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-    fetch('api/popup-settings')
-      .then(res => res.ok ? res.json() : null)
+    fetch('popup_settings.json?t=' + Date.now())
+      .then(res => res.ok ? res.json() : fetch('api/popup-settings').then(r => r.ok ? r.json() : null))
       .then(serverSettings => {
         if (serverSettings && serverSettings.title) {
           const local = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
@@ -308,7 +345,12 @@ function initWelcomePopup() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        tryDisplayPopup();
+      });
+  } else {
+    tryDisplayPopup();
   }
 }
 
@@ -412,10 +454,10 @@ const VUO_APP = {
 
   filterDashboardTools(category, btn) {
     document.querySelectorAll('.dash-tool-filter-btn').forEach(b => {
-      b.className = 'dash-tool-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all';
+      b.className = 'dash-tool-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 bg-white/90 hover:bg-sky-50/80 border border-slate-200/80 hover:border-sky-300 shadow-2xs transition-all';
     });
     if (btn) {
-      btn.className = 'dash-tool-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-black transition-all bg-sky-600 text-white shadow-sm ring-2 ring-sky-300';
+      btn.className = 'dash-tool-filter-btn px-4 py-2 rounded-xl text-xs font-black transition-all bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-md shadow-blue-500/25 border border-sky-400/80 transform scale-[1.02]';
     }
     document.querySelectorAll('.vle-tool-card').forEach(card => {
       const cardCat = card.getAttribute('data-tool-category');
@@ -472,13 +514,14 @@ const VUO_APP = {
     if (langEnBtn) langEnBtn.addEventListener('click', () => setLanguage('en'));
     if (langOrBtn) langOrBtn.addEventListener('click', () => setLanguage('or'));
 
-    // Navigation Tools Dropdown Controller (Hover, Click & Touch Toggle + Auto Close)
-    const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-    const toolsDropdownBtn = document.getElementById('navToolsDropdownBtn');
-    const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-    const toolsChevron = document.getElementById('navToolsChevron');
+    // Reusable Navigation Dropdown Controller (Hover, Click & Touch Toggle + Auto Close)
+    const setupNavDropdown = (wrapperId, btnId, menuId, chevronId, toggleFnName) => {
+      const wrapper = document.getElementById(wrapperId);
+      const btn = document.getElementById(btnId);
+      const menu = document.getElementById(menuId);
+      const chevron = document.getElementById(chevronId);
+      if (!wrapper || !btn || !menu) return;
 
-    if (toolsDropdownBtn && toolsDropdownWrapper && toolsDropdownMenu) {
       let closeTimer = null;
 
       const openDropdown = () => {
@@ -486,59 +529,65 @@ const VUO_APP = {
           clearTimeout(closeTimer);
           closeTimer = null;
         }
-        toolsDropdownWrapper.classList.add('open');
-        toolsDropdownMenu.classList.remove('hidden');
-        if (toolsChevron) toolsChevron.classList.add('rotate-180');
+        // Close other dropdowns
+        document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+          if (w !== wrapper) {
+            w.classList.remove('open');
+            const m = w.querySelector('.nav-dropdown-menu');
+            if (m) m.classList.add('hidden');
+            const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+            if (c) c.classList.remove('rotate-180');
+          }
+        });
+
+        wrapper.classList.add('open');
+        menu.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
       };
 
       const closeDropdown = (delay = 0) => {
         if (delay > 0) {
           closeTimer = setTimeout(() => {
-            toolsDropdownWrapper.classList.remove('open');
-            toolsDropdownMenu.classList.add('hidden');
-            if (toolsChevron) toolsChevron.classList.remove('rotate-180');
+            wrapper.classList.remove('open');
+            menu.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
           }, delay);
         } else {
           if (closeTimer) clearTimeout(closeTimer);
-          toolsDropdownWrapper.classList.remove('open');
-          toolsDropdownMenu.classList.add('hidden');
-          if (toolsChevron) toolsChevron.classList.remove('rotate-180');
+          wrapper.classList.remove('open');
+          menu.classList.add('hidden');
+          if (chevron) chevron.classList.remove('rotate-180');
         }
       };
 
-      window.toggleNavToolsDropdown = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        if (toolsDropdownMenu.classList.contains('hidden') || !toolsDropdownWrapper.classList.contains('open')) {
-          openDropdown();
-        } else {
-          closeDropdown(0);
-        }
-      };
+      if (toggleFnName) {
+        window[toggleFnName] = (e) => {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          if (menu.classList.contains('hidden') || !wrapper.classList.contains('open')) {
+            openDropdown();
+          } else {
+            closeDropdown(0);
+          }
+        };
+        btn.onclick = (e) => window[toggleFnName](e);
+      }
 
-      // Toggle on button click / touch
-      toolsDropdownBtn.onclick = (e) => window.toggleNavToolsDropdown(e);
+      // Hover on desktop
+      wrapper.addEventListener('mouseenter', () => openDropdown());
+      wrapper.addEventListener('mouseleave', () => closeDropdown(180));
 
-      // Hover on desktop with smooth 180ms buffer
-      toolsDropdownWrapper.addEventListener('mouseenter', () => {
-        openDropdown();
-      });
-
-      toolsDropdownWrapper.addEventListener('mouseleave', () => {
-        closeDropdown(180);
-      });
-
-      // Close dropdown when clicking anywhere outside
+      // Global outside click
       document.addEventListener('click', (e) => {
-        if (!toolsDropdownWrapper.contains(e.target)) {
+        if (!wrapper.contains(e.target)) {
           closeDropdown(0);
         }
       });
 
-      // Handle click on any dropdown sub-option (Ensures immediate 1-click navigation)
-      toolsDropdownWrapper.querySelectorAll('.nav-dropdown-menu a').forEach(subLink => {
+      // Dropdown sub-link routing
+      wrapper.querySelectorAll('.nav-dropdown-menu a').forEach(subLink => {
         subLink.addEventListener('click', (e) => {
           const targetHash = subLink.getAttribute('href');
           if (targetHash && targetHash.startsWith('#')) {
@@ -548,7 +597,6 @@ const VUO_APP = {
             VUO_APP.handleRoute(routeName);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
-          // Close dropdown smoothly without blocking click dispatch
           setTimeout(() => {
             closeDropdown(0);
             try {
@@ -558,7 +606,20 @@ const VUO_APP = {
           }, 50);
         });
       });
-    }
+    };
+
+    // Initialize all 4 Navigation Dropdowns: Image Tools, PDF Tools, Office & CSC Tools, CSC Services
+    setupNavDropdown('navImageToolsDropdownWrapper', 'navImageToolsDropdownBtn', 'navImageToolsDropdownMenu', 'navImageToolsChevron', 'toggleNavImageToolsDropdown');
+    setupNavDropdown('navPdfToolsDropdownWrapper', 'navPdfToolsDropdownBtn', 'navPdfToolsDropdownMenu', 'navPdfToolsChevron', 'toggleNavPdfToolsDropdown');
+    setupNavDropdown('navOfficeToolsDropdownWrapper', 'navOfficeToolsDropdownBtn', 'navOfficeToolsDropdownMenu', 'navOfficeToolsChevron', 'toggleNavOfficeToolsDropdown');
+    setupNavDropdown('navServicesDropdownWrapper', 'navServicesDropdownBtn', 'navServicesDropdownMenu', 'navServicesChevron', 'toggleNavServicesDropdown');
+
+    // Backward compatibility alias for legacy toggleNavToolsDropdown
+    window.toggleNavToolsDropdown = (e) => {
+      if (typeof window.toggleNavImageToolsDropdown === 'function') {
+        window.toggleNavImageToolsDropdown(e);
+      }
+    };
 
     // Global Hash Link Click Handler (Ensures immediate 1-click navigation for ALL options across website)
     document.querySelectorAll('a[href^="#"]').forEach(link => {
@@ -571,11 +632,14 @@ const VUO_APP = {
           const mobileDrawer = document.getElementById('mobileDrawer');
           if (mobileDrawer) mobileDrawer.classList.add('hidden');
 
-          // Close Tools Dropdown if open
-          const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-          const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-          if (toolsDropdownWrapper) toolsDropdownWrapper.classList.remove('open');
-          if (toolsDropdownMenu) toolsDropdownMenu.classList.add('hidden');
+          // Close any open navigation dropdowns
+          document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+            w.classList.remove('open');
+            const m = w.querySelector('.nav-dropdown-menu');
+            if (m) m.classList.add('hidden');
+            const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+            if (c) c.classList.remove('rotate-180');
+          });
 
           // If clicking current hash, prevent default page jump and re-route
           if (hash === window.location.hash) {
@@ -722,10 +786,14 @@ const VUO_APP = {
             }
           }
         });
-        const toolsDropdownWrapper = document.getElementById('navToolsDropdownWrapper');
-        const toolsDropdownMenu = document.getElementById('navToolsDropdownMenu');
-        if (toolsDropdownWrapper) toolsDropdownWrapper.classList.remove('open');
-        if (toolsDropdownMenu) toolsDropdownMenu.classList.add('hidden');
+        // Close any open navigation dropdowns
+        document.querySelectorAll('.nav-dropdown-wrapper').forEach(w => {
+          w.classList.remove('open');
+          const m = w.querySelector('.nav-dropdown-menu');
+          if (m) m.classList.add('hidden');
+          const c = w.querySelector('.nav-chevron, [id$="Chevron"]');
+          if (c) c.classList.remove('rotate-180');
+        });
       }
     });
 
@@ -786,6 +854,22 @@ const VUO_APP = {
       subTab = cleanHash.replace('pvcprint-', '');
     } else if (cleanHash === 'pvcprint') {
       viewName = 'pvcprint';
+    } else if (cleanHash === 'whatsappresizer' || cleanHash === 'whatsapp-resizer' || cleanHash === 'whatsapp') {
+      viewName = 'whatsappresizer';
+    } else if (cleanHash === 'geminipassport' || cleanHash === 'gemini') {
+      viewName = 'passphoto';
+    } else if (cleanHash === 'pdfeditor') {
+      viewName = 'pdftools';
+      subTab = 'pdfEditor';
+    } else if (cleanHash === 'imgtopdf' || cleanHash === 'imagetopdf') {
+      viewName = 'pdftools';
+      subTab = 'imgToPdf';
+    } else if (cleanHash.startsWith('jobalert-') || cleanHash === 'jobalert' || cleanHash === 'jobalerts' || cleanHash === 'jobs') {
+      viewName = 'jobalert';
+      subTab = cleanHash.startsWith('jobalert-') ? cleanHash.replace('jobalert-', '') : '';
+    } else if (cleanHash.startsWith('admin-')) {
+      viewName = 'admin';
+      subTab = cleanHash.replace('admin-', '');
     }
 
     // Hide all view containers
@@ -802,6 +886,46 @@ const VUO_APP = {
         link.classList.remove('active');
       }
     });
+
+    // Strict Authentication Guard for All Tools & Services
+    const publicRoutes = ['home', 'contact', 'admin'];
+    const currentUser = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
+
+    if (!publicRoutes.includes(viewName) && !currentUser) {
+      // Revert hash to #home
+      window.location.hash = '#home';
+
+      // Hide all views and show Home view
+      document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+      const homeView = document.getElementById('view_home');
+      if (homeView) homeView.classList.remove('hidden');
+
+      // Update active nav link to Home
+      document.querySelectorAll('.nav-link').forEach(link => {
+        const linkHref = link.getAttribute('href') || '';
+        if (linkHref === '#home') {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Kripya pehle VLE Login karein! Sabhi tools, services, videos aur forms keval registered VLEs ke liye uplabdh hain.", "warning");
+      }
+
+      if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
+        VUO_AUTH_MODAL.openLogin({
+          item: `CSC Tools & Services (${cleanHash.toUpperCase()})`
+        }, () => {
+          window.location.hash = `#${cleanHash}`;
+          VUO_APP.handleRoute(cleanHash);
+        });
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     // Show target view (With strict admin guard)
     if (viewName === 'admin' && !VUO_AUTH.isAdmin()) {
@@ -828,8 +952,22 @@ const VUO_APP = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Initialize specific view modules and switch sub-tabs on route entry
-    if (viewName === 'passphoto') {
+    if (viewName === 'whatsappresizer') {
+      if (typeof VUO_WHATSAPP_RESIZER !== 'undefined') {
+        VUO_WHATSAPP_RESIZER.init();
+      }
+    } else if (viewName === 'passphoto') {
       VUO_PASSPHOTO.init();
+      if (cleanHash === 'geminipassport' || cleanHash === 'gemini') {
+        setTimeout(() => {
+          const geminiPanel = document.getElementById('passPhotoGeminiPanel');
+          if (geminiPanel && geminiPanel.classList.contains('hidden')) {
+            VUO_PASSPHOTO.toggleGeminiAssistant();
+          }
+          const studioCard = document.getElementById('geminiPassportStudioCard') || geminiPanel;
+          if (studioCard) studioCard.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
     } else if (viewName === 'imagetools') {
       VUO_IMAGETOOLS.init();
       if (subTab) {
@@ -903,10 +1041,20 @@ const VUO_APP = {
           VUO_CSCTOOLS.switchTab(subTab);
         }
       }
+    } else if (viewName === 'jobalert') {
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        VUO_JOB_ALERT.init();
+        if (subTab) {
+          VUO_JOB_ALERT.setFilter(subTab);
+        }
+      }
     } else if (viewName === 'admin') {
       if (VUO_AUTH.isAdmin()) {
         if (typeof VUO_ADMIN !== 'undefined') {
           VUO_ADMIN.init();
+          if (subTab) {
+            VUO_ADMIN.switchTab(subTab);
+          }
         }
         if (typeof window.vuoRenderAdminFormsTable === 'function') {
           setTimeout(window.vuoRenderAdminFormsTable, 50);

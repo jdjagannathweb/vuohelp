@@ -14,7 +14,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
-PORT = int(os.environ.get('PORT', 3000))
+PORT = 3000
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 # Ensure common MIME types are properly recognized
@@ -217,6 +217,204 @@ def fetch_live_youtube_videos(force=False):
     _training_cache["last_sync"] = now
     return _training_cache["videos"], 0
 
+# In-memory cache for Job Alerts
+_jobs_cache = {
+    "jobs": [],
+    "last_sync": 0
+}
+
+def determine_job_category(title, org, qual):
+    text = (title + " " + org + " " + qual).lower()
+    if any(k in text for k in ['odisha', 'ossc', 'osssc', 'opsc', 'bhubaneswar', 'cuttack', 'rourkela', 'sambalpur', 'puri', 'oav', 'anganwadi']):
+        return 'Odisha Govt'
+    elif any(k in text for k in ['rrb', 'railway', 'train', 'irctc', 'loco', 'ntpc']):
+        return 'Railway'
+    elif any(k in text for k in ['bank', 'ibps', 'sbi', 'rbi', 'nabard', 'canara', 'baroda', 'pnb']):
+        return 'Banking'
+    elif any(k in text for k in ['police', 'army', 'navy', 'airforce', 'crpf', 'bsf', 'cisf', 'itbp', 'defense', 'defence', 'agniveer', 'sepoy', 'constable']):
+        return 'Defense & Police'
+    elif any(k in text for k in ['10th', '10 th', '8th', 'matric', '12th', '+2', 'intermediate']):
+        return '10th & 12th Pass'
+    else:
+        return 'Central Govt'
+
+def estimate_job_salary(title, qual):
+    t = (title + " " + qual).lower()
+    if any(k in t for k in ['officer', 'analyst', 'manager', 'executive', 'engineer', 'specialist', 'registrar', 'scientist', 'fellow']):
+        return '₹35,400 - ₹1,12,400 (Level-9 / Level-10)'
+    elif any(k in t for k in ['cgl', 'sub inspector', 'si', 'inspector', 'assistant section officer', 'aso', 'graduate']):
+        return '₹35,400 - ₹1,12,400 (Level-9)'
+    elif any(k in t for k in ['constable', 'technician', 'clerk', 'junior assistant', 'typist', 'chsl', 'apprentice']):
+        return '₹19,900 - ₹63,200 (Level-4)'
+    elif any(k in t for k in ['peon', 'helper', 'cook', 'mts', 'multitasking', 'attendant', '10th', '8th']):
+        return '₹18,000 - ₹56,900 (Level-1)'
+    else:
+        return '₹21,700 - ₹69,100 (Level-3 / Standard Govt Scale)'
+
+def get_job_documents_list(qual):
+    q = qual.lower()
+    docs = [
+        "10th Class Board Certificate & Marksheet (Age & Identity Proof)",
+        "Aadhaar Card (Mobile Linked for OTP)",
+        "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+        "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+        "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
+        "Caste Certificate (SC / ST / SEBC / OBC if applicable)"
+    ]
+    if any(k in q for k in ['graduate', 'b.tech', 'degree', 'masters', 'mca', 'b.a', 'b.sc', 'b.com']):
+        docs.insert(1, "Graduation / Degree Certificate & Final Year Marksheet")
+        docs.insert(2, "+2 / Higher Secondary Marksheet & Passing Certificate")
+    elif any(k in q for k in ['12th', '+2', 'diploma', 'iti']):
+        docs.insert(1, "+2 / Intermediate or ITI/Diploma Certificate & Marksheet")
+    
+    docs.append("Active Mobile Number & Active Email ID")
+    return docs
+
+DEFAULT_JOB_SOURCES = [
+    {"id": 1, "name": "Portal 1 (Odisha Government Jobs)", "url": "https://www.freejobalert.com/odisha-government-jobs/", "active": True},
+    {"id": 2, "name": "Portal 2 (Railway RRB Recruitment)", "url": "https://www.freejobalert.com/railway-jobs/", "active": True},
+    {"id": 3, "name": "Portal 3 (Staff Selection Commission SSC)", "url": "https://www.freejobalert.com/ssc/", "active": True},
+    {"id": 4, "name": "Portal 4 (Banking & IBPS Recruitment)", "url": "https://www.freejobalert.com/bank-jobs/", "active": True},
+    {"id": 5, "name": "Portal 5 (Police & Defense Recruitment)", "url": "https://www.freejobalert.com/police-defence-jobs/", "active": True}
+]
+
+def get_job_sources():
+    sources_file = os.path.join(DIRECTORY, "job_sources.json")
+    if os.path.exists(sources_file):
+        try:
+            with open(sources_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list) and len(data) > 0:
+                    return data
+        except Exception as e:
+            print(f"[Job Sources] Error loading: {e}")
+    return DEFAULT_JOB_SOURCES
+
+def fetch_live_job_alerts(force=False, custom_sources=None):
+    global _jobs_cache
+    now = time.time()
+    cache_file = os.path.join(DIRECTORY, "job_alerts.json")
+
+    # Load from disk if in-memory cache is empty
+    if not _jobs_cache["jobs"] and os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                _jobs_cache["jobs"] = json.load(f)
+                _jobs_cache["last_sync"] = os.path.getmtime(cache_file)
+        except Exception as e:
+            print(f"[Jobs Cache] Error loading: {e}")
+
+    # Return cached if within 30 minutes and not forced
+    if not force and _jobs_cache["jobs"] and (now - _jobs_cache["last_sync"] < 1800):
+        return _jobs_cache["jobs"], 0
+
+    sources = custom_sources if (custom_sources and isinstance(custom_sources, list)) else get_job_sources()
+    scraped_jobs = []
+    new_added = 0
+
+    # Scrape each active configured portal URL
+    for src in sources:
+        url = src.get('url', '').strip() if isinstance(src, dict) else str(src).strip()
+        is_active = src.get('active', True) if isinstance(src, dict) else True
+        if not url or not url.startswith('http') or not is_active:
+            continue
+
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            html = urllib.request.urlopen(req, timeout=9).read().decode('utf-8', errors='ignore')
+            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.S)
+
+            for r in rows[1:]:
+                cells = re.findall(r'<td[^>]*>(.*?)</td>', r, re.S)
+                if len(cells) >= 6:
+                    clean = [re.sub(r'<[^>]+>', ' ', c).strip() for c in cells]
+                    pdate = clean[0]
+                    board = clean[1]
+                    post = clean[2]
+                    posts = clean[3]
+                    qual = clean[4]
+                    ldate = clean[5]
+
+                    if not post or not board or 'post date' in pdate.lower() or 'recruitment board' in board.lower():
+                        continue
+
+                    links = re.findall(r'href=[\x27\x22]([^\x27\x22]+)[\x27\x22]', r)
+                    detail_link = links[0] if links else url
+                    if not detail_link.startswith('http'):
+                        from urllib.parse import urljoin
+                        detail_link = urljoin(url, detail_link)
+
+                    # Generate clean unique ID
+                    raw_id_str = f"{board}-{post}-{ldate}"
+                    clean_id = "job-" + re.sub(r'[^a-zA-Z0-9]+', '-', raw_id_str).strip('-').lower()[:45]
+
+                    cat = determine_job_category(post, board, qual)
+                    salary = estimate_job_salary(post, qual)
+                    docs = get_job_documents_list(qual)
+
+                    scraped_jobs.append({
+                        "id": clean_id,
+                        "title": f"{board.split(' - ')[0]} - {post}",
+                        "titleOdia": f"{board.split(' - ')[0]} - {post}",
+                        "organization": board.split(' - ')[0],
+                        "post": post,
+                        "vacancies": posts,
+                        "qualification": qual,
+                        "ageLimit": "18 - 38 Years (Age relaxation as per Govt rules)",
+                        "salary": salary,
+                        "startDate": pdate,
+                        "lastDate": ldate,
+                        "category": cat,
+                        "status": "Active",
+                        "applyUrl": detail_link,
+                        "notificationUrl": detail_link,
+                        "officialUrl": detail_link,
+                        "sourceUrl": detail_link,
+                        "source": "Govt Recruitment Board",
+                        "documents": docs,
+                        "examFee": "Check official notification",
+                        "featured": False,
+                        "syncedAt": int(now * 1000)
+                    })
+        except Exception as e:
+            print(f"[Jobs Sync] Scrape error for {url}: {e}")
+
+    if scraped_jobs:
+        existing_map = { j.get('id'): j for j in _jobs_cache["jobs"] if j.get('id') }
+        merged = []
+
+        # Prepend new scraped jobs
+        for sj in scraped_jobs:
+            if sj['id'] not in existing_map:
+                merged.append(sj)
+                existing_map[sj['id']] = sj
+                new_added += 1
+
+        # Keep existing curated jobs
+        for ej in _jobs_cache["jobs"]:
+            if ej['id'] not in [s['id'] for s in scraped_jobs]:
+                merged.append(ej)
+            elif ej.get('featured') or ej.get('documents'):
+                # Prefer existing if curated with docs
+                pass
+
+        if not merged:
+            merged = scraped_jobs + _jobs_cache["jobs"]
+
+        _jobs_cache["jobs"] = merged
+        _jobs_cache["last_sync"] = now
+
+        try:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(merged, f, ensure_ascii=False, indent=2)
+        except Exception as ef:
+            print(f"[Jobs Cache] Error writing disk cache: {ef}")
+
+        return merged, new_added
+
+    _jobs_cache["last_sync"] = now
+    return _jobs_cache["jobs"], 0
+
 class VuoHttpHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
@@ -299,6 +497,86 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(resp)
                 return
 
+            # Endpoint: /api/save-job-alert
+            if self.path.startswith('/api/save-job-alert'):
+                try:
+                    payload = json.loads(body.decode('utf-8'))
+                    if isinstance(payload, dict) and payload.get('title'):
+                        cache_file = os.path.join(DIRECTORY, "job_alerts.json")
+                        jobs = []
+                        if os.path.exists(cache_file):
+                            with open(cache_file, 'r', encoding='utf-8') as f:
+                                jobs = json.load(f)
+                        # Replace if exists, else prepend
+                        job_id = payload.get('id') or f"job-{int(time.time())}"
+                        payload['id'] = job_id
+                        idx = next((i for i, j in enumerate(jobs) if j.get('id') == job_id), -1)
+                        if idx >= 0:
+                            jobs[idx] = payload
+                        else:
+                            jobs.insert(0, payload)
+                        _jobs_cache["jobs"] = jobs
+                        _jobs_cache["last_sync"] = time.time()
+                        with open(cache_file, 'w', encoding='utf-8') as f:
+                            json.dump(jobs, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    print(f"[Save Job Alert] Error: {e}")
+                resp = json.dumps({"status": "success", "message": "Job alert saved successfully"}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+
+            # Endpoint: /api/delete-job-alert
+            if self.path.startswith('/api/delete-job-alert'):
+                try:
+                    payload = json.loads(body.decode('utf-8'))
+                    del_id = payload.get('id')
+                    if del_id:
+                        cache_file = os.path.join(DIRECTORY, "job_alerts.json")
+                        jobs = []
+                        if os.path.exists(cache_file):
+                            with open(cache_file, 'r', encoding='utf-8') as f:
+                                jobs = json.load(f)
+                        jobs = [j for j in jobs if j.get('id') != del_id]
+                        _jobs_cache["jobs"] = jobs
+                        _jobs_cache["last_sync"] = time.time()
+                        with open(cache_file, 'w', encoding='utf-8') as f:
+                            json.dump(jobs, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    print(f"[Delete Job Alert] Error: {e}")
+                resp = json.dumps({"status": "success", "message": "Job alert deleted"}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+
+            # Endpoint: /api/save-job-sources
+            if self.path.startswith('/api/save-job-sources'):
+                try:
+                    payload = json.loads(body.decode('utf-8'))
+                    if isinstance(payload, list) and len(payload) > 0:
+                        sources_file = os.path.join(DIRECTORY, "job_sources.json")
+                        with open(sources_file, 'w', encoding='utf-8') as f:
+                            json.dump(payload, f, ensure_ascii=False, indent=2)
+                        jobs, new_added = fetch_live_job_alerts(force=True, custom_sources=payload)
+                        resp = json.dumps({"status": "success", "message": "5 Job sources saved and sync completed", "count": len(jobs), "newAdded": new_added}).encode('utf-8')
+                    else:
+                        resp = json.dumps({"status": "error", "message": "Invalid sources payload"}).encode('utf-8')
+                except Exception as e:
+                    print(f"[Save Job Sources] Error: {e}")
+                    resp = json.dumps({"status": "error", "message": str(e)}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+
             # Generic POST fallback
             resp = json.dumps({"status": "ok"}).encode('utf-8')
             self.send_response(200)
@@ -357,6 +635,40 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
             self.wfile.write(resp)
             return
 
+        # API: /api/job-alerts
+        if self.path.startswith('/api/job-alerts'):
+            force = 'force=true' in self.path
+            jobs, new_added = fetch_live_job_alerts(force=force)
+            resp = json.dumps({"status": "success", "count": len(jobs), "newAdded": new_added, "jobs": jobs}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
+        # API: /api/sync-job-alerts
+        if self.path.startswith('/api/sync-job-alerts'):
+            jobs, new_added = fetch_live_job_alerts(force=True)
+            resp = json.dumps({"status": "success", "count": len(jobs), "newAdded": new_added, "jobs": jobs}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
+        # API: /api/job-sources
+        if self.path.startswith('/api/job-sources'):
+            sources = get_job_sources()
+            resp = json.dumps({"status": "success", "count": len(sources), "sources": sources}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
         # Clean query strings / hashes
         clean_path = self.path.split('?')[0].split('#')[0]
 
@@ -376,13 +688,7 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 def run_server():
-    env_port = os.environ.get('PORT')
-    if env_port and env_port.isdigit():
-        port = int(env_port)
-    elif len(sys.argv) > 1 and sys.argv[1].isdigit():
-        port = int(sys.argv[1])
-    else:
-        port = PORT
+    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else PORT
     for attempt in range(10):
         try:
             server = ThreadingHTTPServer(('0.0.0.0', port), VuoHttpHandler)

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Portal 1 (Odisha Government Jobs)",
+    "url": "https://www.freejobalert.com/odisha-government-jobs/",
+    "active": true
+  },
+  {
+    "id": 2,
+    "name": "Portal 2 (Railway RRB Recruitment)",
+    "url": "https://www.freejobalert.com/railway-jobs/",
+    "active": true
+  },
+  {
+    "id": 3,
+    "name": "Portal 3 (Staff Selection Commission SSC)",
+    "url": "https://www.freejobalert.com/ssc/",
+    "active": true
+  },
+  {
+    "id": 4,
+    "name": "Portal 4 (Banking & IBPS Recruitment)",
+    "url": "https://www.freejobalert.com/bank-jobs/",
+    "active": true
+  },
+  {
+    "id": 5,
+    "name": "Portal 5 (Police & Defense Recruitment)",
+    "url": "https://www.freejobalert.com/police-defence-jobs/",
+    "active": true
+  }
+]

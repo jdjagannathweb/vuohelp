@@ -230,6 +230,8 @@ const VUO_ADMIN = {
         statusEl.classList.remove('hidden');
       }
 
+      this._pendingPopupImageFile = file;
+
       try {
         const res = await this.compressNoticeImage(file);
         const preview = document.getElementById('adminPopupPosterPreview');
@@ -245,11 +247,16 @@ const VUO_ADMIN = {
 
         this._pendingPopupImageBlob = res.dataUrl;
 
+        // Immediately cache image in IndexedDB to avoid localStorage quota issues
+        if (window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
+          window.VUO_IDB.savePdfBlob('vuo_popup_image', res.dataUrl, file.name || 'notice_image');
+        }
+
         if (statusEl) {
           statusEl.innerHTML = `<span class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> ${res.width}×${res.height} px HD Ready (${res.sizeKb} KB)</span>`;
           statusEl.classList.remove('hidden');
         }
-        showToast(`Full photo optimized successfully (${res.width}×${res.height}px)!`, "success");
+        showToast(`Notice photo optimized successfully (${res.width}×${res.height}px)!`, "success");
       } catch (err) {
         console.error("Notice photo processing error:", err);
         showToast("Error processing photo. Please try another image.", "error");
@@ -343,23 +350,58 @@ const VUO_ADMIN = {
       vleType.addEventListener('change', () => this.renderVleActivityTable());
     }
 
+    // Member Management Filters
+    const memberSearch = document.getElementById('adminMemberSearchInput');
+    if (memberSearch) {
+      memberSearch.addEventListener('input', () => this.renderMembersTable());
+    }
+    const memberDist = document.getElementById('adminMemberDistrictFilter');
+    if (memberDist) {
+      memberDist.addEventListener('change', () => this.renderMembersTable());
+    }
+    const memberStatus = document.getElementById('adminMemberStatusFilter');
+    if (memberStatus) {
+      memberStatus.addEventListener('change', () => this.renderMembersTable());
+    }
+
+    // Member Edit Form
+    const editMemberForm = document.getElementById('adminEditMemberForm');
+    if (editMemberForm) {
+      editMemberForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveEditMember(e);
+      });
+    }
+
+    // Member Change Password Form
+    const changePwdForm = document.getElementById('adminChangeMemberPwdForm');
+    if (changePwdForm) {
+      changePwdForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveMemberPassword(e);
+      });
+    }
+
   },
 
   switchTab(tabName) {
-    this.activeTab = tabName;
+    this.activeTab = tabName || 'leads';
     document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-      if (btn.getAttribute('data-admin-tab') === tabName) {
-        btn.className = 'admin-nav-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-sky-600 text-white shadow-sm';
+      const tab = btn.getAttribute('data-admin-tab');
+      if (tab === this.activeTab) {
+        btn.className = 'admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-orange-500/20 border border-amber-400/80 cursor-pointer transition-all transform scale-[1.02]';
       } else {
-        btn.className = 'admin-nav-btn flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100';
+        btn.className = 'admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all';
       }
     });
 
     document.querySelectorAll('.admin-tab-pane').forEach(pane => {
-      if (pane.id === `admin_pane_${tabName}`) {
+      if (pane.id === `admin_pane_${this.activeTab}`) {
         pane.classList.remove('hidden');
+        pane.style.display = 'block';
       } else {
         pane.classList.add('hidden');
+        pane.style.display = 'none';
       }
     });
 
@@ -368,6 +410,7 @@ const VUO_ADMIN = {
 
   renderAll() {
     try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
+    try { this.renderMembersTable(); } catch (e) { console.warn("renderMembersTable error:", e); }
     try { this.renderLinksTable(); } catch (e) { console.warn("renderLinksTable error:", e); }
     try { this.renderFormsTable(); } catch (e) { console.warn("renderFormsTable error:", e); }
     try { this.renderVideosTable(); } catch (e) { console.warn("renderVideosTable error:", e); }
@@ -378,6 +421,7 @@ const VUO_ADMIN = {
     try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
     try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
     try { this.renderVleActivityTable(); } catch (e) { console.warn("renderVleActivityTable error:", e); }
+    try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
   },
 
   // ---------------- 1. IMPORTANT LINKS ---------------- //
@@ -558,6 +602,7 @@ const VUO_ADMIN = {
 
   setFormUploadMode(mode) {
     this._formUploadMode = mode;
+    window._vuoFormUploadMode = mode;
     const urlBtn = document.getElementById('adminFormModeUrlBtn');
     const fileBtn = document.getElementById('adminFormModeFileBtn');
     const urlBox = document.getElementById('adminFormUrlBox');
@@ -595,6 +640,9 @@ const VUO_ADMIN = {
   },
 
   async handleAddPdfForm() {
+    if (typeof window.vuoSubmitPdfForm === 'function') {
+      return window.vuoSubmitPdfForm();
+    }
     const titleInput = document.getElementById('adminFormTitle');
     let title = titleInput ? titleInput.value.trim() : '';
     const titleOdia = document.getElementById('adminFormTitleOdia').value.trim();
@@ -678,7 +726,6 @@ const VUO_ADMIN = {
             if (progressText) progressText.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> ${msg}`;
             if (progressBar) progressBar.style.width = '70%';
             if (progressPercent) progressPercent.textContent = '70%';
-            showToast(msg, "info");
           });
 
           if (cloudRes && cloudRes.url && cloudRes.url.startsWith('http')) {
@@ -689,13 +736,24 @@ const VUO_ADMIN = {
             if (progressBar) progressBar.style.width = '100%';
             if (progressPercent) progressPercent.textContent = '100%';
             if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Cloud Upload Success!`;
+          } else {
+            fileUrl = `forms/${selectedFile.name}`;
+            downloadUrl = '';
+            previewUrl = '';
+            storageType = 'indexeddb';
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressPercent) progressPercent.textContent = '100%';
+            if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Saved to Offline High-Capacity DB!`;
           }
         } catch (cloudErr) {
           console.warn("Cloud upload attempt finished:", cloudErr);
+          if (progressBar) progressBar.style.width = '100%';
+          if (progressPercent) progressPercent.textContent = '100%';
+          if (progressText) progressText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Saved to Offline High-Capacity DB!`;
         } finally {
           setTimeout(() => {
             if (progressBox) progressBox.classList.add('hidden');
-          }, 1500);
+          }, 1200);
         }
       }
 
@@ -703,19 +761,20 @@ const VUO_ADMIN = {
         fileUrl = `forms/${selectedFile.name}`;
       }
 
-      // 3. Local server background write if available
+      // 3. Local server write if running on local server
       try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            await fetch('/api/upload-form', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileName: selectedFile.name, base64Data: e.target.result })
-            });
-          } catch (_) {}
-        };
-        reader.readAsDataURL(selectedFile);
+        const toBase64 = (f) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(f);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = error => reject(error);
+        });
+        const b64 = await toBase64(selectedFile);
+        await fetch('/api/upload-form', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: selectedFile.name, base64Data: b64 })
+        });
       } catch (_) {}
     }
 
@@ -1168,6 +1227,21 @@ const VUO_ADMIN = {
     const buttonLink = document.getElementById('adminPopupButtonLink') ? document.getElementById('adminPopupButtonLink').value.trim() : '#passphoto';
     let imageUrl = document.getElementById('adminPopupPosterUrl') ? document.getElementById('adminPopupPosterUrl').value.trim() : '';
 
+    // If a new photo file was chosen, upload to Firebase Storage if available
+    if (this._pendingPopupImageFile && typeof VUO_DB !== 'undefined' && VUO_DB.storage) {
+      try {
+        showToast("Uploading notice photo to Firebase Cloud Storage...", "info");
+        const fireUrl = await VUO_DB.uploadImageToStorage(this._pendingPopupImageFile);
+        if (fireUrl) {
+          imageUrl = fireUrl;
+          const urlInput = document.getElementById('adminPopupPosterUrl');
+          if (urlInput) urlInput.value = fireUrl;
+        }
+      } catch (fbErr) {
+        console.warn("Firebase notice image upload fallback:", fbErr);
+      }
+    }
+
     // If title is blank, provide a sensible default so save is never blocked
     if (!title) {
       title = imageUrl ? "Official Notice / ଅଫିସିଆଲ୍ ନୋଟିସ୍" : "Official Digital Updates — VLE HELP DESK";
@@ -1188,11 +1262,20 @@ const VUO_ADMIN = {
       updatedAtTimestamp: Date.now()
     };
 
+    // If imageUrl is data URL, save high-res copy in IndexedDB
+    if (imageUrl && imageUrl.startsWith('data:image') && window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
+      window.VUO_IDB.savePdfBlob('vuo_popup_image', imageUrl, 'notice_image');
+    }
+
     // 1. Channel A: Save to Local Storage & IndexedDB (Immediate local responsiveness)
     try {
       localStorage.setItem('vuo_popup', JSON.stringify(popupObj));
     } catch (e) {
-      console.warn("localStorage quota exceeded, storing in IndexedDB:", e);
+      console.warn("localStorage quota exceeded, storing with IDB reference:", e);
+      try {
+        const safePop = { ...popupObj, imageUrl: 'indexeddb' };
+        localStorage.setItem('vuo_popup', JSON.stringify(safePop));
+      } catch (_) {}
     }
     if (window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
       window.VUO_IDB.savePdfBlob('vuo_popup_settings', popupObj, 'vuo_popup_settings');
@@ -1225,7 +1308,11 @@ const VUO_ADMIN = {
     let cloudSynced = false;
     if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized) {
       try {
-        const cloudRes = await VUO_DB.cloudSavePopup(popupObj);
+        const firestoreObj = { ...popupObj };
+        if (firestoreObj.imageUrl && firestoreObj.imageUrl.length > 500000) {
+          firestoreObj.imageUrl = '';
+        }
+        const cloudRes = await VUO_DB.cloudSavePopup(firestoreObj);
         if (cloudRes && cloudRes.success) {
           cloudSynced = true;
         }
@@ -1288,6 +1375,18 @@ const VUO_ADMIN = {
     } else {
       showToast("Notice & Photo saved successfully! Live preview updated.", "success");
     }
+  },
+
+  downloadPopupJson() {
+    const pop = JSON.parse(localStorage.getItem('vuo_popup') || JSON.stringify(VUO_DATA.popupSettings || {}));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pop, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = "popup_settings.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast("popup_settings.json downloaded! You can upload it to your repository.", "success");
   },
 
   // ---------------- 8. SECURITY & PASSWORD ---------------- //
@@ -1818,9 +1917,823 @@ const VUO_ADMIN = {
     link.click();
     document.body.removeChild(link);
     if (typeof showToast === 'function') showToast("VLE Activity CSV exported successfully!", "success");
+  },
+
+  // ---------------- 12. REGISTERED MEMBERS DIRECTORY & MANAGEMENT ---------------- //
+  renderMembersTable() {
+    const tbody = document.getElementById('adminMembersTbody');
+    const countBadge = document.getElementById('adminTotalMembersCount');
+    if (!tbody) return;
+
+    let members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+
+    if (countBadge) countBadge.textContent = members.length;
+
+    // Filters
+    const searchVal = (document.getElementById('adminMemberSearchInput')?.value || '').toLowerCase().trim();
+    const distVal = (document.getElementById('adminMemberDistrictFilter')?.value || '').toLowerCase().trim();
+    const statusVal = (document.getElementById('adminMemberStatusFilter')?.value || '').toLowerCase().trim();
+
+    if (searchVal) {
+      members = members.filter(m => 
+        (m.fullName || m.name || '').toLowerCase().includes(searchVal) ||
+        (m.mobile || '').includes(searchVal) ||
+        (m.cscId || '').toLowerCase().includes(searchVal) ||
+        (m.memberNo || '').toLowerCase().includes(searchVal) ||
+        (m.email || '').toLowerCase().includes(searchVal)
+      );
+    }
+
+    if (distVal) {
+      members = members.filter(m => (m.district || '').toLowerCase() === distVal);
+    }
+
+    if (statusVal) {
+      members = members.filter(m => {
+        const s = (m.status || 'Active').toLowerCase();
+        const isGate = m.isGateOnly || m.registrationType === 'gate';
+        if (statusVal === 'gate') return isGate || s.includes('gate');
+        if (statusVal === 'active') return !s.includes('suspend') && !s.includes('block');
+        return s.includes(statusVal);
+      });
+    }
+
+    if (members.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="p-8 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-users-slash text-3xl mb-2 text-slate-300"></i>
+            <p class="font-bold text-slate-500">No registered VLE members found.</p>
+            <p class="text-[11px] text-slate-400">Try changing your search terms or filters, or click "Cloud Sync".</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = members.map(m => {
+      const cleanPhone = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const waLink = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent('Namaskar ' + (m.fullName || 'VLE') + ', VLE CSC Help desk se sampark kar rahe hain.')}` : '#';
+      const isGoogle = m.authProvider === 'google' || (m.googleId && m.googleId.length > 0);
+      const isGate = m.isGateOnly || m.registrationType === 'gate' || (m.status || '').toLowerCase().includes('gate');
+      const isSuspended = (m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('lock') || (m.status || '').toLowerCase().includes('block');
+      
+      let statusBadge;
+      if (isSuspended) {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-lock text-[9px]"></i> Suspended (Locked)</span>`;
+      } else if (isGate) {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-cyan-100 text-cyan-800 border border-cyan-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-shield-halved text-[9px]"></i> Gate Verified</span>`;
+      } else {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i class="fa-solid fa-circle-check text-[9px]"></i> Full Member</span>`;
+      }
+
+      const safeTargetId = cleanPhone || m.cscId || m.memberNo;
+
+      return `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs ${isSuspended ? 'bg-rose-50/30' : ''}">
+          <!-- Name & Avatar -->
+          <td class="p-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr ${isSuspended ? 'from-rose-600 to-red-700' : 'from-sky-600 to-blue-700'} text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
+                ${m.avatar && m.avatar.startsWith('http') ? `<img src="${m.avatar}" alt="${m.fullName}" class="w-full h-full rounded-full object-cover">` : (m.fullName || 'V').charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-black text-slate-900">${m.fullName || m.name || 'VLE Member'}</span>
+                  ${isGoogle ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><i class="fa-brands fa-google text-[9px]"></i> Google</span>` : ''}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono">${m.email || (cleanPhone + '@vlehelp.in')}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Mobile with WhatsApp -->
+          <td class="p-3 whitespace-nowrap">
+            <div class="flex items-center gap-1.5 font-mono font-bold text-slate-800 text-[11px]">
+              <span>+91 ${cleanPhone || '-'}</span>
+              ${cleanPhone ? `
+                <a href="${waLink}" target="_blank" class="text-emerald-600 hover:text-emerald-700 p-0.5" title="WhatsApp Message">
+                  <i class="fa-brands fa-whatsapp text-sm"></i>
+                </a>
+                <a href="tel:${cleanPhone}" class="text-sky-600 hover:text-sky-700 p-0.5" title="Call Member">
+                  <i class="fa-solid fa-phone text-xs"></i>
+                </a>
+              ` : ''}
+            </div>
+          </td>
+
+          <!-- CSC ID & Kendra -->
+          <td class="p-3">
+            <div class="font-mono font-bold text-sky-700 text-[11px]">${m.cscId || m.memberNo || '—'}</div>
+            <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${m.kendraName || 'Digital Seva Kendra'}</div>
+          </td>
+
+          <!-- District -->
+          <td class="p-3 whitespace-nowrap">
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              ${m.district || 'Odisha'}
+            </span>
+          </td>
+
+          <!-- Status & Join Date -->
+          <td class="p-3 whitespace-nowrap">
+            ${statusBadge}
+            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">${m.joiningDate || '2026'}</div>
+          </td>
+
+          <!-- Password (Masked with reveal toggle) -->
+          <td class="p-3 whitespace-nowrap">
+            <div class="flex items-center gap-1">
+              <span id="pwd_mask_${safeTargetId}" class="font-mono text-xs text-slate-400 font-bold tracking-wider">••••••</span>
+              <span id="pwd_val_${safeTargetId}" class="hidden font-mono text-xs text-emerald-700 font-bold">${m.passwordHash || '1234'}</span>
+              <button type="button" onclick="VUO_ADMIN.togglePasswordReveal('${safeTargetId}')" class="text-slate-400 hover:text-slate-600 p-1 text-[11px] cursor-pointer" title="Toggle Password View">
+                <i id="pwd_ico_${safeTargetId}" class="fa-solid fa-eye text-[10px]"></i>
+              </button>
+            </div>
+          </td>
+
+          <!-- Action Buttons -->
+          <td class="p-3 text-right whitespace-nowrap space-x-1">
+            <button type="button" onclick="VUO_ADMIN.openEditMember('${safeTargetId}')" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Edit Member Details">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span>Edit</span>
+            </button>
+            <button type="button" onclick="VUO_ADMIN.openChangeMemberPassword('${safeTargetId}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Change Password">
+              <i class="fa-solid fa-key"></i>
+              <span>Change Pwd</span>
+            </button>
+            ${isSuspended ? `
+              <button type="button" onclick="VUO_ADMIN.toggleLockMember('${safeTargetId}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Unlock Member Account">
+                <i class="fa-solid fa-lock-open"></i>
+                <span>Unlock</span>
+              </button>
+            ` : `
+              <button type="button" onclick="VUO_ADMIN.toggleLockMember('${safeTargetId}')" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs" title="Lock / Suspend Member Account">
+                <i class="fa-solid fa-lock"></i>
+                <span>Lock</span>
+              </button>
+            `}
+            <button type="button" onclick="VUO_ADMIN.deleteMember('${safeTargetId}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all" title="Delete Member Permanently">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  async syncCloudMembersNow() {
+    const btn = document.getElementById('adminSyncMembersBtn');
+    const oldHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Syncing...</span>`;
+      btn.disabled = true;
+    }
+    if (typeof showToast === 'function') showToast("Firebase Cloud se members sync ho rahe hain...", "info");
+
+    try {
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudMembersDirectly === 'function') {
+        const res = await VUO_DB.fetchCloudMembersDirectly();
+        this.renderMembersTable();
+        if (typeof showToast === 'function') {
+          showToast(`Cloud se ${res.memberCount || 0} Registered Members aur ${res.gateCount || 0} Gate VLEs sync ho gaye!`, "success");
+        }
+      } else {
+        this.renderMembersTable();
+      }
+    } catch (e) {
+      console.error(e);
+      if (typeof showToast === 'function') showToast("Sync error: " + e.message, "error");
+    } finally {
+      if (btn) {
+        btn.innerHTML = oldHtml || `<i class="fa-solid fa-cloud-arrow-down"></i> <span>Cloud Sync</span>`;
+        btn.disabled = false;
+      }
+    }
+  },
+
+  togglePasswordReveal(targetId) {
+    const mask = document.getElementById(`pwd_mask_${targetId}`);
+    const val = document.getElementById(`pwd_val_${targetId}`);
+    const ico = document.getElementById(`pwd_ico_${targetId}`);
+    if (!mask || !val) return;
+    if (mask.classList.contains('hidden')) {
+      mask.classList.remove('hidden');
+      val.classList.add('hidden');
+      if (ico) ico.className = 'fa-solid fa-eye text-[10px]';
+    } else {
+      mask.classList.add('hidden');
+      val.classList.remove('hidden');
+      if (ico) ico.className = 'fa-solid fa-eye-slash text-[10px] text-amber-600';
+    }
+  },
+
+  openEditMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!m) {
+      if (typeof showToast === 'function') showToast("Member record not found.", "error");
+      return;
+    }
+
+    const modal = document.getElementById('adminEditMemberModal');
+    if (!modal) return;
+
+    document.getElementById('editMemberTargetId').value = m.mobile || m.cscId || m.memberNo;
+    document.getElementById('editMemberName').value = m.fullName || m.name || '';
+    document.getElementById('editMemberMobile').value = (m.mobile || '').replace(/\D/g, '').slice(-10);
+    document.getElementById('editMemberCscId').value = m.cscId || '';
+    document.getElementById('editMemberDistrict').value = m.district || 'Puri';
+    document.getElementById('editMemberKendra').value = m.kendraName || '';
+    document.getElementById('editMemberEmail').value = m.email || '';
+    document.getElementById('editMemberStatus').value = (m.status || '').toLowerCase().includes('suspend') ? 'Suspended' : 'Active (Verified VLE)';
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  closeEditMemberModal() {
+    const modal = document.getElementById('adminEditMemberModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  handleSaveEditMember(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = document.getElementById('editMemberTargetId')?.value;
+    const name = document.getElementById('editMemberName')?.value;
+    const mobile = document.getElementById('editMemberMobile')?.value;
+    const cscId = document.getElementById('editMemberCscId')?.value;
+    const district = document.getElementById('editMemberDistrict')?.value;
+    const kendra = document.getElementById('editMemberKendra')?.value;
+    const email = document.getElementById('editMemberEmail')?.value;
+    const status = document.getElementById('editMemberStatus')?.value;
+
+    if (!name || name.trim().length < 2) {
+      if (typeof showToast === 'function') showToast("Please enter member name.", "warning");
+      return;
+    }
+    const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+    if (!cleanMob || cleanMob.length !== 10) {
+      if (typeof showToast === 'function') showToast("Please enter a valid 10-digit mobile number.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.updateMember(targetId, {
+      fullName: name,
+      mobile: cleanMob,
+      cscId: cscId,
+      district: district,
+      kendraName: kendra,
+      email: email,
+      status: status
+    });
+
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    this.closeEditMemberModal();
+    this.renderMembersTable();
+    if (typeof showToast === 'function') {
+      showToast(`Member profile for ${res.member.fullName} updated successfully!`, "success");
+    }
+  },
+
+  openChangeMemberPassword(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!m) {
+      if (typeof showToast === 'function') showToast("Member record not found.", "error");
+      return;
+    }
+
+    const modal = document.getElementById('adminChangeMemberPwdModal');
+    if (!modal) return;
+
+    document.getElementById('changePwdTargetId').value = m.mobile || m.cscId || m.memberNo;
+    document.getElementById('changePwdMemberInfo').textContent = `${m.fullName || 'VLE'} (+91 ${(m.mobile || '').slice(-10)}) — CSC: ${m.cscId || 'N/A'}`;
+    document.getElementById('changePwdNewValue').value = '';
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  closeChangeMemberPwdModal() {
+    const modal = document.getElementById('adminChangeMemberPwdModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  generateRandomPassword() {
+    const input = document.getElementById('changePwdNewValue');
+    if (input) {
+      const rnd = 'VLE@' + Math.floor(1000 + Math.random() * 9000);
+      input.value = rnd;
+      input.type = 'text';
+    }
+  },
+
+  async handleSaveMemberPassword(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = document.getElementById('changePwdTargetId')?.value;
+    const newPwd = document.getElementById('changePwdNewValue')?.value;
+    const saveBtn = e?.target?.querySelector('button[type="submit"]') || document.querySelector('#adminChangeMemberPwdModal button[type="submit"]');
+    const oldBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+
+    if (!newPwd || newPwd.trim().length < 4) {
+      if (typeof showToast === 'function') showToast("New password must be at least 4 characters.", "warning");
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving to Cloud...`;
+      saveBtn.disabled = true;
+    }
+
+    try {
+      const res = await VUO_AUTH.adminSetPassword(targetId, newPwd.trim());
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message, "error");
+        return;
+      }
+
+      this.closeChangeMemberPwdModal();
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(`✅ Password changed & synced to Cloud for ${res.member.fullName}! (New: ${newPwd.trim()})`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Error updating password: " + err.message, "error");
+    } finally {
+      if (saveBtn) {
+        saveBtn.innerHTML = oldBtnHtml || 'Save New Password';
+        saveBtn.disabled = false;
+      }
+    }
+  },
+
+  async toggleLockMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const isLocked = m && ((m.status || '').toLowerCase().includes('suspend') || (m.status || '').toLowerCase().includes('lock') || (m.status || '').toLowerCase().includes('block'));
+    const actionName = isLocked ? "UNLOCK" : "LOCK / SUSPEND";
+    const name = m ? (m.fullName || m.name || 'Member') : targetId;
+
+    if (!confirm(`Kya aap sach me member "${name}" ka account ${actionName} karna chahte hain?`)) return;
+
+    if (typeof showToast === 'function') {
+      showToast(`${actionName} kiya ja raha hai (Cloud Firestore sync)...`, "info");
+    }
+
+    try {
+      const res = await VUO_AUTH.toggleMemberLock(targetId);
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message || "Failed to update member lock status.", "error");
+        return;
+      }
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(res.isLocked ? `🔒 Member ${name} ka account LOCK kar diya gaya hai.` : `🔓 Member ${name} ka account UNLOCK ho gaya hai.`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Error: " + err.message, "error");
+    }
+  },
+
+  async deleteMember(targetId) {
+    const members = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    const cleanTarget = targetId.toString().replace(/\D/g, '').slice(-10);
+    const targetLower = targetId.toString().trim().toLowerCase();
+
+    const m = members.find(item => {
+      const mMob = (item.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (item.cscId || '').toLowerCase();
+      const mNo = (item.memberNo || '').toLowerCase();
+      return (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const name = m ? `${m.fullName || 'VLE'} (${m.memberNo || cleanTarget})` : targetId;
+
+    if (!confirm(`⚠️ Kripya dhyan dein:\n\nKya aap sach me VLE Member "${name}" ko DELETE karna chahte hain?\n\nYe record Cloud Firestore aur Local Storage dono se PERMANENTLY delete ho jayega aur dobara wapas nahi aayega.`)) {
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast("Cloud Firestore aur Local se delete kiya ja raha hai...", "info");
+    }
+
+    try {
+      const res = await VUO_AUTH.deleteMember(targetId);
+      if (!res.success) {
+        if (typeof showToast === 'function') showToast(res.message || "Failed to delete member.", "error");
+        return;
+      }
+      this.renderMembersTable();
+      if (typeof showToast === 'function') {
+        showToast(`✅ VLE Member "${name}" permanently delete ho gaya hai (Cloud & Local dono se).`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === 'function') showToast("Delete error: " + err.message, "error");
+    }
+  },
+
+  exportMembersCsv() {
+    const list = (typeof VUO_AUTH !== 'undefined') ? VUO_AUTH.getAllMembers() : [];
+    if (list.length === 0) {
+      if (typeof showToast === 'function') showToast("No members to export.", "warning");
+      return;
+    }
+
+    const headers = ["Member No", "Full Name", "Mobile", "Email", "CSC ID", "District", "Kendra Name", "Auth Provider", "Status", "Password", "Joining Date"];
+    const rows = list.map(m => {
+      return [
+        `"${m.memberNo || ''}"`,
+        `"${(m.fullName || m.name || '').replace(/"/g, '""')}"`,
+        `"${(m.mobile || '').replace(/\D/g, '').slice(-10)}"`,
+        `"${(m.email || '').replace(/"/g, '""')}"`,
+        `"${(m.cscId || '').replace(/"/g, '""')}"`,
+        `"${(m.district || '').replace(/"/g, '""')}"`,
+        `"${(m.kendraName || '').replace(/"/g, '""')}"`,
+        `"${m.authProvider || 'mobile'}"`,
+        `"${m.status || 'Active'}"`,
+        `"${m.passwordHash || '1234'}"`,
+        `"${m.joiningDate || ''}"`
+      ].join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `VUO_Registered_Members_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof showToast === 'function') showToast("Members CSV exported successfully!", "success");
+  },
+
+  // ---------------- 13. JOB ALERTS & 5 AUTO-SYNC PORTALS ---------------- //
+  _cachedJobSources: null,
+
+  async loadJobSources() {
+    if (this._cachedJobSources && this._cachedJobSources.length > 0) {
+      this.populateJobSourcesInputs(this._cachedJobSources);
+      return;
+    }
+    try {
+      const res = await fetch('/api/job-sources', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.sources)) {
+          this._cachedJobSources = data.sources;
+          this.populateJobSourcesInputs(data.sources);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log("[Admin] Local job sources fallback:", e);
+    }
+    const defaults = [
+      { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
+      { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
+      { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
+    ];
+    this._cachedJobSources = defaults;
+    this.populateJobSourcesInputs(defaults);
+  },
+
+  populateJobSourcesInputs(sources) {
+    for (let i = 1; i <= 5; i++) {
+      const src = (Array.isArray(sources) && sources[i - 1]) ? sources[i - 1] : null;
+      const nameInput = document.getElementById(`adminJobSource${i}Name`);
+      const urlInput = document.getElementById(`adminJobSource${i}Url`);
+      const activeCheck = document.getElementById(`adminJobSource${i}Active`);
+
+      if (src) {
+        if (nameInput) nameInput.value = src.name || `Portal ${i}`;
+        if (urlInput) urlInput.value = src.url || '';
+        if (activeCheck) activeCheck.checked = src.active !== false;
+      }
+    }
+  },
+
+  async saveJobSources() {
+    const sources = [];
+    for (let i = 1; i <= 5; i++) {
+      const nameInput = document.getElementById(`adminJobSource${i}Name`);
+      const urlInput = document.getElementById(`adminJobSource${i}Url`);
+      const activeCheck = document.getElementById(`adminJobSource${i}Active`);
+
+      const name = nameInput ? nameInput.value.trim() : `Portal ${i}`;
+      const url = urlInput ? urlInput.value.trim() : '';
+      const active = activeCheck ? activeCheck.checked : true;
+
+      sources.push({
+        id: i,
+        name: name || `Portal ${i}`,
+        url: url,
+        active: active
+      });
+    }
+
+    this._cachedJobSources = sources;
+    try {
+      localStorage.setItem('vuo_configured_job_sources', JSON.stringify(sources));
+    } catch(e) {}
+
+    // Send to server
+    try {
+      const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+      if (btn) btn.disabled = true;
+      if (typeof showToast === 'function') showToast("Saving 5 portals and running auto-sync...", "info");
+
+      const res = await fetch('/api/save-job-sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sources)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof showToast === 'function') {
+          showToast(`✅ 5 Website Portals Saved! Synced ${data.count || 0} active jobs!`, "success");
+        }
+      }
+    } catch (e) {
+      console.warn("[Admin] Save sources server error:", e);
+      if (typeof showToast === 'function') showToast("5 Portals saved locally!", "success");
+    } finally {
+      const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+      if (btn) btn.disabled = false;
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        await VUO_JOB_ALERT.fetchLiveServerJobs(true);
+      }
+      this.renderJobAlertsAdmin();
+    }
+  },
+
+  resetDefaultJobSources() {
+    const defaults = [
+      { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
+      { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
+      { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
+    ];
+    this.populateJobSourcesInputs(defaults);
+    if (typeof showToast === 'function') showToast("Default 5 portals restored. Click 'Save' to apply.", "info");
+  },
+
+  async syncAllJobSourcesNow() {
+    const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+    const textEl = document.getElementById('adminJobAlertsSyncAllBtnText');
+    if (btn) btn.disabled = true;
+    if (textEl) textEl.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin text-amber-950"></i> Syncing 5 Portals...`;
+
+    try {
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        await VUO_JOB_ALERT.fetchLiveServerJobs(true);
+      } else {
+        await fetch('/api/sync-job-alerts');
+      }
+      this.renderJobAlertsAdmin();
+      if (typeof showToast === 'function') showToast("✅ All configured website portals synced successfully!", "success");
+    } catch (e) {
+      if (typeof showToast === 'function') showToast("Sync error: " + e.message, "error");
+    } finally {
+      if (btn) btn.disabled = false;
+      if (textEl) textEl.innerHTML = `⚡ Sync All 5 Sources Now`;
+    }
+  },
+
+  handleAdminAddJob(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const title = (document.getElementById('adminCustomJobTitle')?.value || '').trim();
+    const org = (document.getElementById('adminCustomJobOrg')?.value || '').trim();
+    const category = document.getElementById('adminCustomJobCategory')?.value || 'Odisha Govt';
+    const vacancies = (document.getElementById('adminCustomJobVacancies')?.value || '').trim() || 'Various Posts';
+    const salary = (document.getElementById('adminCustomJobSalary')?.value || '').trim();
+    const qual = (document.getElementById('adminCustomJobQual')?.value || '').trim() || 'Matric / Degree';
+    const startDate = (document.getElementById('adminCustomJobStartDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
+    const lastDate = (document.getElementById('adminCustomJobLastDate')?.value || '').trim();
+    const applyUrl = (document.getElementById('adminCustomJobApplyUrl')?.value || '').trim();
+    const notifUrl = (document.getElementById('adminCustomJobNotifUrl')?.value || '').trim() || applyUrl;
+    const docsRaw = (document.getElementById('adminCustomJobDocs')?.value || '').trim();
+
+    if (!title || !lastDate || !applyUrl) {
+      if (typeof showToast === 'function') showToast("Kripya Job Title, Last Date aur Apply URL fill karein!", "warning");
+      return;
+    }
+
+    let docs = [];
+    if (docsRaw) {
+      docs = docsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+    } else {
+      docs = [
+        "10th Class Board Certificate & Marksheet",
+        "+2 / Degree Certificate & Marksheet",
+        "Aadhaar Card (Mobile Linked)",
+        "Recent Passport Size Color Photo",
+        "Candidate Signature",
+        "Resident & Caste Certificate (if applicable)"
+      ];
+    }
+
+    const newJob = {
+      id: `custom-job-${Date.now()}`,
+      title: title,
+      titleOdia: title,
+      organization: org || 'Government Recruitment Board',
+      post: title,
+      vacancies: vacancies,
+      qualification: qual,
+      salary: salary || 'Govt Pay Scale',
+      startDate: startDate,
+      lastDate: lastDate,
+      category: category,
+      status: 'Active',
+      applyUrl: applyUrl,
+      notificationUrl: notifUrl,
+      officialUrl: applyUrl,
+      source: 'Admin Published',
+      documents: docs,
+      featured: true,
+      syncedAt: Date.now()
+    };
+
+    // Save to localStorage
+    try {
+      let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      custom.unshift(newJob);
+      localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
+    } catch(err) {}
+
+    // POST to server
+    try {
+      fetch('/api/save-job-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newJob)
+      }).catch(() => {});
+    } catch(err) {}
+
+    // Add to VUO_JOB_ALERT if present
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (!Array.isArray(VUO_JOB_ALERT.jobs)) VUO_JOB_ALERT.jobs = [];
+      VUO_JOB_ALERT.jobs.unshift(newJob);
+      VUO_JOB_ALERT.renderStats();
+      VUO_JOB_ALERT.renderJobs();
+    }
+
+    // Reset Form
+    const form = document.getElementById('adminAddJobAlertForm');
+    if (form) form.reset();
+
+    this.renderJobAlertsAdmin();
+    if (typeof showToast === 'function') {
+      showToast("✅ ନୂଆ ସରକାରୀ ଚାକିରୀ ଆଲର୍ଟ ସଫଳତାର ସହିତ ପବ୍ଲିଶ ହେଲା!", "success");
+    }
+  },
+
+  async deleteJobAlert(jobId) {
+    if (!jobId) return;
+    if (!confirm("Are you sure you want to delete this job alert?")) return;
+
+    // Delete locally
+    try {
+      let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      custom = custom.filter(j => j.id !== jobId);
+      localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
+    } catch(e) {}
+
+    // Delete on server
+    try {
+      await fetch('/api/delete-job-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: jobId })
+      });
+    } catch(e) {}
+
+    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
+      VUO_JOB_ALERT.jobs = VUO_JOB_ALERT.jobs.filter(j => j.id !== jobId);
+      VUO_JOB_ALERT.renderStats();
+      VUO_JOB_ALERT.renderJobs();
+    }
+
+    this.renderJobAlertsAdmin();
+    if (typeof showToast === 'function') showToast("Job alert deleted.", "info");
+  },
+
+  filterJobAlertsTable() {
+    const input = document.getElementById('adminJobSearchFilter');
+    const q = input ? input.value.toLowerCase().trim() : '';
+    this.renderJobAlertsAdmin(q);
+  },
+
+  renderJobAlertsAdmin(filterQuery = '') {
+    this.loadJobSources();
+
+    const tbody = document.getElementById('adminJobAlertsTbody');
+    const countBadge = document.getElementById('adminTotalJobsCount');
+    const tableCountBadge = document.getElementById('adminActiveJobsTableCount');
+
+    let allJobs = [];
+    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function') {
+      allJobs = VUO_JOB_ALERT.getAllJobs();
+    }
+
+    const totalCount = allJobs.length;
+    if (countBadge) countBadge.textContent = totalCount;
+    if (tableCountBadge) tableCountBadge.textContent = totalCount;
+
+    if (!tbody) return;
+
+    let filtered = allJobs;
+    if (filterQuery) {
+      filtered = allJobs.filter(j => 
+        (j.title || '').toLowerCase().includes(filterQuery) ||
+        (j.organization || '').toLowerCase().includes(filterQuery) ||
+        (j.category || '').toLowerCase().includes(filterQuery) ||
+        (j.qualification || '').toLowerCase().includes(filterQuery)
+      );
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No active job alerts found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(j => {
+      const safeId = (j.id || '').replace(/'/g, "\\'");
+      return `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs">
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${j.title}</div>
+            <div class="text-[11px] text-slate-500 font-semibold">${j.organization || 'Govt Department'}</div>
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200">${j.category || 'Govt'}</span>
+          </td>
+          <td class="p-3 font-bold text-emerald-700">${j.salary || 'Govt Scale'}</td>
+          <td class="p-3 font-semibold text-slate-700">${j.vacancies || '—'}</td>
+          <td class="p-3 font-bold text-rose-700 whitespace-nowrap">${j.lastDate || '—'}</td>
+          <td class="p-3 text-[11px] text-slate-500">${j.source || 'Scraped'}</td>
+          <td class="p-3 text-right whitespace-nowrap">
+            <a href="${j.applyUrl || '#'}" target="_blank" class="px-2 py-1 text-sky-600 hover:bg-sky-50 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 transition-colors mr-1">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Apply
+            </a>
+            <button onclick="VUO_ADMIN.deleteJobAlert('${safeId}')" class="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg font-bold text-[11px] transition-colors cursor-pointer">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 };
 
 if (typeof window !== 'undefined') {
   window.VUO_ADMIN = VUO_ADMIN;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = VUO_ADMIN;
 }

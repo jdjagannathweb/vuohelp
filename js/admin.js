@@ -421,6 +421,7 @@ const VUO_ADMIN = {
     try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
     try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
     try { this.renderVleActivityTable(); } catch (e) { console.warn("renderVleActivityTable error:", e); }
+    try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
   },
 
   // ---------------- 1. IMPORTANT LINKS ---------------- //
@@ -2405,6 +2406,328 @@ const VUO_ADMIN = {
     link.click();
     document.body.removeChild(link);
     if (typeof showToast === 'function') showToast("Members CSV exported successfully!", "success");
+  },
+
+  // ---------------- 13. JOB ALERTS & 5 AUTO-SYNC PORTALS ---------------- //
+  _cachedJobSources: null,
+
+  async loadJobSources() {
+    if (this._cachedJobSources && this._cachedJobSources.length > 0) {
+      this.populateJobSourcesInputs(this._cachedJobSources);
+      return;
+    }
+    try {
+      const res = await fetch('/api/job-sources', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.sources)) {
+          this._cachedJobSources = data.sources;
+          this.populateJobSourcesInputs(data.sources);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log("[Admin] Local job sources fallback:", e);
+    }
+    const defaults = [
+      { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
+      { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
+      { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
+    ];
+    this._cachedJobSources = defaults;
+    this.populateJobSourcesInputs(defaults);
+  },
+
+  populateJobSourcesInputs(sources) {
+    for (let i = 1; i <= 5; i++) {
+      const src = (Array.isArray(sources) && sources[i - 1]) ? sources[i - 1] : null;
+      const nameInput = document.getElementById(`adminJobSource${i}Name`);
+      const urlInput = document.getElementById(`adminJobSource${i}Url`);
+      const activeCheck = document.getElementById(`adminJobSource${i}Active`);
+
+      if (src) {
+        if (nameInput) nameInput.value = src.name || `Portal ${i}`;
+        if (urlInput) urlInput.value = src.url || '';
+        if (activeCheck) activeCheck.checked = src.active !== false;
+      }
+    }
+  },
+
+  async saveJobSources() {
+    const sources = [];
+    for (let i = 1; i <= 5; i++) {
+      const nameInput = document.getElementById(`adminJobSource${i}Name`);
+      const urlInput = document.getElementById(`adminJobSource${i}Url`);
+      const activeCheck = document.getElementById(`adminJobSource${i}Active`);
+
+      const name = nameInput ? nameInput.value.trim() : `Portal ${i}`;
+      const url = urlInput ? urlInput.value.trim() : '';
+      const active = activeCheck ? activeCheck.checked : true;
+
+      sources.push({
+        id: i,
+        name: name || `Portal ${i}`,
+        url: url,
+        active: active
+      });
+    }
+
+    this._cachedJobSources = sources;
+    try {
+      localStorage.setItem('vuo_configured_job_sources', JSON.stringify(sources));
+    } catch(e) {}
+
+    // Send to server
+    try {
+      const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+      if (btn) btn.disabled = true;
+      if (typeof showToast === 'function') showToast("Saving 5 portals and running auto-sync...", "info");
+
+      const res = await fetch('/api/save-job-sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sources)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof showToast === 'function') {
+          showToast(`✅ 5 Website Portals Saved! Synced ${data.count || 0} active jobs!`, "success");
+        }
+      }
+    } catch (e) {
+      console.warn("[Admin] Save sources server error:", e);
+      if (typeof showToast === 'function') showToast("5 Portals saved locally!", "success");
+    } finally {
+      const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+      if (btn) btn.disabled = false;
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        await VUO_JOB_ALERT.fetchLiveServerJobs(true);
+      }
+      this.renderJobAlertsAdmin();
+    }
+  },
+
+  resetDefaultJobSources() {
+    const defaults = [
+      { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
+      { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
+      { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
+    ];
+    this.populateJobSourcesInputs(defaults);
+    if (typeof showToast === 'function') showToast("Default 5 portals restored. Click 'Save' to apply.", "info");
+  },
+
+  async syncAllJobSourcesNow() {
+    const btn = document.getElementById('adminJobAlertsSyncAllBtn');
+    const textEl = document.getElementById('adminJobAlertsSyncAllBtnText');
+    if (btn) btn.disabled = true;
+    if (textEl) textEl.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin text-amber-950"></i> Syncing 5 Portals...`;
+
+    try {
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        await VUO_JOB_ALERT.fetchLiveServerJobs(true);
+      } else {
+        await fetch('/api/sync-job-alerts');
+      }
+      this.renderJobAlertsAdmin();
+      if (typeof showToast === 'function') showToast("✅ All configured website portals synced successfully!", "success");
+    } catch (e) {
+      if (typeof showToast === 'function') showToast("Sync error: " + e.message, "error");
+    } finally {
+      if (btn) btn.disabled = false;
+      if (textEl) textEl.innerHTML = `⚡ Sync All 5 Sources Now`;
+    }
+  },
+
+  handleAdminAddJob(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const title = (document.getElementById('adminCustomJobTitle')?.value || '').trim();
+    const org = (document.getElementById('adminCustomJobOrg')?.value || '').trim();
+    const category = document.getElementById('adminCustomJobCategory')?.value || 'Odisha Govt';
+    const vacancies = (document.getElementById('adminCustomJobVacancies')?.value || '').trim() || 'Various Posts';
+    const salary = (document.getElementById('adminCustomJobSalary')?.value || '').trim();
+    const qual = (document.getElementById('adminCustomJobQual')?.value || '').trim() || 'Matric / Degree';
+    const startDate = (document.getElementById('adminCustomJobStartDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
+    const lastDate = (document.getElementById('adminCustomJobLastDate')?.value || '').trim();
+    const applyUrl = (document.getElementById('adminCustomJobApplyUrl')?.value || '').trim();
+    const notifUrl = (document.getElementById('adminCustomJobNotifUrl')?.value || '').trim() || applyUrl;
+    const docsRaw = (document.getElementById('adminCustomJobDocs')?.value || '').trim();
+
+    if (!title || !lastDate || !applyUrl) {
+      if (typeof showToast === 'function') showToast("Kripya Job Title, Last Date aur Apply URL fill karein!", "warning");
+      return;
+    }
+
+    let docs = [];
+    if (docsRaw) {
+      docs = docsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+    } else {
+      docs = [
+        "10th Class Board Certificate & Marksheet",
+        "+2 / Degree Certificate & Marksheet",
+        "Aadhaar Card (Mobile Linked)",
+        "Recent Passport Size Color Photo",
+        "Candidate Signature",
+        "Resident & Caste Certificate (if applicable)"
+      ];
+    }
+
+    const newJob = {
+      id: `custom-job-${Date.now()}`,
+      title: title,
+      titleOdia: title,
+      organization: org || 'Government Recruitment Board',
+      post: title,
+      vacancies: vacancies,
+      qualification: qual,
+      salary: salary || 'Govt Pay Scale',
+      startDate: startDate,
+      lastDate: lastDate,
+      category: category,
+      status: 'Active',
+      applyUrl: applyUrl,
+      notificationUrl: notifUrl,
+      officialUrl: applyUrl,
+      source: 'Admin Published',
+      documents: docs,
+      featured: true,
+      syncedAt: Date.now()
+    };
+
+    // Save to localStorage
+    try {
+      let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      custom.unshift(newJob);
+      localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
+    } catch(err) {}
+
+    // POST to server
+    try {
+      fetch('/api/save-job-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newJob)
+      }).catch(() => {});
+    } catch(err) {}
+
+    // Add to VUO_JOB_ALERT if present
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (!Array.isArray(VUO_JOB_ALERT.jobs)) VUO_JOB_ALERT.jobs = [];
+      VUO_JOB_ALERT.jobs.unshift(newJob);
+      VUO_JOB_ALERT.renderStats();
+      VUO_JOB_ALERT.renderJobs();
+    }
+
+    // Reset Form
+    const form = document.getElementById('adminAddJobAlertForm');
+    if (form) form.reset();
+
+    this.renderJobAlertsAdmin();
+    if (typeof showToast === 'function') {
+      showToast("✅ ନୂଆ ସରକାରୀ ଚାକିରୀ ଆଲର୍ଟ ସଫଳତାର ସହିତ ପବ୍ଲିଶ ହେଲା!", "success");
+    }
+  },
+
+  async deleteJobAlert(jobId) {
+    if (!jobId) return;
+    if (!confirm("Are you sure you want to delete this job alert?")) return;
+
+    // Delete locally
+    try {
+      let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      custom = custom.filter(j => j.id !== jobId);
+      localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
+    } catch(e) {}
+
+    // Delete on server
+    try {
+      await fetch('/api/delete-job-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: jobId })
+      });
+    } catch(e) {}
+
+    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
+      VUO_JOB_ALERT.jobs = VUO_JOB_ALERT.jobs.filter(j => j.id !== jobId);
+      VUO_JOB_ALERT.renderStats();
+      VUO_JOB_ALERT.renderJobs();
+    }
+
+    this.renderJobAlertsAdmin();
+    if (typeof showToast === 'function') showToast("Job alert deleted.", "info");
+  },
+
+  filterJobAlertsTable() {
+    const input = document.getElementById('adminJobSearchFilter');
+    const q = input ? input.value.toLowerCase().trim() : '';
+    this.renderJobAlertsAdmin(q);
+  },
+
+  renderJobAlertsAdmin(filterQuery = '') {
+    this.loadJobSources();
+
+    const tbody = document.getElementById('adminJobAlertsTbody');
+    const countBadge = document.getElementById('adminTotalJobsCount');
+    const tableCountBadge = document.getElementById('adminActiveJobsTableCount');
+
+    let allJobs = [];
+    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function') {
+      allJobs = VUO_JOB_ALERT.getAllJobs();
+    }
+
+    const totalCount = allJobs.length;
+    if (countBadge) countBadge.textContent = totalCount;
+    if (tableCountBadge) tableCountBadge.textContent = totalCount;
+
+    if (!tbody) return;
+
+    let filtered = allJobs;
+    if (filterQuery) {
+      filtered = allJobs.filter(j => 
+        (j.title || '').toLowerCase().includes(filterQuery) ||
+        (j.organization || '').toLowerCase().includes(filterQuery) ||
+        (j.category || '').toLowerCase().includes(filterQuery) ||
+        (j.qualification || '').toLowerCase().includes(filterQuery)
+      );
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No active job alerts found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(j => {
+      const safeId = (j.id || '').replace(/'/g, "\\'");
+      return `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-xs">
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${j.title}</div>
+            <div class="text-[11px] text-slate-500 font-semibold">${j.organization || 'Govt Department'}</div>
+          </td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200">${j.category || 'Govt'}</span>
+          </td>
+          <td class="p-3 font-bold text-emerald-700">${j.salary || 'Govt Scale'}</td>
+          <td class="p-3 font-semibold text-slate-700">${j.vacancies || '—'}</td>
+          <td class="p-3 font-bold text-rose-700 whitespace-nowrap">${j.lastDate || '—'}</td>
+          <td class="p-3 text-[11px] text-slate-500">${j.source || 'Scraped'}</td>
+          <td class="p-3 text-right whitespace-nowrap">
+            <a href="${j.applyUrl || '#'}" target="_blank" class="px-2 py-1 text-sky-600 hover:bg-sky-50 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 transition-colors mr-1">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Apply
+            </a>
+            <button onclick="VUO_ADMIN.deleteJobAlert('${safeId}')" class="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg font-bold text-[11px] transition-colors cursor-pointer">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 };
 

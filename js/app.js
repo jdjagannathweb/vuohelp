@@ -129,8 +129,18 @@ const VUO_SEARCH = {
       { name: "Word to PDF Converter", nameOdia: "ୱାର୍ଡ ଟୁ PDF", hash: "#pdftools-wordtopdf", type: "Tool", icon: "📝", desc: "Convert Docx and text files to clean A4 PDF documents" },
       { name: "PDF Editor & Attestation Seal", nameOdia: "PDF ଏଡିଟର ଓ ଷ୍ଟାମ୍ପ", hash: "#pdfeditor", type: "Tool", icon: "✒️", desc: "Interactive visual PDF editor, stamps & signatures" },
       { name: "WhatsApp Image Resizer & Darkness Clear", nameOdia: "ହ୍ୱାଟ୍ସଆପ୍ ଡକ୍ୟୁମେଣ୍ଟ ରିସାଇଜର ଓ ଡାର୍କନେସ କ୍ଲିଅର", hash: "#whatsappresizer", type: "Tool", icon: "🟢", desc: "4-Corner perspective warp, clear darkness for printing & save ink" },
-      { name: "Image to PDF (<200KB Portal Mode)", nameOdia: "ଇମେଜ୍ ଟୁ PDF (<୨୦୦ KB)", hash: "#imgtopdf", type: "Tool", icon: "📑", desc: "Multi-image to PDF with Odisha e-District & Subhadra <200KB preset" }
+      { name: "Image to PDF (<200KB Portal Mode)", nameOdia: "ଇମେଜ୍ ଟୁ PDF (<୨୦୦ KB)", hash: "#imgtopdf", type: "Tool", icon: "📑", desc: "Multi-image to PDF with Odisha e-District & Subhadra <200KB preset" },
+      { name: "Job Alert & Online Form Desk", nameOdia: "ଚାକିରି ଆଲର୍ଟ ଓ ଅନଲାଇନ୍ ଫର୍ମ ଡେସ୍କ", hash: "#jobalert", type: "Desk", icon: "📢", desc: "Odisha & Central Govt Jobs with salary, last date, apply link & document checklist" }
     ];
+
+    const jobs = (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function' ? VUO_JOB_ALERT.getAllJobs() : []).map(j => ({
+      name: j.title || j.post || 'Govt Job Notification',
+      nameOdia: j.titleOdia || j.post || 'ଚାକିରି ବିଜ୍ଞପ୍ତି',
+      hash: "#jobalert",
+      type: "Job Alert",
+      icon: "💼",
+      desc: (j.organization ? j.organization + ' • ' : '') + (j.salary ? 'Salary: ' + j.salary + ' • ' : '') + 'Last Date: ' + (j.lastDate || 'N/A')
+    }));
 
     const links = VUO_LINKS.getAllLinks().map(l => ({
       name: l.title,
@@ -159,7 +169,7 @@ const VUO_SEARCH = {
       desc: f.desc || (f.categoryName + " - " + f.size)
     }));
 
-    const allItems = [...tools, ...links, ...videos, ...forms];
+    const allItems = [...tools, ...jobs, ...links, ...videos, ...forms];
 
     const filtered = q ? allItems.filter(item => 
       item.name.toLowerCase().includes(q) || 
@@ -854,6 +864,12 @@ const VUO_APP = {
     } else if (cleanHash === 'imgtopdf' || cleanHash === 'imagetopdf') {
       viewName = 'pdftools';
       subTab = 'imgToPdf';
+    } else if (cleanHash.startsWith('jobalert-') || cleanHash === 'jobalert' || cleanHash === 'jobalerts' || cleanHash === 'jobs') {
+      viewName = 'jobalert';
+      subTab = cleanHash.startsWith('jobalert-') ? cleanHash.replace('jobalert-', '') : '';
+    } else if (cleanHash.startsWith('admin-')) {
+      viewName = 'admin';
+      subTab = cleanHash.replace('admin-', '');
     }
 
     // Hide all view containers
@@ -1025,10 +1041,20 @@ const VUO_APP = {
           VUO_CSCTOOLS.switchTab(subTab);
         }
       }
+    } else if (viewName === 'jobalert') {
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        VUO_JOB_ALERT.init();
+        if (subTab) {
+          VUO_JOB_ALERT.setFilter(subTab);
+        }
+      }
     } else if (viewName === 'admin') {
       if (VUO_AUTH.isAdmin()) {
         if (typeof VUO_ADMIN !== 'undefined') {
           VUO_ADMIN.init();
+          if (subTab) {
+            VUO_ADMIN.switchTab(subTab);
+          }
         }
         if (typeof window.vuoRenderAdminFormsTable === 'function') {
           setTimeout(window.vuoRenderAdminFormsTable, 50);

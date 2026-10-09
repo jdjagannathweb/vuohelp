@@ -1040,7 +1040,7 @@ body {
             <button id="navServicesDropdownBtn" onclick="window.toggleNavServicesDropdown(event)" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
               <i class="fa-solid fa-layer-group text-amber-400 text-xs"></i>
               <span>CSC Services</span>
-              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs">4 Core Desks</span>
+              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs">5 Core Desks</span>
               <i id="navServicesChevron" class="fa-solid fa-chevron-down text-[9px] text-slate-400 nav-chevron transition-transform duration-200"></i>
             </button>
             <div id="navServicesDropdownMenu" class="nav-dropdown-menu hidden">
@@ -1053,10 +1053,22 @@ body {
                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                     <span>🏛️ Core CSC Desks</span>
                   </span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-800 border border-amber-200">4 Desks</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-800 border border-amber-200">5 Desks</span>
                 </div>
 
-                <!-- 1. Training Desk -->
+                <!-- 1. Job Alert Desk (NEW & LIVE) -->
+                <a href="#jobalert" onclick="if(window.closeAllNavDropdowns) window.closeAllNavDropdowns();" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 text-slate-800 hover:text-amber-900 border border-amber-200/60 bg-amber-50/30 transition-all group/item">
+                  <span class="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center text-sm group-hover/item:scale-110 group-hover/item:bg-amber-500 group-hover/item:text-slate-950 transition-all"><i class="fa-solid fa-briefcase"></i></span>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-900">Job Alert Desk</span>
+                      <span class="px-1.5 py-0.2 text-[8px] font-black rounded bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 animate-pulse">NEW &amp; LIVE</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 truncate">Odisha &amp; Central Jobs, Salary, Docs</p>
+                  </div>
+                </a>
+
+                <!-- 2. Training Desk -->
                 <a href="#training" onclick="if(window.closeAllNavDropdowns) window.closeAllNavDropdowns();" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-purple-50 text-slate-800 hover:text-purple-900 border border-transparent hover:border-purple-200 transition-all group/item">
                   <span class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-600 flex items-center justify-center text-sm group-hover/item:scale-110 group-hover/item:bg-purple-600 group-hover/item:text-white transition-all"><i class="fa-solid fa-circle-play"></i></span>
                   <div class="flex-1 min-w-0">
@@ -1068,7 +1080,7 @@ body {
                   </div>
                 </a>
 
-                <!-- 2. Vle's Lead Desk -->
+                <!-- 3. Vle's Lead Desk -->
                 <a href="#leads" onclick="if(window.closeAllNavDropdowns) window.closeAllNavDropdowns();" class="nav-link-leads flex items-center gap-2.5 p-2 rounded-xl hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 border border-transparent hover:border-emerald-200 transition-all group/item cursor-pointer">
                   <span class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center text-sm group-hover/item:scale-110 group-hover/item:bg-emerald-600 group-hover/item:text-white transition-all"><i class="fa-solid fa-bolt"></i></span>
                   <div class="flex-1 min-w-0">
@@ -1080,7 +1092,7 @@ body {
                   </div>
                 </a>
 
-                <!-- 3. Offline Forms (PDF) -->
+                <!-- 4. Offline Forms (PDF) -->
                 <a href="#forms" onclick="if(window.closeAllNavDropdowns) window.closeAllNavDropdowns();" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-rose-50 text-slate-800 hover:text-rose-900 border border-transparent hover:border-rose-200 transition-all group/item">
                   <span class="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-600 flex items-center justify-center text-sm group-hover/item:scale-110 group-hover/item:bg-rose-600 group-hover/item:text-white transition-all"><i class="fa-solid fa-file-pdf"></i></span>
                   <div class="flex-1 min-w-0">
@@ -1092,7 +1104,7 @@ body {
                   </div>
                 </a>
 
-                <!-- 4. Important Links -->
+                <!-- 5. Important Links -->
                 <a href="#links" onclick="if(window.closeAllNavDropdowns) window.closeAllNavDropdowns();" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-900 border border-transparent hover:border-sky-200 transition-all group/item">
                   <span class="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-600 flex items-center justify-center text-sm group-hover/item:scale-110 group-hover/item:bg-sky-600 group-hover/item:text-white transition-all"><i class="fa-solid fa-link"></i></span>
                   <div class="flex-1 min-w-0">
@@ -1255,6 +1267,10 @@ body {
         <a href="#csctools-qrcode" onclick="VUO_APP.navigateTo('csctools'); setTimeout(()=>VUO_CSCTOOLS.switchTab('qrcode'),50);" class="mobile-nav-link py-2 px-3 rounded-xl bg-purple-950/30 border border-purple-800/30 text-purple-300 flex items-center gap-2"><i class="fa-solid fa-qrcode text-purple-400"></i> QR Code Generator</a>
         <a href="#csctools-poster" onclick="VUO_APP.navigateTo('csctools'); setTimeout(()=>VUO_CSCTOOLS.switchTab('poster'),50);" class="mobile-nav-link py-2 px-3 rounded-xl bg-amber-950/30 border border-amber-800/30 text-amber-300 flex items-center gap-2"><i class="fa-solid fa-bullhorn text-amber-400"></i> CSC Poster Maker</a>
         <a href="#csctools-credit" class="mobile-nav-link py-2 px-3 rounded-xl bg-rose-950/30 border border-rose-800/30 text-rose-300 flex items-center justify-between"><span class="flex items-center gap-2"><i class="fa-solid fa-book-bookmark text-rose-400"></i> VLE Udhar Khata (Credit)</span><span class="bg-rose-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded">7-DAY ALERT</span></a>
+        <a href="#jobalert" class="mobile-nav-link py-2.5 px-3 rounded-xl border border-amber-500/60 bg-gradient-to-r from-amber-950/80 to-orange-950/80 text-amber-200 flex items-center justify-between shadow-md font-black">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-briefcase text-amber-400 animate-pulse"></i> Job Alert Desk (Sarkari)</span>
+          <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">NEW &amp; LIVE</span>
+        </a>
         <a href="#links" class="mobile-nav-link py-2.5 px-3 rounded-xl border border-sky-800/50 bg-sky-950/40 text-sky-200 flex items-center justify-between" data-i18n="nav_links">
           <span class="flex items-center gap-2"><i class="fa-solid fa-link text-sky-400"></i> Important Links</span>
           <span class="bg-sky-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">60+</span>
@@ -1374,6 +1390,9 @@ body {
             <!-- Quick Service Shortcut Chips -->
             <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 text-[11px] font-bold">
               <span class="text-slate-500 text-[10px] uppercase tracking-wider mr-1">Quick Jump:</span>
+              <a href="#jobalert" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 border border-amber-300 text-amber-950 shadow-2xs transition-all flex items-center gap-1.5 font-black">
+                <i class="fa-solid fa-briefcase text-amber-600"></i> Job Alert Desk (Sarkari)
+              </a>
               <a href="#whatsappresizer" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs transition-all flex items-center gap-1.5">
                 <i class="fa-brands fa-whatsapp text-emerald-600"></i> WhatsApp Resizer &amp; Clean
               </a>
@@ -1394,6 +1413,10 @@ body {
 
           <!-- Hero Action CTA Buttons -->
           <div class="flex flex-wrap justify-center items-center gap-3 pt-4">
+            <a href="#jobalert" class="px-5 sm:px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 shadow-xl shadow-amber-500/25 transition-all transform hover:-translate-y-1 flex items-center gap-2">
+              <i class="fa-solid fa-briefcase text-slate-950"></i>
+              <span>JOB ALERT DESK (LIVE)</span>
+            </a>
             <a href="#forms" class="px-5 sm:px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-xl shadow-rose-500/25 transition-all transform hover:-translate-y-1 flex items-center gap-2">
               <i class="fa-solid fa-file-pdf text-white"></i>
               <span>OFFLINE FORMS (26+)</span>
@@ -6538,6 +6561,137 @@ body {
       </div>
     </section>
 
+    <!-- ---------------- VIEW 11B: JOB ALERT DESK ---------------- -->
+    <section id="view_jobalert" class="view-container hidden py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      
+      <!-- Top Title & Live Sync Header -->
+      <div class="mb-8 max-w-4xl mx-auto text-center space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300 text-amber-900 text-xs font-black shadow-xs">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+          <span>📢 LIVE GOVERNMENT JOB ALERTS &amp; SARKARI RECRUITMENT</span>
+          <span class="text-amber-400">|</span>
+          <span class="text-amber-700 font-extrabold text-[11px]">Live Auto-Sync Desk</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight">
+          Job Alert Desk &amp; Sarkari Recruitment
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto">
+          ଓଡ଼ିଶା ଓ ସର୍ବଭାରତୀୟ ସରକାରୀ ଚାକିରୀ ସୂଚନା, ପୋଷ୍ଟ ସଂଖ୍ୟା, ମାସିକ ଦରମା (Salary), ଆବେଦନ ତାରିଖ, ଆବଶ୍ୟକ କାଗଜପତ୍ର (Documents Checklist) ଏବଂ ଡାଇରେକ୍ଟ ଅନଲାଇନ୍ ଆବେଦନ ଲିଙ୍କ୍।
+        </p>
+
+        <!-- Live Sync Action Row (No external website names) -->
+        <div class="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+          <button id="jobAlertSyncBtn" onclick="VUO_JOB_ALERT.fetchLiveServerJobs(true)" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate text-slate-950"></i>
+            <span id="jobAlertSyncBtnText">Auto-Sync Latest Jobs</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Stat Counters Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm text-center">
+          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Active Jobs</span>
+          <span id="jobStatTotal" class="text-2xl sm:text-3xl font-black text-slate-900 block mt-0.5">10</span>
+          <span class="text-[10px] text-slate-400 font-medium">Odisha &amp; All India</span>
+        </div>
+        <div class="bg-white rounded-2xl border border-amber-200/80 p-4 shadow-sm text-center bg-gradient-to-b from-white to-amber-50/40">
+          <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Odisha Govt Jobs</span>
+          <span id="jobStatOdisha" class="text-2xl sm:text-3xl font-black text-amber-700 block mt-0.5">6</span>
+          <span class="text-[10px] text-amber-600/80 font-medium">OSSC, OSSSC, Police</span>
+        </div>
+        <div class="bg-white rounded-2xl border border-sky-200/80 p-4 shadow-sm text-center bg-gradient-to-b from-white to-sky-50/40">
+          <span class="text-[11px] font-bold text-sky-800 uppercase tracking-wider block">Central &amp; Railway</span>
+          <span id="jobStatCentral" class="text-2xl sm:text-3xl font-black text-sky-700 block mt-0.5">4</span>
+          <span class="text-[10px] text-sky-600/80 font-medium">RRB, SSC, Banking</span>
+        </div>
+        <div class="bg-white rounded-2xl border border-rose-200/80 p-4 shadow-sm text-center bg-gradient-to-b from-white to-rose-50/40">
+          <span class="text-[11px] font-bold text-rose-800 uppercase tracking-wider block">Closing Soon (&le; 7 Days)</span>
+          <span id="jobStatClosing" class="text-2xl sm:text-3xl font-black text-rose-600 block mt-0.5">2</span>
+          <span class="text-[10px] text-rose-600/80 font-medium">Apply Immediately</span>
+        </div>
+      </div>
+
+      <!-- Controls Row: Search Input + Explicit Search Button + Auto-Sync + Sort -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <!-- Search input with Search Button -->
+        <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-xl">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" id="jobAlertSearchInput" placeholder="Search by Job Name, Post, Qualification (10th/Degree)..."
+              class="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all" />
+          </div>
+          <button id="jobAlertSearchBtn" onclick="VUO_JOB_ALERT.executeSearch()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs whitespace-nowrap">
+            <i class="fa-solid fa-magnifying-glass text-amber-400"></i> Search
+          </button>
+          <button id="jobAlertSearchClearBtn" onclick="VUO_JOB_ALERT.clearSearch()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer whitespace-nowrap" title="Reset Search">
+            Reset
+          </button>
+        </div>
+
+        <!-- Filter Count, Secondary Auto-Sync & Sort -->
+        <div class="flex flex-wrap items-center justify-between w-full md:w-auto gap-2.5 text-xs">
+          <button onclick="VUO_JOB_ALERT.fetchLiveServerJobs(true)" class="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate text-amber-700"></i>
+            <span>Auto-Sync</span>
+          </button>
+          <span id="jobAlertsCountBadge" class="font-black text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
+            Loading Jobs...
+          </span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500 font-bold text-[11px]">Sort:</span>
+            <select id="jobAlertSortSelect" class="bg-slate-50 border border-slate-200 text-slate-800 font-bold rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+              <option value="lastDate">Nearest Last Date</option>
+              <option value="newest">Recently Added</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-8 overflow-x-auto pb-1">
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-black rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 border border-amber-500 text-slate-950 shadow-md transition-all cursor-pointer whitespace-nowrap" data-cat="all">
+          <i class="fa-solid fa-border-all mr-1"></i> All Jobs
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="odisha">
+          <i class="fa-solid fa-landmark text-amber-600 mr-1"></i> Odisha Govt (OSSC/OSSSC)
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="railway">
+          <i class="fa-solid fa-train text-red-600 mr-1"></i> Railway (RRB)
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="defense">
+          <i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i> Defense &amp; Police (Odisha/SSC)
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="banking">
+          <i class="fa-solid fa-piggy-bank text-blue-600 mr-1"></i> Banking (SBI/IBPS)
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="matric">
+          <i class="fa-solid fa-graduation-cap text-purple-600 mr-1"></i> 10th &amp; 12th Pass Only
+        </button>
+        <button class="job-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs cursor-pointer whitespace-nowrap" data-cat="closing">
+          <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Closing in 7 Days
+        </button>
+      </div>
+
+      <!-- Main Jobs Grid Container -->
+      <div id="jobAlertsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 items-start">
+        <!-- Injected via jobalert.js -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="jobAlertsEmpty" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-md mx-auto">
+        <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mx-auto mb-4">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+        <h3 class="text-base font-black text-slate-900">କୌଣସି ଚାକିରୀ ସୂଚନା ମିଳିଲା ନାହିଁ</h3>
+        <p class="text-xs text-slate-500 mt-1 mb-4">No jobs matching your filter or search query. Please try searching another keyword or reset the filter.</p>
+        <button onclick="document.getElementById('jobAlertSearchInput').value=''; VUO_JOB_ALERT.searchQuery=''; VUO_JOB_ALERT.renderJobs();" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer">
+          Reset Filter &amp; Show All
+        </button>
+      </div>
+
+    </section>
 
     <!-- ---------------- VIEW 12: VLE TRAINING ---------------- -->
     <section id="view_training" class="view-container hidden py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -6938,6 +7092,9 @@ body {
         </button>
         <button type="button" onclick="VUO_ADMIN.switchTab('firebase')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="firebase">
           <i class="fa-solid fa-fire text-amber-600"></i> Firebase Cloud Sync
+        </button>
+        <button type="button" onclick="VUO_ADMIN.switchTab('jobalerts')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="jobalerts">
+          <i class="fa-solid fa-briefcase text-amber-600"></i> Job Alerts &amp; 5 Sync Portals (<span id="adminTotalJobsCount">0</span>)
         </button>
       </div>
 
@@ -8039,6 +8196,286 @@ body {
               </tr>
             </tbody>
           </table>
+        </div>
+
+      </div>
+
+      <!-- 12. Job Alerts & 5 Auto-Sync Portals Pane -->
+      <div id="admin_pane_jobalerts" class="admin-tab-pane hidden mt-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-8">
+        
+        <!-- Header with Live Sync Status & Actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold mb-1">
+              <i class="fa-solid fa-briefcase"></i> Sarkari Job Alert Control &amp; Auto-Sync
+            </div>
+            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+              <span>Government Job Alerts &amp; 5 Auto-Sync Portals</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Configure 5 recruitment website portals for automatic auto-sync, add custom job notifications with salary &amp; document checklists, and manage active listings.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="adminJobAlertsSyncAllBtn" onclick="VUO_ADMIN.syncAllJobSourcesNow()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
+              <i class="fa-solid fa-arrows-rotate text-slate-950"></i>
+              <span id="adminJobAlertsSyncAllBtnText">⚡ Sync All 5 Sources Now</span>
+            </button>
+            <a href="#jobalert" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-arrow-up-right-from-square text-amber-400"></i> View Public Page
+            </a>
+          </div>
+        </div>
+
+        <!-- SECTION 1: 5 Configurable Website Sources for Auto-Sync -->
+        <div class="bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30 p-5 rounded-2xl border border-amber-200 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-200/60">
+            <div>
+              <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-globe text-amber-600"></i>
+                <span>5 Auto-Sync Website Portals Configuration</span>
+              </h4>
+              <p class="text-[11px] text-slate-600 mt-0.5">
+                Yahan 5 website links configure karein. Save &amp; Auto-sync karne par in sabhi links se latest recruitment table automatic scrape hokar Job Alert Desk me add ho jayegi.
+              </p>
+            </div>
+            <span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
+              5 Slots Configurable
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Source 1 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div class="md:col-span-1 flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">1</span>
+                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 1:</span>
+              </div>
+              <div class="md:col-span-3">
+                <input type="text" id="adminJobSource1Name" placeholder="Portal Name (e.g. Odisha Govt)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
+              </div>
+              <div class="md:col-span-6">
+                <input type="url" id="adminJobSource1Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
+              </div>
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="adminJobSource1Active" checked class="w-4 h-4 text-amber-600 rounded" />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Source 2 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div class="md:col-span-1 flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">2</span>
+                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 2:</span>
+              </div>
+              <div class="md:col-span-3">
+                <input type="text" id="adminJobSource2Name" placeholder="Portal Name (e.g. Railway RRB)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
+              </div>
+              <div class="md:col-span-6">
+                <input type="url" id="adminJobSource2Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
+              </div>
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="adminJobSource2Active" checked class="w-4 h-4 text-amber-600 rounded" />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Source 3 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div class="md:col-span-1 flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">3</span>
+                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 3:</span>
+              </div>
+              <div class="md:col-span-3">
+                <input type="text" id="adminJobSource3Name" placeholder="Portal Name (e.g. SSC & Central)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
+              </div>
+              <div class="md:col-span-6">
+                <input type="url" id="adminJobSource3Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
+              </div>
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="adminJobSource3Active" checked class="w-4 h-4 text-amber-600 rounded" />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Source 4 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div class="md:col-span-1 flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">4</span>
+                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 4:</span>
+              </div>
+              <div class="md:col-span-3">
+                <input type="text" id="adminJobSource4Name" placeholder="Portal Name (e.g. Banking & IBPS)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
+              </div>
+              <div class="md:col-span-6">
+                <input type="url" id="adminJobSource4Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
+              </div>
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="adminJobSource4Active" checked class="w-4 h-4 text-amber-600 rounded" />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Source 5 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+              <div class="md:col-span-1 flex items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">5</span>
+                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 5:</span>
+              </div>
+              <div class="md:col-span-3">
+                <input type="text" id="adminJobSource5Name" placeholder="Portal Name (e.g. Police & Defense)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
+              </div>
+              <div class="md:col-span-6">
+                <input type="url" id="adminJobSource5Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
+              </div>
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="adminJobSource5Active" checked class="w-4 h-4 text-amber-600 rounded" />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Sources Button -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <button type="button" onclick="VUO_ADMIN.saveJobSources()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
+              <i class="fa-solid fa-floppy-disk text-slate-950"></i>
+              <span>Save 5 Website Portals &amp; Run Auto-Sync</span>
+            </button>
+            <button type="button" onclick="VUO_ADMIN.resetDefaultJobSources()" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-all">
+              Reset 5 Default Portals
+            </button>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Add New Job Alert Form (Moved to Admin Portal) -->
+        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+          <div class="pb-3 border-b border-slate-200">
+            <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-plus-circle text-emerald-600"></i>
+              <span>+ Add New Government Job Alert Manually</span>
+            </h4>
+            <p class="text-[11px] text-slate-600 mt-0.5">
+              Custom job alert create karein jisme salary, apply last date, direct apply link aur document checklist customer ke liye ready rahegi.
+            </p>
+          </div>
+
+          <form id="adminAddJobAlertForm" onsubmit="VUO_ADMIN.handleAdminAddJob(event)" class="space-y-3.5 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div class="md:col-span-7">
+                <label class="block font-bold text-slate-700 mb-1">Job Title / Recruitment Name *</label>
+                <input type="text" id="adminCustomJobTitle" required placeholder="e.g. OSSC CGL Specialist Recruitment 2026" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold" />
+              </div>
+              <div class="md:col-span-5">
+                <label class="block font-bold text-slate-700 mb-1">Organization / Board *</label>
+                <input type="text" id="adminCustomJobOrg" required placeholder="e.g. Odisha Staff Selection Commission (OSSC)" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Category</label>
+                <select id="adminCustomJobCategory" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold">
+                  <option value="Odisha Govt">Odisha Govt</option>
+                  <option value="Central Govt">Central Govt</option>
+                  <option value="Railway">Railway</option>
+                  <option value="Banking">Banking</option>
+                  <option value="Defense & Police">Defense & Police</option>
+                  <option value="10th & 12th Pass">10th & 12th Pass</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Total Vacancies</label>
+                <input type="text" id="adminCustomJobVacancies" placeholder="e.g. 595 Posts" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Salary / Pay Scale *</label>
+                <input type="text" id="adminCustomJobSalary" required placeholder="e.g. ₹35,400 - ₹1,12,400 (Level-9)" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-emerald-800" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Qualification</label>
+                <input type="text" id="adminCustomJobQual" placeholder="e.g. Any Bachelor Degree / +2" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Start Date</label>
+                <input type="text" id="adminCustomJobStartDate" placeholder="e.g. 10-10-2026" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Last Date (End Date) *</label>
+                <input type="text" id="adminCustomJobLastDate" required placeholder="e.g. 10-11-2026" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-rose-700" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Apply Online URL *</label>
+                <input type="url" id="adminCustomJobApplyUrl" required placeholder="https://www.ossc.gov.in" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-[11px]" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Official Notification PDF URL</label>
+                <input type="url" id="adminCustomJobNotifUrl" placeholder="https://..." class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-[11px]" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Required Documents Checklist (One per line)</label>
+              <textarea id="adminCustomJobDocs" rows="3" placeholder="10th Class Board Certificate & Marksheet&#10;+2 / Degree Marksheet&#10;Aadhaar Card (Mobile Linked)&#10;Recent Passport Size Photo (White BG)&#10;Candidate Signature&#10;Odisha Resident & Caste Certificate" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2">
+                <i class="fa-solid fa-bullhorn"></i> Save &amp; Publish Job Alert
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- SECTION 3: Active Job Alerts Table -->
+        <div class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-sky-600"></i>
+              <span>Active Job Alerts in System (<span id="adminActiveJobsTableCount">0</span>)</span>
+            </h4>
+            <div class="relative w-full sm:w-72">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" id="adminJobSearchFilter" oninput="VUO_ADMIN.filterJobAlertsTable()" placeholder="Search active jobs..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-xl bg-slate-50 focus:bg-white focus:ring-1 focus:ring-amber-500" />
+            </div>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-2xs">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Recruitment &amp; Post</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Salary Scale</th>
+                  <th class="p-3">Vacancies</th>
+                  <th class="p-3">Last Date</th>
+                  <th class="p-3">Source</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminJobAlertsTbody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="7" class="p-6 text-center text-slate-400">Loading active job alerts...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -11917,6 +12354,7 @@ window.vuoResolveDriveFormUrl = function(form) {
   <script src="js/creditkhata.js?v=14.0"></script>
   <script src="js/csctools.js?v=14.0"></script>
   <script src="js/admin.js?v=14.0"></script>
+  <script src="js/jobalert.js?v=14.0"></script>
   <script src="js/app.js?v=14.0"></script>
 
   <!-- Inline Resilient Navigation Dropdown Controller (Outside click & Esc fallback) -->
