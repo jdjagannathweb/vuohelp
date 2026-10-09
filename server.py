@@ -14,7 +14,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
-PORT = 3000
+PORT = int(os.environ.get('PORT', 3000))
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 # Ensure common MIME types are properly recognized
@@ -376,7 +376,13 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 def run_server():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else PORT
+    env_port = os.environ.get('PORT')
+    if env_port and env_port.isdigit():
+        port = int(env_port)
+    elif len(sys.argv) > 1 and sys.argv[1].isdigit():
+        port = int(sys.argv[1])
+    else:
+        port = PORT
     for attempt in range(10):
         try:
             server = ThreadingHTTPServer(('0.0.0.0', port), VuoHttpHandler)

@@ -25,12 +25,12 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
   resultCtx: null,
 
   // Settings
-  aspectRatio: 'a4_portrait', // 'a4_portrait', 'a4_landscape', 'id_card', 'free'
+  aspectRatio: 'free', // 'free' (natural shape, no distortion), 'a4_portrait', 'a4_landscape', 'id_card'
   filterMode: 'bw_laser', // 'bw_laser', 'magic_color', 'photocopy', 'grayscale', 'original'
-  threshold: 135, // 40 - 220
+  threshold: 140, // 40 - 220 (paper whiteness cutoff)
   brightness: 10, // -50 - +50
-  contrast: 25,   // -50 - +50
-  sharpness: 20,  // 0 - 100
+  contrast: 35,   // -50 - +50 (rich dark text)
+  sharpness: 40,  // 0 - 100 (crisp edge sharpness)
 
   // Photoshop Free Transform (Ctrl+T) State
   transform: {
@@ -405,37 +405,89 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
           let localCenterY = 0;
 
           if (h === 'se') {
-            newW = Math.max(15, localX + origW / 2);
-            newH = lockAspect ? (newW / ratio) : Math.max(15, localY + origH / 2);
+            const vx = localX + origW / 2;
+            const vy = localY + origH / 2;
+            if (lockAspect) {
+              const s = Math.max(vx / Math.max(1, origW), vy / Math.max(1, origH));
+              newW = Math.max(15, Math.round(origW * s));
+              newH = Math.max(15, Math.round(newW / ratio));
+            } else {
+              newW = Math.max(15, Math.round(vx));
+              newH = Math.max(15, Math.round(vy));
+            }
             localCenterX = -origW / 2 + newW / 2;
             localCenterY = -origH / 2 + newH / 2;
           } else if (h === 'ne') {
-            newW = Math.max(15, localX + origW / 2);
-            newH = lockAspect ? (newW / ratio) : Math.max(15, origH / 2 - localY);
+            const vx = localX + origW / 2;
+            const vy = origH / 2 - localY;
+            if (lockAspect) {
+              const s = Math.max(vx / Math.max(1, origW), vy / Math.max(1, origH));
+              newW = Math.max(15, Math.round(origW * s));
+              newH = Math.max(15, Math.round(newW / ratio));
+            } else {
+              newW = Math.max(15, Math.round(vx));
+              newH = Math.max(15, Math.round(vy));
+            }
             localCenterX = -origW / 2 + newW / 2;
             localCenterY = origH / 2 - newH / 2;
           } else if (h === 'sw') {
-            newW = Math.max(15, origW / 2 - localX);
-            newH = lockAspect ? (newW / ratio) : Math.max(15, localY + origH / 2);
+            const vx = origW / 2 - localX;
+            const vy = localY + origH / 2;
+            if (lockAspect) {
+              const s = Math.max(vx / Math.max(1, origW), vy / Math.max(1, origH));
+              newW = Math.max(15, Math.round(origW * s));
+              newH = Math.max(15, Math.round(newW / ratio));
+            } else {
+              newW = Math.max(15, Math.round(vx));
+              newH = Math.max(15, Math.round(vy));
+            }
             localCenterX = origW / 2 - newW / 2;
             localCenterY = -origH / 2 + newH / 2;
           } else if (h === 'nw') {
-            newW = Math.max(15, origW / 2 - localX);
-            newH = lockAspect ? (newW / ratio) : Math.max(15, origH / 2 - localY);
+            const vx = origW / 2 - localX;
+            const vy = origH / 2 - localY;
+            if (lockAspect) {
+              const s = Math.max(vx / Math.max(1, origW), vy / Math.max(1, origH));
+              newW = Math.max(15, Math.round(origW * s));
+              newH = Math.max(15, Math.round(newW / ratio));
+            } else {
+              newW = Math.max(15, Math.round(vx));
+              newH = Math.max(15, Math.round(vy));
+            }
             localCenterX = origW / 2 - newW / 2;
             localCenterY = origH / 2 - newH / 2;
           } else if (h === 'e') {
-            newW = Math.max(15, localX + origW / 2);
+            const vx = localX + origW / 2;
+            newW = Math.max(15, Math.round(vx));
+            if (lockAspect) {
+              newH = Math.max(15, Math.round(newW / ratio));
+            }
             localCenterX = -origW / 2 + newW / 2;
+            localCenterY = 0;
           } else if (h === 'w') {
-            newW = Math.max(15, origW / 2 - localX);
+            const vx = origW / 2 - localX;
+            newW = Math.max(15, Math.round(vx));
+            if (lockAspect) {
+              newH = Math.max(15, Math.round(newW / ratio));
+            }
             localCenterX = origW / 2 - newW / 2;
+            localCenterY = 0;
           } else if (h === 's') {
-            newH = Math.max(15, localY + origH / 2);
+            const vy = localY + origH / 2;
+            newH = Math.max(15, Math.round(vy));
+            if (lockAspect) {
+              newW = Math.max(15, Math.round(newH * ratio));
+            }
             localCenterY = -origH / 2 + newH / 2;
+            localCenterX = 0;
           } else if (h === 'n') {
-            newH = Math.max(15, origH / 2 - localY);
+            const vy = origH / 2 - localY;
+            newH = Math.max(15, Math.round(vy));
+            if (lockAspect) {
+              newW = Math.max(15, Math.round(newH * ratio));
+            }
             localCenterY = origH / 2 - newH / 2;
+            localCenterX = 0;
           }
 
           // Convert local center shift back to world mm
@@ -452,6 +504,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
 
           this.updateA4DocItemDOM();
           this.updatePsOptionsBar();
+          this.updateA4Inputs();
         }
       };
 
@@ -467,55 +520,88 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       window.addEventListener('touchend', handlePsPointerUp);
     }
 
-    // 8. Photoshop Options Bar Inputs (W, H, X, Y, Angle, Aspect Lock)
+    // 8. Photoshop Options Bar Inputs (W, H, X, Y, Angle, Aspect Lock, Scale Slider)
     const optW = document.getElementById('waPsOptW');
-    if (optW) {
-      optW.addEventListener('change', (e) => {
-        const valCm = parseFloat(e.target.value);
-        if (valCm > 0) {
-          const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
-          this.transform.wMm = Math.round(valCm * 10);
-          if (this.transform.lockAspect) {
-            this.transform.hMm = Math.round(this.transform.wMm / ratio);
-          }
-          this.updateA4DocItemDOM();
-          this.updatePsOptionsBar();
-        }
-      });
-    }
-
     const optH = document.getElementById('waPsOptH');
+    const optX = document.getElementById('waPsOptX');
+    const optY = document.getElementById('waPsOptY');
+
+    const handleOptWChange = (e) => {
+      const valCm = parseFloat(e.target.value);
+      if (valCm > 0) {
+        const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
+        this.transform.wMm = Math.round(valCm * 10);
+        if (this.transform.lockAspect) {
+          this.transform.hMm = Math.round(this.transform.wMm / ratio);
+        }
+        this.updateA4DocItemDOM();
+        this.updatePsOptionsBar();
+        this.updateA4Inputs();
+      }
+    };
+    if (optW) {
+      optW.addEventListener('input', handleOptWChange);
+      optW.addEventListener('change', handleOptWChange);
+    }
+
+    const handleOptHChange = (e) => {
+      const valCm = parseFloat(e.target.value);
+      if (valCm > 0) {
+        const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
+        this.transform.hMm = Math.round(valCm * 10);
+        if (this.transform.lockAspect) {
+          this.transform.wMm = Math.round(this.transform.hMm * ratio);
+        }
+        this.updateA4DocItemDOM();
+        this.updatePsOptionsBar();
+        this.updateA4Inputs();
+      }
+    };
     if (optH) {
-      optH.addEventListener('change', (e) => {
-        const valCm = parseFloat(e.target.value);
-        if (valCm > 0) {
-          const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
-          this.transform.hMm = Math.round(valCm * 10);
-          if (this.transform.lockAspect) {
-            this.transform.wMm = Math.round(this.transform.hMm * ratio);
-          }
-          this.updateA4DocItemDOM();
-          this.updatePsOptionsBar();
+      optH.addEventListener('input', handleOptHChange);
+      optH.addEventListener('change', handleOptHChange);
+    }
+
+    const handleOptXChange = (e) => {
+      this.transform.xMm = parseInt(e.target.value, 10) || 0;
+      this.updateA4DocItemDOM();
+      this.updatePsOptionsBar();
+      this.updateA4Inputs();
+    };
+    if (optX) {
+      optX.addEventListener('input', handleOptXChange);
+      optX.addEventListener('change', handleOptXChange);
+    }
+
+    const handleOptYChange = (e) => {
+      this.transform.yMm = parseInt(e.target.value, 10) || 0;
+      this.updateA4DocItemDOM();
+      this.updatePsOptionsBar();
+      this.updateA4Inputs();
+    };
+    if (optY) {
+      optY.addEventListener('input', handleOptYChange);
+      optY.addEventListener('change', handleOptYChange);
+    }
+
+    // Direct Scale Slider (Live zoom)
+    const scaleSlider = document.getElementById('waA4ScaleSlider');
+    if (scaleSlider) {
+      scaleSlider.addEventListener('input', (e) => {
+        const pct = parseInt(e.target.value, 10);
+        if (!isNaN(pct)) {
+          this.setA4ScalePercent(pct);
         }
       });
     }
 
-    const optX = document.getElementById('waPsOptX');
-    if (optX) {
-      optX.addEventListener('change', (e) => {
-        this.transform.xMm = parseInt(e.target.value, 10) || 0;
-        this.updateA4DocItemDOM();
-        this.updatePsOptionsBar();
-      });
-    }
-
-    const optY = document.getElementById('waPsOptY');
-    if (optY) {
-      optY.addEventListener('change', (e) => {
-        this.transform.yMm = parseInt(e.target.value, 10) || 0;
-        this.updateA4DocItemDOM();
-        this.updatePsOptionsBar();
-      });
+    // Mouse Wheel Zoom on Document Box
+    if (docItem) {
+      docItem.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.05 : 0.95;
+        this.scaleDocBy(factor);
+      }, { passive: false });
     }
 
     const optAngle = document.getElementById('waPsOptAngle');
@@ -730,18 +816,27 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       this.setSlider('waThresholdSlider', 135);
       this.setSlider('waBrightnessSlider', 10);
       this.setSlider('waContrastSlider', 30);
+      this.setSlider('waSharpnessSlider', 35);
+    } else if (mode === 'photocopy') {
+      this.setSlider('waThresholdSlider', 140);
+      this.setSlider('waBrightnessSlider', 10);
+      this.setSlider('waContrastSlider', 35);
+      this.setSlider('waSharpnessSlider', 45);
     } else if (mode === 'magic_color') {
       this.setSlider('waThresholdSlider', 140);
       this.setSlider('waBrightnessSlider', 15);
-      this.setSlider('waContrastSlider', 20);
-    } else if (mode === 'photocopy') {
-      this.setSlider('waThresholdSlider', 120);
-      this.setSlider('waBrightnessSlider', 5);
-      this.setSlider('waContrastSlider', 45);
+      this.setSlider('waContrastSlider', 25);
+      this.setSlider('waSharpnessSlider', 30);
+    } else if (mode === 'grayscale') {
+      this.setSlider('waThresholdSlider', 135);
+      this.setSlider('waBrightnessSlider', 10);
+      this.setSlider('waContrastSlider', 25);
+      this.setSlider('waSharpnessSlider', 25);
     } else if (mode === 'original') {
       this.setSlider('waThresholdSlider', 128);
       this.setSlider('waBrightnessSlider', 0);
       this.setSlider('waContrastSlider', 0);
+      this.setSlider('waSharpnessSlider', 0);
     }
 
     this.processStraightenAndFilter();
@@ -969,6 +1064,14 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       // Standard ID Card (Aadhaar / Voter / PAN: 85.6 x 53.98 mm = 1.5857 ratio)
       targetW = Math.max(1600, targetW);
       targetH = Math.round(targetW / 1.5857);
+    } else {
+      // 'free' / natural shape: preserves exact proportions while guaranteeing at least 1800px for crystal-clear text
+      const maxEdge = Math.max(targetW, targetH);
+      if (maxEdge < 1800) {
+        const upScale = 1800 / Math.max(1, maxEdge);
+        targetW = Math.round(targetW * upScale);
+        targetH = Math.round(targetH * upScale);
+      }
     }
 
     // High performance limit (Up to 3200px for full A4 crispness)
@@ -1087,9 +1190,38 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     outCtx.drawImage(srcCanvas, 0, 0);
 
     if (this.filterMode !== 'original') {
-      const imgData = outCtx.getImageData(0, 0, outCanvas.width, outCanvas.height);
+      const W = outCanvas.width;
+      const H = outCanvas.height;
+      const imgData = outCtx.getImageData(0, 0, W, H);
       const data = imgData.data;
       const len = data.length;
+
+      // 1. Fast Adaptive Background Illumination Map Estimation (CamScanner / Xerox Algorithm)
+      // Downscale to 1/16th for fast, noise-free local background estimation
+      const sw = Math.max(32, Math.round(W / 16));
+      const sh = Math.max(32, Math.round(H / 16));
+      const bgSmall = document.createElement('canvas');
+      bgSmall.width = sw;
+      bgSmall.height = sh;
+      const bgSmallCtx = bgSmall.getContext('2d');
+      bgSmallCtx.drawImage(srcCanvas, 0, 0, sw, sh);
+
+      const bgBlur = document.createElement('canvas');
+      bgBlur.width = sw;
+      bgBlur.height = sh;
+      const bgBlurCtx = bgBlur.getContext('2d');
+      if ('filter' in bgBlurCtx) {
+        bgBlurCtx.filter = 'blur(6px)';
+      }
+      bgBlurCtx.drawImage(bgSmall, 0, 0);
+
+      const bgFull = document.createElement('canvas');
+      bgFull.width = W;
+      bgFull.height = H;
+      const bgFullCtx = bgFull.getContext('2d');
+      bgFullCtx.imageSmoothingEnabled = true;
+      bgFullCtx.drawImage(bgBlur, 0, 0, W, H);
+      const bgData = bgFullCtx.getImageData(0, 0, W, H).data;
 
       const thresh = this.threshold;
       const bright = this.brightness * 1.5;
@@ -1101,92 +1233,84 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
         let g = data[i + 1];
         let b = data[i + 2];
 
-        // Luminance
+        // Pixel luminance
         const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        // Local background luminance
+        const bgLum = Math.max(25, 0.299 * bgData[i] + 0.587 * bgData[i + 1] + 0.114 * bgData[i + 2]);
+        // Illumination normalized luminance: removes shadows and uneven room light
+        const norm = Math.min(255, (lum / bgLum) * 255);
+
         // Saturation (color intensity)
         const maxC = Math.max(r, g, b);
         const minC = Math.min(r, g, b);
         const sat = maxC - minC;
 
-        if (mode === 'bw_laser') {
-          // High-Definition Document Text Preservation & Laser Clean
-          // Protects small numbers, light ball-pen ink, and stamps from getting erased
-          if (lum > thresh + 25) {
-            // Pure white paper background
+        if (mode === 'photocopy') {
+          // High-Definition Xerox Photocopy: Deep pitch black text, pristine pure white paper
+          const paperCut = thresh - 10;
+          if (norm >= paperCut) {
             data[i] = 255;
             data[i + 1] = 255;
             data[i + 2] = 255;
-          } else if (lum < thresh - 25) {
-            // Sharp dark text
-            const darkVal = Math.max(0, Math.min(45, lum * 0.3));
+          } else {
+            const t = norm / Math.max(1, paperCut);
+            const dark = Math.pow(t, 1.35) * 45;
+            const finalVal = Math.max(0, Math.min(255, Math.round(dark + bright)));
+            data[i] = finalVal;
+            data[i + 1] = finalVal;
+            data[i + 2] = finalVal;
+          }
+        } else if (mode === 'bw_laser') {
+          // Laser Clean Document (Preserves thin lines, small digits, signatures)
+          const paperCut = thresh;
+          if (norm > paperCut + 12) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          } else if (norm < paperCut - 28) {
+            const t = norm / Math.max(1, paperCut - 28);
+            const darkVal = Math.max(0, Math.min(48, Math.round(Math.pow(t, 1.25) * 42 + bright)));
             data[i] = darkVal;
             data[i + 1] = darkVal;
             data[i + 2] = darkVal;
           } else {
-            // Smooth adaptive transition curve: keeps faint text and fine lines legible
-            const factor = (lum - (thresh - 25)) / 50;
+            const factor = (norm - (paperCut - 28)) / 40;
             if (factor > 0.62) {
               data[i] = 255;
               data[i + 1] = 255;
               data[i + 2] = 255;
             } else {
-              const darkVal = Math.round(25 + factor * 65);
+              const darkVal = Math.max(0, Math.min(255, Math.round(25 + factor * 65 + bright)));
               data[i] = darkVal;
               data[i + 1] = darkVal;
               data[i + 2] = darkVal;
             }
           }
         } else if (mode === 'magic_color') {
-          // Magic Color: Clears background shadows, keeps color stamps/photos/signatures
-          if (sat > 25) {
-            // Colored area (Aadhaar photo, red seal, blue stamp, government logo)
+          // Magic Color: Cleans background paper to pure white while preserving photos, seals, stamps
+          if (sat > 20) {
             let adjR = contrastFactor * (r - 128) + 128 + bright;
             let adjG = contrastFactor * (g - 128) + 128 + bright;
             let adjB = contrastFactor * (b - 128) + 128 + bright;
-            data[i] = Math.max(0, Math.min(255, adjR));
-            data[i + 1] = Math.max(0, Math.min(255, adjG));
-            data[i + 2] = Math.max(0, Math.min(255, adjB));
+            data[i] = Math.max(0, Math.min(255, Math.round(adjR)));
+            data[i + 1] = Math.max(0, Math.min(255, Math.round(adjG)));
+            data[i + 2] = Math.max(0, Math.min(255, Math.round(adjB)));
           } else {
-            // Grayscale / Paper background or black text
-            if (lum > thresh + 20) {
+            if (norm > thresh) {
               data[i] = 255;
               data[i + 1] = 255;
               data[i + 2] = 255;
-            } else if (lum < thresh - 20) {
-              const darkVal = Math.max(0, Math.min(45, lum * 0.35));
+            } else {
+              const darkVal = Math.max(0, Math.min(50, Math.round(Math.pow(norm / thresh, 1.3) * 45 + bright)));
               data[i] = darkVal;
               data[i + 1] = darkVal;
               data[i + 2] = darkVal;
-            } else {
-              const factor = (lum - (thresh - 20)) / 40;
-              if (factor > 0.65) {
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-              } else {
-                const darkVal = Math.round(30 + factor * 70);
-                data[i] = darkVal;
-                data[i + 1] = darkVal;
-                data[i + 2] = darkVal;
-              }
             }
           }
-        } else if (mode === 'photocopy') {
-          // High Contrast Photocopy (Xerox mode)
-          let cLum = contrastFactor * (lum - 128) + 128 + bright;
-          if (cLum > thresh - 10) {
-            cLum = 255;
-          } else {
-            cLum = Math.max(0, cLum * 0.6);
-          }
-          data[i] = cLum;
-          data[i + 1] = cLum;
-          data[i + 2] = cLum;
         } else if (mode === 'grayscale') {
-          // Clean Grayscale
-          let cLum = contrastFactor * (lum - 128) + 128 + bright;
-          cLum = Math.max(0, Math.min(255, cLum));
-          if (cLum > thresh + 20) cLum = 255;
+          let cLum = contrastFactor * (norm - 128) + 128 + bright;
+          cLum = Math.max(0, Math.min(255, Math.round(cLum)));
+          if (cLum > thresh + 15) cLum = 255;
           data[i] = cLum;
           data[i + 1] = cLum;
           data[i + 2] = cLum;
@@ -1241,6 +1365,8 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     const srcData = src.data;
     const out = ctx.createImageData(w, h);
     const outData = out.data;
+    // Pre-populate with srcData to avoid black borders
+    outData.set(srcData);
 
     // 3x3 Laplacian Sharpening Kernel: [0, -1, 0, -1, 5, -1, 0, -1, 0]
     const kMid = 1 + 4 * strength;
@@ -1256,7 +1382,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
             kSide * srcData[((y + 1) * w + x) * 4 + c] +
             kSide * srcData[(y * w + (x - 1)) * 4 + c] +
             kSide * srcData[(y * w + (x + 1)) * 4 + c];
-          outData[idx + c] = Math.max(0, Math.min(255, val));
+          outData[idx + c] = Math.max(0, Math.min(255, Math.round(val)));
         }
         outData[idx + 3] = srcData[idx + 3];
       }
@@ -1484,12 +1610,23 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       ? (this.resultCanvas.width / this.resultCanvas.height)
       : (210 / 148);
 
-    // Default to Top Half
-    let dw = 180;
-    let dh = Math.round(180 / ratio);
-    if (dh > 128) {
-      dh = 128;
-      dw = Math.round(128 * ratio);
+    let dw, dh;
+    if (ratio >= 1.0) {
+      // Landscape document: Fit top half nicely (180mm width)
+      dw = 180;
+      dh = Math.round(180 / ratio);
+      if (dh > 135) {
+        dh = 135;
+        dw = Math.round(135 * ratio);
+      }
+    } else {
+      // Portrait document: Give it a generous size on A4 (160mm width)
+      dw = 160;
+      dh = Math.round(160 / ratio);
+      if (dh > 230) {
+        dh = 230;
+        dw = Math.round(230 * ratio);
+      }
     }
 
     this.transform.xMm = Math.round((this.a4PaperWidthMm - dw) / 2);
@@ -1568,9 +1705,9 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       this.setA4Orientation('portrait');
       let dw = 180;
       let dh = Math.round(180 / ratio);
-      if (dh > 128) {
-        dh = 128;
-        dw = Math.round(128 * ratio);
+      if (dh > 135) {
+        dh = 135;
+        dw = Math.round(135 * ratio);
       }
       this.transform.xMm = Math.round((210 - dw) / 2);
       this.transform.yMm = 12;
@@ -1579,23 +1716,56 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       this.transform.angleDeg = 0;
       this.twoCopies = false;
       this.updateA4Studio();
-      if (typeof showToast === 'function') showToast('Preset: Top Half (Paper Saver) applied! ଉପର ଭାଗରେ ସେଟ୍ ହେଲା', 'success');
+      if (typeof showToast === 'function') showToast('Preset: Top Half (Paper Saver) ଉପର ଭାଗରେ ସେଟ୍ ହେଲା', 'success');
     } else if (preset === 'bottom_half') {
       this.setA4Orientation('portrait');
       let dw = 180;
       let dh = Math.round(180 / ratio);
-      if (dh > 128) {
-        dh = 128;
-        dw = Math.round(128 * ratio);
+      if (dh > 135) {
+        dh = 135;
+        dw = Math.round(135 * ratio);
       }
       this.transform.xMm = Math.round((210 - dw) / 2);
-      this.transform.yMm = 152;
+      this.transform.yMm = 148;
       this.transform.wMm = dw;
       this.transform.hMm = dh;
       this.transform.angleDeg = 0;
       this.twoCopies = false;
       this.updateA4Studio();
-      if (typeof showToast === 'function') showToast('Preset: Bottom Half applied! ତଳ ଭାଗରେ ସେଟ୍ ହେଲା (Reuse Paper)', 'success');
+      if (typeof showToast === 'function') showToast('Preset: Bottom Half ତଳ ଭାଗରେ ସେଟ୍ ହେଲା (Reuse Paper)', 'success');
+    } else if (preset === 'fit_width') {
+      const maxW = this.a4PaperWidthMm - 20; // 190mm
+      let dw = maxW;
+      let dh = Math.round(dw / ratio);
+      if (dh > this.a4PaperHeightMm - 20) {
+        dh = this.a4PaperHeightMm - 20;
+        dw = Math.round(dh * ratio);
+      }
+      this.transform.wMm = dw;
+      this.transform.hMm = dh;
+      this.transform.xMm = Math.round((this.a4PaperWidthMm - dw) / 2);
+      this.transform.yMm = Math.round(Math.max(10, (this.a4PaperHeightMm - dh) / 2));
+      this.transform.angleDeg = 0;
+      this.twoCopies = false;
+      this.updateA4Studio();
+      if (typeof showToast === 'function') showToast('Preset: Fit Width A4 ଚଉଡ଼ା ମାପ (19 cm)', 'success');
+    } else if (preset === 'max_fit') {
+      const availW = this.a4PaperWidthMm - 16;
+      const availH = this.a4PaperHeightMm - 16;
+      let dw = availW;
+      let dh = Math.round(dw / ratio);
+      if (dh > availH) {
+        dh = availH;
+        dw = Math.round(dh * ratio);
+      }
+      this.transform.wMm = dw;
+      this.transform.hMm = dh;
+      this.transform.xMm = Math.round((this.a4PaperWidthMm - dw) / 2);
+      this.transform.yMm = Math.round((this.a4PaperHeightMm - dh) / 2);
+      this.transform.angleDeg = 0;
+      this.twoCopies = false;
+      this.updateA4Studio();
+      if (typeof showToast === 'function') showToast('Preset: Max Fit ସର୍ବାଧିକ ବଡ଼ ସାଇଜ୍', 'success');
     } else if (preset === 'center') {
       let maxW = this.a4PaperWidthMm - 30;
       let maxH = this.a4PaperHeightMm - 40;
@@ -1629,7 +1799,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       this.transform.angleDeg = 0;
       this.twoCopies = false;
       this.updateA4Studio();
-      if (typeof showToast === 'function') showToast('Preset: Full Page Fit applied! ସମ୍ପୂର୍ଣ୍ଣ ପେଜ୍ ମାପ', 'info');
+      if (typeof showToast === 'function') showToast('Preset: Full Page Fit! ସମ୍ପୂର୍ଣ୍ଣ ପେଜ୍ ମାପ', 'info');
     } else if (preset === 'id_card') {
       this.setA4Orientation('portrait');
       this.transform.xMm = Math.round((210 - 85.6) / 2);
@@ -1671,10 +1841,45 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     }
   },
 
+  scaleDocBy(factor) {
+    if (!this.resultCanvas) return;
+    const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
+    const oldW = this.transform.wMm;
+    const oldH = this.transform.hMm;
+    const oldCx = this.transform.xMm + oldW / 2;
+    const oldCy = this.transform.yMm + oldH / 2;
+
+    let newW = Math.max(20, Math.round(oldW * factor));
+    let newH = Math.round(newW / ratio);
+
+    const maxW = this.a4PaperWidthMm - 10;
+    const maxH = this.a4PaperHeightMm - 10;
+    if (newW > maxW) {
+      newW = maxW;
+      newH = Math.round(newW / ratio);
+    }
+    if (newH > maxH) {
+      newH = maxH;
+      newW = Math.round(newH * ratio);
+    }
+
+    this.transform.wMm = newW;
+    this.transform.hMm = newH;
+    this.transform.xMm = Math.round(Math.max(5, Math.min(this.a4PaperWidthMm - newW - 5, oldCx - newW / 2)));
+    this.transform.yMm = Math.round(Math.max(5, Math.min(this.a4PaperHeightMm - newH - 5, oldCy - newH / 2)));
+
+    this.updateA4DocItemDOM();
+    this.updatePsOptionsBar();
+    this.updateA4Inputs();
+    if (typeof showToast === 'function') {
+      showToast(`Size: ${(newW / 10).toFixed(1)} × ${(newH / 10).toFixed(1)} cm`, 'info');
+    }
+  },
+
   setA4ScalePercent(percent) {
     const ratio = (this.resultCanvas.width || 1) / (this.resultCanvas.height || 1);
     const maxPrintableW = this.a4PaperWidthMm - 20;
-    let newW = Math.round(maxPrintableW * (percent / 100));
+    let newW = Math.max(20, Math.round(maxPrintableW * (percent / 100)));
     let newH = Math.round(newW / ratio);
 
     if (newH > this.a4PaperHeightMm - 20) {
@@ -1682,16 +1887,17 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       newW = Math.round(newH * ratio);
     }
 
+    const oldCx = this.transform.xMm + this.transform.wMm / 2;
+    const oldCy = this.transform.yMm + this.transform.hMm / 2;
+
     this.transform.wMm = newW;
     this.transform.hMm = newH;
-    if (this.transform.xMm + this.transform.wMm > this.a4PaperWidthMm) {
-      this.transform.xMm = Math.max(0, this.a4PaperWidthMm - this.transform.wMm);
-    }
-    if (this.transform.yMm + this.transform.hMm > this.a4PaperHeightMm) {
-      this.transform.yMm = Math.max(0, this.a4PaperHeightMm - this.transform.hMm);
-    }
+    this.transform.xMm = Math.round(Math.max(5, Math.min(this.a4PaperWidthMm - newW - 5, oldCx - newW / 2)));
+    this.transform.yMm = Math.round(Math.max(5, Math.min(this.a4PaperHeightMm - newH - 5, oldCy - newH / 2)));
+
     this.updateA4DocItemDOM();
     this.updatePsOptionsBar();
+    this.updateA4Inputs();
   },
 
   updateA4Studio() {
@@ -1747,7 +1953,9 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     }
 
     if (img) {
-      img.src = this.resultCanvas.toDataURL('image/jpeg', 0.92);
+      img.src = this.resultCanvas.toDataURL('image/jpeg', 0.96);
+      img.style.imageRendering = '-webkit-optimize-contrast';
+      img.style.objectFit = this.transform.lockAspect ? 'contain' : 'fill';
     }
 
     if (badgeText) {
@@ -1777,6 +1985,8 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
         }
         if (img2 && img) {
           img2.src = img.src;
+          img2.style.imageRendering = '-webkit-optimize-contrast';
+          img2.style.objectFit = this.transform.lockAspect ? 'contain' : 'fill';
         }
       } else {
         item2.classList.add('hidden');
@@ -1828,7 +2038,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     const maxW = this.a4PaperWidthMm - 20;
     const pct = Math.round((this.transform.wMm / maxW) * 100);
     if (scaleVal) scaleVal.textContent = pct + '%';
-    if (scaleSlider) scaleSlider.value = pct;
+    if (scaleSlider) scaleSlider.value = Math.min(100, Math.max(20, pct));
 
     if (widthInput) widthInput.value = (this.transform.wMm / 10).toFixed(1);
     if (heightInput) heightInput.value = (this.transform.hMm / 10).toFixed(1);
@@ -1848,6 +2058,9 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     canvas.height = Math.round(this.a4PaperHeightMm * scale); // 3508px for 297mm
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // 100% Crisp White Paper Background
     ctx.fillStyle = '#ffffff';

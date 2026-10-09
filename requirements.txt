@@ -1,0 +1,4 @@
+# VUO CSC Help Desk - Python Dependencies
+# Standard library used (os, sys, json, time, urllib, http.server)
+# No external pip packages strictly required, but gunicorn can optionally be added if preferred:
+# gunicorn==21.2.0

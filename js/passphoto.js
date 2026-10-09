@@ -7,12 +7,15 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   cropper: null,
   uploadedImage: null,
   currentPreset: 'size_12x15', // 'size_12x15', 'passport', 'stamp', 'pan', 'aadhaar', 'custom'
-  bgColor: 'original', // 'original' (no change), '#ffffff', '#bae6fd', '#1e40af', '#e2e8f0', '#dc2626', or custom hex
+  currentPaper: 'a4', // 'a4' (A4 Sheet - Default), '4x6' (4R Photo Paper), '5x7', '3.5x5', 'a6'
+  paperOrientation: 'portrait', // 'portrait', 'landscape'
+  bgColor: 'original', // 'original' (no change) - preserve photo background
   bgTolerance: 45,
   selectedSuit: 'none',
   suitOffsetY: 0, // Vertical adjustment for suit neck line (-80px to +80px)
   suitScale: 1.0, // Scale multiplier for suit shoulder width (0.75 to 1.35) // 'none', 'suit_black', 'suit_navy', 'suit_grey', 'women_blazer', 'shirt_white'
   copies: 6,
+  copiesValue: '6',
   addBorder: true,
   brightness: 100, // Natural 100% (No artificial blowout)
   contrast: 100,   // Balanced 100% (Avoids harsh red contrast from AI photos)
@@ -42,6 +45,115 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     custom: { name: 'Custom Dimension', w: 35, h: 45, ratio: 35 / 45, cols: 4 }
   },
 
+  // Standard photo paper sizes (A4 cyber cafe standard, 4x6 photo studio standard, 5x7, 3.5x5, A6)
+  paperSizes: {
+    '4x6': {
+      name: '4 × 6 Inch (4R Photo Paper - 10×15 cm)',
+      shortName: '4×6 Photo Paper',
+      wMm: 152.4, // 6 inch (landscape)
+      hMm: 101.6, // 4 inch
+      defaultOrientation: 'landscape',
+      widthPx: 1800,
+      heightPx: 1200,
+      cssSize: '6in 4in',
+      pdfFormat: [152.4, 101.6],
+      defaultCopies: 4,
+      copiesOptions: [
+        { value: '4', label: '4 Copies on 4×6 (1 Line of 4 - Recommended)', cols: 4, rows: 1 },
+        { value: '4_grid', label: '4 Copies on 4×6 (2 Lines of 2 - 2×2 Grid)', cols: 2, rows: 2 },
+        { value: '8', label: '8 Copies on 4×6 (2 Lines of 4 - Standard Studio)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies on 4×6 (2 Lines of 3 - Studio 4×6)', cols: 3, rows: 2 },
+        { value: '2', label: '2 Copies on 4×6 (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '12', label: '12 Copies on 4×6 (3 Lines of 4 / 4 Lines of 3 - Max Fit)', cols: 4, rows: 3 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    'a4': {
+      name: 'A4 Sheet (210 × 297 mm)',
+      shortName: 'A4 Sheet',
+      wMm: 210,
+      hMm: 297,
+      defaultOrientation: 'portrait',
+      widthPx: 2480,
+      heightPx: 3508,
+      cssSize: 'A4',
+      pdfFormat: 'a4',
+      defaultCopies: 6,
+      copiesOptions: [
+        { value: '6', label: '6 Copies (1 Line of 6)', cols: 6, rows: 1 },
+        { value: '12', label: '12 Copies (2 Lines of 6)', cols: 6, rows: 2 },
+        { value: '18', label: '18 Copies (3 Lines of 6)', cols: 6, rows: 3 },
+        { value: '24', label: '24 Copies (4 Lines of 6)', cols: 6, rows: 4 },
+        { value: '30', label: '30 Copies (5 Lines of 6)', cols: 6, rows: 5 },
+        { value: '36', label: '36 Copies (6 Lines / Full A4 Sheet)', cols: 6, rows: 6 },
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '16', label: '16 Copies (4 Lines of 4)', cols: 4, rows: 4 },
+        { value: '32', label: '32 Copies (8 Lines of 4)', cols: 4, rows: 8 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    '5x7': {
+      name: '5 × 7 Inch (5R Photo Paper - 13×18 cm)',
+      shortName: '5×7 Photo Paper',
+      wMm: 177.8,
+      hMm: 127.0,
+      defaultOrientation: 'landscape',
+      widthPx: 2100,
+      heightPx: 1500,
+      cssSize: '7in 5in',
+      pdfFormat: [177.8, 127.0],
+      defaultCopies: 12,
+      copiesOptions: [
+        { value: '12', label: '12 Copies (3 Lines of 4)', cols: 4, rows: 3 },
+        { value: '15', label: '15 Copies (3 Lines of 5)', cols: 5, rows: 3 },
+        { value: '10', label: '10 Copies (2 Lines of 5)', cols: 5, rows: 2 },
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    '3.5x5': {
+      name: '3.5 × 5 Inch (3R Photo Paper - 9×13 cm)',
+      shortName: '3.5×5 Photo Paper',
+      wMm: 127.0,
+      hMm: 88.9,
+      defaultOrientation: 'landscape',
+      widthPx: 1500,
+      heightPx: 1050,
+      cssSize: '5in 3.5in',
+      pdfFormat: [127.0, 88.9],
+      defaultCopies: 4,
+      copiesOptions: [
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    },
+    'a6': {
+      name: 'A6 Sheet (105 × 148 mm - A4 1/4 Cut)',
+      shortName: 'A6 Sheet',
+      wMm: 148,
+      hMm: 105,
+      defaultOrientation: 'landscape',
+      widthPx: 1748,
+      heightPx: 1240,
+      cssSize: 'A6',
+      pdfFormat: 'a6',
+      defaultCopies: 8,
+      copiesOptions: [
+        { value: '8', label: '8 Copies (2 Lines of 4)', cols: 4, rows: 2 },
+        { value: '6', label: '6 Copies (2 Lines of 3)', cols: 3, rows: 2 },
+        { value: '4', label: '4 Copies (2 Lines of 2)', cols: 2, rows: 2 },
+        { value: '2', label: '2 Copies (1 Line of 2)', cols: 2, rows: 1 },
+        { value: '1', label: '1 Single Photo Only', cols: 1, rows: 1 }
+      ]
+    }
+  },
+
   init() {
     try { this.updateGeminiStudioUi(); } catch(e) {}
     if (this.geminiApiKey && (this.geminiApiKey.startsWith('AQ.Ab8RN6') || !this.geminiApiKey.startsWith('AIza'))) {
@@ -65,6 +177,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         });
       }
     }
+    this.updatePaperSelectorButtons();
+    this.populateCopiesDropdown();
+    this.updateOrientationButtons();
+    this.updateSheetTitleAndButtons();
+
     if (!this._initialized) {
       this.bindEvents();
       this._initialized = true;
@@ -73,6 +190,160 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       this.loadSamplePhoto();
     } else {
       this.generateSheet();
+    }
+  },
+
+  setPaperSize(size) {
+    if (!this.paperSizes[size]) size = 'a4';
+    this.currentPaper = size;
+    const paper = this.paperSizes[size];
+    this.paperOrientation = paper.defaultOrientation;
+
+    const select = document.getElementById('passPhotoPaperSize');
+    if (select && select.value !== size) select.value = size;
+
+    // Reset copies to default for selected paper: 6 for A4, 4 for 4x6
+    this.copies = paper.defaultCopies;
+    this.copiesValue = String(paper.defaultCopies);
+
+    this.updatePaperSelectorButtons();
+    this.updateOrientationButtons();
+    this.populateCopiesDropdown();
+    this.updateSheetTitleAndButtons();
+    this.generateSheet();
+
+    if (typeof showToast === 'function') {
+      showToast(`Paper: ${paper.shortName} (${paper.defaultCopies} Copies • ${this.paperOrientation.toUpperCase()}) ସେଟ୍ ହେଲା!`, 'success');
+    }
+  },
+
+  updatePaperSelectorButtons() {
+    const a4Btn = document.getElementById('passPhotoQuickPaperA4');
+    const p4x6Btn = document.getElementById('passPhotoQuickPaper4x6');
+    if (a4Btn && p4x6Btn) {
+      if (this.currentPaper === 'a4') {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      } else if (this.currentPaper === '4x6') {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      } else {
+        a4Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+        p4x6Btn.className = 'py-3 px-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 hover:border-slate-400 flex items-center justify-center gap-2 cursor-pointer transition-all';
+      }
+    }
+  },
+
+  setPaperOrientation(orient) {
+    this.paperOrientation = orient;
+    this.updateOrientationButtons();
+    this.populateCopiesDropdown();
+    this.updateSheetTitleAndButtons();
+    this.generateSheet();
+    if (typeof showToast === 'function') {
+      showToast(`Orientation: ${orient === 'landscape' ? 'Landscape (ଶୋଇବା)' : 'Portrait (ଉଭା)'} ସେଟ୍ ହେଲା`, 'info');
+    }
+  },
+
+  updateOrientationButtons() {
+    const lBtn = document.getElementById('passPhotoOrientLandscapeBtn');
+    const pBtn = document.getElementById('passPhotoOrientPortraitBtn');
+    const isLandscape = this.paperOrientation === 'landscape';
+
+    if (lBtn && pBtn) {
+      if (isLandscape) {
+        lBtn.className = 'px-3 py-2 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center justify-center gap-2 transition cursor-pointer';
+        pBtn.className = 'px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 transition cursor-pointer';
+      } else {
+        lBtn.className = 'px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2 transition cursor-pointer';
+        pBtn.className = 'px-3 py-2 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center justify-center gap-2 transition cursor-pointer';
+      }
+    }
+  },
+
+  populateCopiesDropdown() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const select = document.getElementById('passPhotoCopies');
+    if (!select) return;
+
+    const currentVal = this.copiesValue || select.value || String(paper.defaultCopies);
+    select.innerHTML = '';
+
+    const isLandscape = this.paperOrientation === 'landscape';
+
+    paper.copiesOptions.forEach(opt => {
+      const el = document.createElement('option');
+      el.value = opt.value;
+
+      let label = opt.label;
+      if (this.currentPaper === '4x6') {
+        if (!isLandscape) {
+          if (opt.value === '8') label = '8 Copies (4 Lines of 2 - 4×6 Portrait)';
+          else if (opt.value === '6') label = '6 Copies (3 Lines of 2)';
+          else if (opt.value === '4') label = '4 Copies (2 Lines of 2 - 2×2 Grid)';
+          else if (opt.value === '12') label = '12 Copies (4 Lines of 3 - Max Fit)';
+        }
+      }
+      el.textContent = label;
+      select.appendChild(el);
+    });
+
+    const exists = paper.copiesOptions.some(o => o.value === currentVal);
+    if (exists) {
+      select.value = currentVal;
+      this.copiesValue = currentVal;
+      this.copies = parseInt(currentVal, 10) || paper.defaultCopies;
+    } else {
+      select.value = String(paper.defaultCopies);
+      this.copiesValue = String(paper.defaultCopies);
+      this.copies = paper.defaultCopies;
+    }
+
+    this.updateGridInfoText();
+  },
+
+  updateGridInfoText() {
+    const infoEl = document.getElementById('passPhotoGridInfo');
+    if (!infoEl) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const opt = paper.copiesOptions.find(o => o.value === this.copiesValue || o.value == this.copies);
+    if (opt) {
+      const isLandscape = this.paperOrientation === 'landscape';
+      const c = (this.currentPaper === '4x6' && !isLandscape) ? opt.rows : opt.cols;
+      const r = (this.currentPaper === '4x6' && !isLandscape) ? opt.cols : opt.rows;
+      const photoCount = String(opt.value).replace('_grid', '');
+      infoEl.textContent = `${r} Line${r > 1 ? 's' : ''} of ${c} (${photoCount} Photos)`;
+    }
+  },
+
+  updateSheetTitleAndButtons() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const badgeEl = document.getElementById('passPhotoPaperBadge');
+    if (badgeEl) {
+      badgeEl.textContent = `${paper.shortName} (${this.paperOrientation === 'landscape' ? 'Landscape' : 'Portrait'})`;
+    }
+
+    const headerBadge = document.getElementById('passPhotoSheetHeaderBadge');
+    if (headerBadge) {
+      headerBadge.textContent = `(${paper.shortName})`;
+    }
+
+    const jpgBtn = document.getElementById('passPhotoDownloadJpgBtn');
+    if (jpgBtn) {
+      const span = jpgBtn.querySelector('span');
+      if (span) span.textContent = `${paper.shortName} JPG`;
+    }
+
+    const pdfBtn = document.getElementById('passPhotoDownloadPdfBtn');
+    if (pdfBtn) {
+      const span = pdfBtn.querySelector('span');
+      if (span) span.textContent = `${paper.shortName} PDF`;
+    }
+
+    const printBtn = document.getElementById('passPhotoPrintBtn');
+    if (printBtn) {
+      const span = printBtn.querySelector('span');
+      if (span) span.textContent = `Print ${paper.shortName}`;
     }
   },
 
@@ -196,9 +467,10 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
             this.cropper.setAspectRatio(ratio);
           }
         }
-        // Auto-select recommended copies for 1.2x1.5 inch
-        if (this.currentPreset === 'size_12x15' && this.copies === 8) {
+        // Auto-select recommended copies for 1.2x1.5 inch on A4 only
+        if (this.currentPreset === 'size_12x15' && this.currentPaper === 'a4' && this.copies === 8) {
           this.copies = 6;
+          this.copiesValue = "6";
           const copiesSelect = document.getElementById('passPhotoCopies');
           if (copiesSelect) copiesSelect.value = "6";
         }
@@ -206,11 +478,22 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       });
     }
 
+    // Paper size change
+    const paperSelect = document.getElementById('passPhotoPaperSize');
+    if (paperSelect) {
+      paperSelect.value = this.currentPaper;
+      paperSelect.addEventListener('change', (e) => {
+        this.setPaperSize(e.target.value);
+      });
+    }
+
     // Copies change
     const copiesSelect = document.getElementById('passPhotoCopies');
     if (copiesSelect) {
       copiesSelect.addEventListener('change', (e) => {
+        this.copiesValue = e.target.value;
         this.copies = parseInt(e.target.value, 10);
+        this.updateGridInfoText();
         this.generateSheet();
       });
     }
@@ -678,16 +961,21 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
   renderDefaultPreview() {
     const sheetCanvas = document.getElementById('passPhotoSheetCanvas');
     if (!sheetCanvas) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    const sheetW = isLandscape ? Math.max(paper.widthPx, paper.heightPx) : Math.min(paper.widthPx, paper.heightPx);
+    const sheetH = isLandscape ? Math.min(paper.widthPx, paper.heightPx) : Math.max(paper.widthPx, paper.heightPx);
+
+    sheetCanvas.width = sheetW;
+    sheetCanvas.height = sheetH;
     const ctx = sheetCanvas.getContext('2d');
-    sheetCanvas.width = 794; // A4 at 96 DPI: 794 x 1123 px
-    sheetCanvas.height = 1123;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 18px Inter, sans-serif';
+    ctx.font = '600 24px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Upload or choose a sample photo to generate print-ready A4 sheet', sheetCanvas.width / 2, sheetCanvas.height / 2);
+    ctx.fillText(`Upload or choose a sample photo to generate print-ready ${paper.shortName}`, sheetCanvas.width / 2, sheetCanvas.height / 2);
   },
 
   hexToRgb(hex) {
@@ -1235,8 +1523,10 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
 
       // DEFAULT 4 COPIES for Joint Photo (User Requirement)
       this.copies = 4;
+      this.copiesValue = (this.currentPaper === '4x6') ? "4_grid" : "4";
       const copiesSelect = document.getElementById('passPhotoCopies');
-      if (copiesSelect) copiesSelect.value = "4";
+      if (copiesSelect) copiesSelect.value = this.copiesValue;
+      this.updateGridInfoText();
 
       const individualRatio = (40.0 / 2) / 31.0; // ~0.645
       if (this.cropper) {
@@ -1268,9 +1558,12 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         this.currentPreset = 'size_12x15';
         const presetSelect = document.getElementById('passPhotoPreset');
         if (presetSelect) presetSelect.value = 'size_12x15';
-        this.copies = 6;
+        const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+        this.copies = paper.defaultCopies;
+        this.copiesValue = String(paper.defaultCopies);
         const copiesSelect = document.getElementById('passPhotoCopies');
-        if (copiesSelect) copiesSelect.value = "6";
+        if (copiesSelect) copiesSelect.value = this.copiesValue;
+        this.updateGridInfoText();
         if (this.cropper) {
           this.cropper.setAspectRatio(this.presets.size_12x15.ratio);
         }
@@ -2164,24 +2457,32 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       sCtx.drawImage(singlePhoto, 0, 0);
     }
 
-    // A4 Dimension at Ultra HD commercial photo print standard (300 DPI: 2480 x 3508 px)
-    const a4Canvas = document.getElementById('passPhotoSheetCanvas');
-    if (!a4Canvas) return;
+    const sheetCanvas = document.getElementById('passPhotoSheetCanvas');
+    if (!sheetCanvas) return;
 
-    a4Canvas.width = 2480;
-    a4Canvas.height = 3508;
-    const ctx = a4Canvas.getContext('2d');
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+
+    // 300 DPI exact pixel dimensions
+    const sheetW = isLandscape ? Math.max(paper.widthPx, paper.heightPx) : Math.min(paper.widthPx, paper.heightPx);
+    const sheetH = isLandscape ? Math.min(paper.widthPx, paper.heightPx) : Math.max(paper.widthPx, paper.heightPx);
+
+    sheetCanvas.width = sheetW;
+    sheetCanvas.height = sheetH;
+
+    const ctx = sheetCanvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // White paper background
+    // Clean white photo paper background
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, a4Canvas.width, a4Canvas.height);
+    ctx.fillRect(0, 0, sheetW, sheetH);
 
     const ratio = singlePhoto.width / singlePhoto.height;
-    const presetName = this.presets[this.currentPreset]?.name || 'Passport Size';
+    const presetObj = this.presets[this.currentPreset] || this.presets.size_12x15;
+    const presetName = presetObj?.name || 'Passport Size';
 
-    // MULTI-PERSON STRIP MODE: Print 2 people on the same A4 sheet / line (e.g. 4+2, 3+3, 6+6)
+    // ---------------- MULTI-PERSON STRIP MODE ----------------
     if (this.studioMode === 'multi') {
       const photo1 = singlePhoto;
       const photo2 = this.getPerson2ProcessedPhotoCanvas() || photo1;
@@ -2190,135 +2491,123 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       const totalCopies = p1Copies + p2Copies;
       this.copies = totalCopies;
 
-      const cols = 6; // Exactly 6 photos per row
-      const rows = Math.ceil(totalCopies / 6);
-      let basePhotoW = 180;
-      let basePhotoH = Math.round(basePhotoW / ratio);
-      let baseStartX = 25;
-      let baseStartY = 25;
-      let baseGapX = 22;
-      let baseGapY = 20;
+      let cols = (this.currentPaper === '4x6') ? (totalCopies <= 6 ? 3 : 4) : (this.currentPaper === 'a4' ? 6 : 4);
+      let rows = Math.ceil(totalCopies / cols);
 
-      const scale = 2; // 300 DPI Ultra HD multiplier
-      const photoW = basePhotoW * scale;
-      const photoH = basePhotoH * scale;
-      const startX = baseStartX * scale;
-      const startY = baseStartY * scale;
-      const gapX = baseGapX * scale;
-      const gapY = baseGapY * scale;
+      const mmToPx = 300 / 25.4;
+      const marginX = Math.round(sheetW * 0.035);
+      const marginY = (this.currentPaper === 'a4')
+        ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
+        : Math.round(sheetH * 0.04);
+      const gapX = Math.round(sheetW * 0.02);
+      const gapY = Math.round(sheetH * 0.02);
+
+      const maxPhotoW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+      const maxPhotoH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+      let photoW = maxPhotoW;
+      let photoH = Math.round(photoW / ratio);
+      if (photoH > maxPhotoH) {
+        photoH = maxPhotoH;
+        photoW = Math.round(photoH * ratio);
+      }
+
+      const gridW = cols * photoW + (cols - 1) * gapX;
+      const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
+      const startY = marginY;
 
       let count = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (count >= totalCopies) break;
-
           const posX = startX + c * (photoW + gapX);
           const posY = startY + r * (photoH + gapY);
-
           const curPhoto = (count < p1Copies) ? photo1 : photo2;
           ctx.drawImage(curPhoto, posX, posY, photoW, photoH);
 
           if (this.addBorder) {
             ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.setLineDash([6, 6]);
             ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
             ctx.setLineDash([]);
           }
-
           count++;
         }
       }
 
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '600 20px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`VLE HELP DESK — Multi-Person Sheet (Person 1: ${p1Copies} Photos | Person 2: ${p2Copies} Photos) | 300 DPI Ultra HD Print | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 3470);
+      // No footer text drawn on photo paper per user request: "koi bhi photo paper me botton me kuch bhi likho mat"
       return;
     }
 
-    // Determine Base Grid Dimensions (Columns x Rows) with Minimal Margins (scaled 2x for 300 DPI)
-    let cols = 6;
-    let rows = Math.ceil(this.copies / 6);
-    let basePhotoW = 180;
-    let basePhotoH = Math.round(basePhotoW / ratio);
-    let baseStartX = 25;
-    let baseStartY = 25;
-    let baseGapX = 22;
-    let baseGapY = 20;
+    // ---------------- SINGLE PERSON / COUPLE GRID MODE ----------------
+    const opt = paper.copiesOptions.find(o => o.value === this.copiesValue || o.value == this.copies) || paper.copiesOptions[0];
+    let cols = opt.cols;
+    let rows = opt.rows;
 
-    const is6ColMode = (this.currentPreset === 'size_12x15') || 
-                       (this.copies === 6 || this.copies === 12 || this.copies === 18 || this.copies === 24 || this.copies === 30 || this.copies === 36);
-
-    if (this.currentPreset === 'joint_40x31' || this.currentPreset === 'joint_18x15') {
-      cols = (this.copies <= 2) ? 2 : 4;
-      rows = Math.ceil(this.copies / cols);
-      basePhotoW = (cols === 2) ? 460 : 268;
-      basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = Math.floor((1240 - (cols * basePhotoW + (cols - 1) * 24)) / 2);
-      baseStartY = 35;
-      baseGapX = 24;
-      baseGapY = 25;
-    } else if (this.currentPreset === 'joint_2x3') {
-      cols = (this.copies <= 2) ? 2 : 3;
-      rows = Math.ceil(this.copies / cols);
-      basePhotoW = (cols === 2) ? 460 : 340;
-      basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = Math.floor((1240 - (cols * basePhotoW + (cols - 1) * 30)) / 2);
-      baseStartY = 35;
-      baseGapX = 30;
-      baseGapY = 30;
-    } else if (this.copies === 1) {
-      cols = 1; rows = 1;
-      basePhotoW = 320; basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25;
-      baseStartY = 25;
-    } else if (this.copies === 4) {
-      cols = 2; rows = 2;
-      basePhotoW = 320; basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25; baseStartY = 25;
-      baseGapX = 35; baseGapY = 30;
-    } else if (is6ColMode) {
-      cols = 6;
-      rows = Math.ceil(this.copies / 6);
-      basePhotoW = 180;
-      basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25;
-      baseStartY = 25;
-      baseGapX = 22;
-      baseGapY = 20;
-    } else if (this.copies === 8) {
-      cols = 4; rows = 2;
-      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25; baseStartY = 25;
-      baseGapX = 40; baseGapY = 30;
-    } else if (this.copies === 16) {
-      cols = 4; rows = 4;
-      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25; baseStartY = 25;
-      baseGapX = 40; baseGapY = 25;
-    } else if (this.copies === 32) {
-      cols = 4; rows = 8;
-      basePhotoW = 265; basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25; baseStartY = 25;
-      baseGapX = 40; baseGapY = 16;
-    } else {
-      cols = 4;
-      rows = Math.ceil(this.copies / 4);
-      basePhotoW = 265;
-      basePhotoH = Math.round(basePhotoW / ratio);
-      baseStartX = 25; baseStartY = 25;
-      baseGapX = 40; baseGapY = 25;
+    if (this.currentPaper === '4x6' && !isLandscape) {
+      cols = opt.rows;
+      rows = opt.cols;
     }
 
-    // 300 DPI multiplier (2.0x from 1240x1754 -> 2480x3508)
-    const scale = 2;
-    const photoW = basePhotoW * scale;
-    const photoH = basePhotoH * scale;
-    const startX = baseStartX * scale;
-    const startY = baseStartY * scale;
-    const gapX = baseGapX * scale;
-    const gapY = baseGapY * scale;
+    // Joint Photo specific adjustments
+    if (this.currentPreset === 'joint_40x31' || this.currentPreset === 'joint_18x15') {
+      if (this.currentPaper === '4x6') {
+        if (this.copies <= 2) { cols = 2; rows = 1; }
+        else if (this.copies <= 4) { cols = 2; rows = 2; }
+        else { cols = 3; rows = 2; }
+      } else if (this.currentPaper === 'a4') {
+        cols = (this.copies <= 2) ? 2 : 4;
+        rows = Math.ceil(this.copies / cols);
+      }
+    } else if (this.currentPreset === 'joint_2x3') {
+      if (this.currentPaper === '4x6') {
+        if (this.copies <= 2) { cols = 2; rows = 1; }
+        else { cols = 2; rows = 2; }
+      }
+    }
+
+    // Standard physical mm dimension to 300 DPI pixels (1 mm ~ 11.811 px)
+    const mmToPx = 300 / 25.4;
+    let basePhotoW = Math.round(presetObj.w * mmToPx);
+    let basePhotoH = Math.round(presetObj.h * mmToPx);
+
+    // Margins and gaps
+    const marginX = Math.round(sheetW * 0.035);
+    const marginY = (this.currentPaper === 'a4')
+      ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
+      : Math.round(sheetH * 0.04);
+    const gapX = Math.round(sheetW * 0.02);
+    const gapY = Math.round(sheetH * 0.02);
+
+    const maxAvailW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+    const maxAvailH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+    let photoW = basePhotoW;
+    let photoH = basePhotoH;
+
+    if (photoW > maxAvailW || photoH > maxAvailH) {
+      const scaleW = maxAvailW / photoW;
+      const scaleH = maxAvailH / photoH;
+      const s = Math.min(scaleW, scaleH);
+      photoW = Math.floor(photoW * s);
+      photoH = Math.floor(photoH * s);
+    }
+
+    // Compute grid dimensions and center placement
+    const gridW = cols * photoW + (cols - 1) * gapX;
+    const gridH = rows * photoH + (rows - 1) * gapY;
+    const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
+
+    let startY = marginY;
+    if (this.currentPaper === 'a4') {
+      // User requirement: "jab bhi a4 select ho ta he to photo uparse 0.03cm chod ke photo dikhna chahiye"
+      // 0.03 cm = 0.3 mm (~4 px at 300 DPI). Top cutting border starts at 0 px, photo starts at 4 px (0.03 cm).
+      startY = Math.max(4, Math.round(0.03 * 10 * mmToPx));
+    } else {
+      // For 4x6 and other dedicated cards, center nicely
+      startY = Math.max(marginY, Math.floor((sheetH - gridH) / 2));
+    }
 
     let count = 0;
     for (let r = 0; r < rows; r++) {
@@ -2328,27 +2617,22 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         const posX = startX + c * (photoW + gapX);
         const posY = startY + r * (photoH + gapY);
 
-        // Draw photo at full crisp Ultra HD resolution
         ctx.drawImage(singlePhoto, posX, posY, photoW, photoH);
 
-        // Optional cutting guideline crosses around corners
+        // Cutting border lines
         if (this.addBorder) {
           ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 2;
           ctx.setLineDash([6, 6]);
           ctx.strokeRect(posX - 4, posY - 4, photoW + 8, photoH + 8);
-          ctx.setLineDash([]); // Reset dash
+          ctx.setLineDash([]);
         }
 
         count++;
       }
     }
 
-    // Ultra HD footer info placed at the very bottom edge of A4 sheet
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 20px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`VLE HELP DESK — ${presetName} | 300 DPI Ultra HD Print | ${this.copies} Photos | ${new Date().toLocaleDateString('en-GB')}`, a4Canvas.width / 2, 3470);
+    // No footer text drawn on photo paper per user request: "koi bhi photo paper me botton me kuch bhi likho mat"
   },
 
   
@@ -3019,24 +3303,30 @@ Examine this portrait photo and return a strict JSON object with:
   },
 
   downloadSheetJpg() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'download', item: `A4 Passport Sheet (${this.copies} copies JPG)`, category: 'photo' }, () => this._doDownloadSheetJpg());
+      return VUO_GATE.requireAccess({ type: 'download', item: `${paperTitle} (${this.copies} copies JPG)`, category: 'photo' }, () => this._doDownloadSheetJpg());
     }
     this._doDownloadSheetJpg();
   },
   _doDownloadSheetJpg() {
     const sheet = document.getElementById('passPhotoSheetCanvas');
     if (!sheet) return;
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const pName = (this.currentPaper || '4x6').replace('*', 'x').toUpperCase();
     const link = document.createElement('a');
-    link.download = `VLE_A4_Passport_Sheet_${this.copies}_Copies_${Date.now()}.jpg`;
-    link.href = sheet.toDataURL('image/jpeg', 0.95);
+    link.download = `VLE_${pName}_Passport_Sheet_${this.copies}_Copies_${Date.now()}.jpg`;
+    link.href = sheet.toDataURL('image/jpeg', 0.96);
     link.click();
-    showToast(`A4 Sheet (${this.copies} copies) downloaded!`, "success");
+    showToast(`${paper.shortName} (${this.copies} copies) downloaded!`, "success");
   },
 
   downloadSheetPdf() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'download', item: `A4 Passport Sheet (${this.copies} copies PDF)`, category: 'photo' }, () => this._doDownloadSheetPdf());
+      return VUO_GATE.requireAccess({ type: 'download', item: `${paperTitle} (${this.copies} copies PDF)`, category: 'photo' }, () => this._doDownloadSheetPdf());
     }
     this._doDownloadSheetPdf();
   },
@@ -3049,24 +3339,57 @@ Examine this portrait photo and return a strict JSON object with:
       return;
     }
 
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    const wMm = isLandscape ? Math.max(paper.wMm, paper.hMm) : Math.min(paper.wMm, paper.hMm);
+    const hMm = isLandscape ? Math.min(paper.wMm, paper.hMm) : Math.max(paper.wMm, paper.hMm);
+    const orientation = isLandscape ? 'l' : 'p';
+
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4'); // A4 is 210 x 297 mm
+    const pdf = new jsPDF({
+      orientation: orientation,
+      unit: 'mm',
+      format: [wMm, hMm]
+    });
     const imgData = sheet.toDataURL('image/jpeg', 0.98);
 
-    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save(`VLE_Passport_Sheet_${this.copies}Copies_${Date.now()}.pdf`);
-    showToast("Print-Ready A4 PDF generated and downloaded!", "success");
+    pdf.addImage(imgData, 'JPEG', 0, 0, wMm, hMm);
+    const safeName = (paper.shortName || 'Sheet').replace(/[^a-zA-Z0-9]/g, '_');
+    pdf.save(`VLE_${safeName}_${this.copies}Copies_${Date.now()}.pdf`);
+    showToast(`Print-Ready ${paper.shortName} PDF generated and downloaded!`, "success");
   },
 
   printSheet() {
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const paperTitle = paper.shortName || 'Passport Sheet';
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'print', item: `A4 Passport Sheet (${this.copies} copies Print)`, category: 'photo' }, () => this._doPrintSheet());
+      return VUO_GATE.requireAccess({ type: 'print', item: `${paperTitle} (${this.copies} copies Print)`, category: 'photo' }, () => this._doPrintSheet());
     }
     this._doPrintSheet();
   },
   _doPrintSheet() {
     const sheet = document.getElementById('passPhotoSheetCanvas');
     if (!sheet) return;
+
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
+    const isLandscape = this.paperOrientation === 'landscape';
+    let pageCss = '6in 4in';
+
+    if (this.currentPaper === '4x6') {
+      pageCss = isLandscape ? '6in 4in' : '4in 6in';
+    } else if (this.currentPaper === '5x7') {
+      pageCss = isLandscape ? '7in 5in' : '5in 7in';
+    } else if (this.currentPaper === '3.5x5') {
+      pageCss = isLandscape ? '5in 3.5in' : '3.5in 5in';
+    } else if (this.currentPaper === 'a4') {
+      pageCss = isLandscape ? 'A4 landscape' : 'A4 portrait';
+    } else if (this.currentPaper === 'a6') {
+      pageCss = isLandscape ? 'A6 landscape' : 'A6 portrait';
+    } else {
+      const wMm = isLandscape ? Math.max(paper.wMm, paper.hMm) : Math.min(paper.wMm, paper.hMm);
+      const hMm = isLandscape ? Math.min(paper.wMm, paper.hMm) : Math.max(paper.wMm, paper.hMm);
+      pageCss = `${wMm}mm ${hMm}mm`;
+    }
 
     const dataUrl = sheet.toDataURL('image/jpeg', 1.0);
     const printWindow = window.open('', '_blank');
@@ -3079,9 +3402,9 @@ Examine this portrait photo and return a strict JSON object with:
       <!DOCTYPE html>
       <html>
         <head>
-          <title>VLE HELP DESK - Passport Photo Print</title>
+          <title>VLE HELP DESK - ${paper.shortName} (${this.copies} Copies) Print</title>
           <style>
-            @page { size: A4; margin: 0mm; }
+            @page { size: ${pageCss}; margin: 0mm; }
             body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
             img { width: 100vw; height: auto; max-height: 100vh; object-fit: contain; }
           </style>
@@ -3099,6 +3422,7 @@ Examine this portrait photo and return a strict JSON object with:
     const canvas = document.getElementById('passPhotoSheetCanvas');
     const fitBtn = document.getElementById('passPhotoViewFit');
     const zoomBtn = document.getElementById('passPhotoViewZoom');
+    const paper = this.paperSizes[this.currentPaper] || this.paperSizes['4x6'];
 
     if (mode === 'zoom') {
       if (canvas) canvas.classList.add('zoom-actual');
@@ -3108,7 +3432,7 @@ Examine this portrait photo and return a strict JSON object with:
       if (fitBtn) {
         fitBtn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1 font-bold';
       }
-      showToast("A4 Sheet: 100% Actual Pixel View", "info");
+      showToast(`${paper.shortName}: 100% Actual Pixel View`, "info");
     } else {
       if (canvas) canvas.classList.remove('zoom-actual');
       if (fitBtn) {
@@ -3117,7 +3441,7 @@ Examine this portrait photo and return a strict JSON object with:
       if (zoomBtn) {
         zoomBtn.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1 font-bold';
       }
-      showToast("A4 Sheet: Full Page Fit View", "info");
+      showToast(`${paper.shortName}: Full Sheet Fit View`, "info");
     }
   }
 };
