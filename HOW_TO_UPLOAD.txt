@@ -1,0 +1,55 @@
+========================================================
+VUO CSC HELP DESK - GITHUB UPLOAD INSTRUCTIONS
+========================================================
+
+Nayi Job Alert Service, 5 Website Auto-Sync Portals aur latest features ke liye ye files update hui hain:
+
+ROOT FOLDER FILES (Root directory me upload karein):
+1. index.html            (Main website with Job Alert Desk & Admin 5 Portals)
+2. 200.html              (SPA routing - byte-for-byte clone of index.html)
+3. server.py             (5-Portal multi-source scraper & REST API)
+4. job_alerts.json       (Curated & cached Govt Job database)
+5. job_sources.json      (5 Configured website portals for auto-sync)
+6. render.yaml           (Render hosting configuration)
+7. requirements.txt      (Python configuration)
+
+CSS FOLDER FILES (GitHub me 'css' folder khol kar upload karein):
+1. css/custom.css        (A4 layout, print rules, styles)
+
+JS FOLDER FILES (GitHub me 'js' folder khol kar upload karein):
+1. js/resumemaker.js     (Resume & Biodata A4 builder, pagination & PDF engine)
+2. js/jobalert.js        (Job Alert UI & multi-source sync module)
+3. js/admin.js           (Admin control center with 5 portal configs & job publisher)
+4. js/app.js             (App router, search & module dispatcher)
+5. js/passphoto.js       (Passport photo studio)
+6. js/whatsapp-resizer.js (WhatsApp image resizer & darkness clear)
+
+--------------------------------------------------------
+KAISE UPLOAD KAREIN (STEP-BY-STEP DIRECT GITHUB WEB PE):
+--------------------------------------------------------
+1. GitHub me apna repo kholein (vuo-csc-help / vuohelpdesk).
+2. 'Add file' -> 'Upload files' par click karein.
+3. GITHUB_UPLOAD_FILES folder se:
+   - index.html
+   - 200.html
+   - server.py
+   - job_alerts.json
+   - job_sources.json
+   - render.yaml
+   - requirements.txt
+   ko drag and drop karein.
+4. Niche 'Commit changes' par click karein.
+5. Ab repo ke andar 'css' folder par click karein (ya create karein).
+   Waha GITHUB_UPLOAD_FILES/css/custom.css upload karein aur Commit karein.
+6. Ab repo ke andar 'js' folder par click karke open karein.
+7. Waha 'Add file' -> 'Upload files' par click karein.
+8. GITHUB_UPLOAD_FILES/js folder se:
+   - resumemaker.js
+   - jobalert.js
+   - admin.js
+   - app.js
+   - passphoto.js
+   - whatsapp-resizer.js
+   ko drag and drop karein aur 'Commit changes' karein.
+9. Render / GitHub Pages automatically 1-2 minute me live update kar dega!
+========================================================

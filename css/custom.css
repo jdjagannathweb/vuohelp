@@ -751,3 +751,64 @@ body {
 .resume-page-footer {
   display: none !important;
 }
+
+/* ==========================================================================
+   RESUME & BIODATA MAKER - TRUE A4 LAYOUT, MARGINS & PRINT SPECIFICATIONS
+   ========================================================================== */
+
+/* A4 Page Container on Screen Preview */
+.resume-a4-page {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 210mm !important;
+  min-height: 297mm !important;
+  padding: 13mm 14mm !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  background-color: #ffffff;
+  position: relative;
+}
+
+@media screen and (max-width: 768px) {
+  .resume-a4-page {
+    padding: 16px 14px !important;
+    min-height: auto !important;
+  }
+}
+
+/* Print Rules for Resume & Biodata */
+@media print {
+  .resume-a4-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  .resume-page-break,
+  .resume-page-header-tag {
+    display: none !important;
+  }
+
+  .resume-page-1 {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .resume-page-2 {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 2mm !important;
+  }
+
+  .resume-section,
+  .resume-signature-block,
+  .resume-experience-item,
+  .resume-education-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+
