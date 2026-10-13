@@ -758,6 +758,10 @@ body {
 
 /* A4 Page Container on Screen Preview */
 .resume-a4-page {
+  font-family: Arial, Helvetica, sans-serif !important;
+  word-spacing: normal !important;
+  letter-spacing: 0px !important;
+  text-rendering: geometricPrecision !important;
   box-sizing: border-box !important;
   width: 100% !important;
   max-width: 210mm !important;
@@ -767,6 +771,10 @@ body {
   margin-right: auto !important;
   background-color: #ffffff;
   position: relative;
+}
+
+.resume-a4-page.font-serif {
+  font-family: Georgia, "Times New Roman", serif !important;
 }
 
 @media screen and (max-width: 768px) {
