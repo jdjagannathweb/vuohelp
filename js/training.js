@@ -6,9 +6,40 @@
 
 const VUO_TRAINING = {
   currentCategory: 'all',
+  searchQuery: '',
   channelId: 'UCjxf06z3rx9DObtaTfaJfqg',
   channelUrl: 'https://www.youtube.com/channel/UCjxf06z3rx9DObtaTfaJfqg',
   isSyncing: false,
+
+  handleSearchInput(e) {
+    this.searchQuery = (e.target.value || '').trim();
+    const clearBtn = document.getElementById('trainingSearchClearBtn');
+    if (clearBtn) {
+      if (this.searchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    }
+    this.renderVideos();
+  },
+
+  clearSearch() {
+    this.searchQuery = '';
+    const input = document.getElementById('trainingSearchInput');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    const clearBtn = document.getElementById('trainingSearchClearBtn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    this.renderVideos();
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  },
 
   init() {
     if (!this._initialized) {
@@ -423,6 +454,7 @@ const VUO_TRAINING = {
 
     let videos = this.getAllVideos();
 
+    // 1. Filter by category
     if (this.currentCategory && this.currentCategory !== 'all') {
       const catTarget = this.currentCategory.toLowerCase().trim();
       videos = videos.filter(v => {
@@ -432,20 +464,74 @@ const VUO_TRAINING = {
       });
     }
 
+    // 2. Filter by search query
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      const terms = q.split(/\s+/).filter(Boolean);
+      videos = videos.filter(v => {
+        const text = [
+          v.title || '',
+          v.titleOdia || '',
+          v.desc || '',
+          v.category || '',
+          v.badge || '',
+          v.youtubeId || ''
+        ].join(' ').toLowerCase();
+
+        return terms.every(term => text.includes(term));
+      });
+    }
+
+    // 3. Update count badge in search bar
+    const countBadge = document.getElementById('trainingVideoCountBadge');
+    if (countBadge) {
+      if (this.searchQuery) {
+        countBadge.textContent = `${videos.length} found`;
+      } else {
+        countBadge.textContent = `${videos.length} videos`;
+      }
+    }
+
+    // 4. Empty State
     if (videos.length === 0) {
-      container.innerHTML = `
-        <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
-          <i class="fa-brands fa-youtube text-4xl text-rose-500 mb-2"></i>
-          <p class="font-bold text-slate-700">No videos found in this category.</p>
-          <p class="text-xs text-slate-400 mt-1">Click "All Videos" to view the complete tutorial library.</p>
-        </div>
-      `;
+      if (this.searchQuery) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-xs px-4">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-2xl"></i>
+            </div>
+            <p class="font-bold text-slate-800 text-base sm:text-lg">No videos found matching "${this.escapeHtml(this.searchQuery)}"</p>
+            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Try searching with a different term like Subhadra, PMAY, KALIA, CSC, Ration, or Bank BC.</p>
+            <button onclick="VUO_TRAINING.clearSearch()" class="mt-4 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer">
+              <i class="fa-solid fa-rotate-left mr-1"></i> Clear Search
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-xs">
+            <i class="fa-brands fa-youtube text-4xl text-rose-500 mb-2"></i>
+            <p class="font-bold text-slate-700">No videos found in this category.</p>
+            <p class="text-xs text-slate-400 mt-1">Click "All Videos" to view the complete tutorial library.</p>
+          </div>
+        `;
+      }
       return;
     }
 
     container.innerHTML = videos.map(video => {
       const isOdia = typeof currentLanguage !== 'undefined' && currentLanguage === 'or';
-      const title = isOdia && video.titleOdia ? video.titleOdia : video.title;
+      const rawTitle = isOdia && video.titleOdia ? video.titleOdia : video.title;
+      let displayTitle = this.escapeHtml(rawTitle);
+      if (this.searchQuery) {
+        const terms = this.searchQuery.trim().split(/\s+/).filter(Boolean);
+        terms.forEach(t => {
+          try {
+            const re = new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            displayTitle = displayTitle.replace(re, '<mark class="bg-amber-200 text-slate-900 rounded-xs px-0.5">$1</mark>');
+          } catch (_) {}
+        });
+      }
       const thumbUrl = `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
       const ytLink = `https://www.youtube.com/watch?v=${video.youtubeId}`;
 
@@ -457,7 +543,7 @@ const VUO_TRAINING = {
               onclick="VUO_TRAINING.openVideoModal('${video.id || video.youtubeId}')">
               
               <!-- Real YouTube Video Thumbnail -->
-              <img src="${thumbUrl}" alt="${title}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+              <img src="${thumbUrl}" alt="${this.escapeHtml(rawTitle)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                 onerror="this.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80'" />
               
               <!-- Dark gradient overlay -->
@@ -482,7 +568,7 @@ const VUO_TRAINING = {
             <!-- Content Details -->
             <div class="p-4">
               <h3 class="text-sm font-bold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-2 leading-snug">
-                ${title}
+                ${displayTitle}
               </h3>
               <p class="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
                 ${video.desc || 'CSC VLE practical step-by-step training tutorial.'}

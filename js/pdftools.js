@@ -661,8 +661,19 @@ const VUO_PDFTOOLS = {
       }
 
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      
+      const isFileProto = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+      const cMapBase = isFileProto ? 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/' : './vendor/pdfjs/cmaps/';
+      const fontBase = isFileProto ? 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/' : './vendor/pdfjs/standard_fonts/';
+
       // Pass a cloned slice so the worker never detaches this.editorPdfBytes
-      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(this.editorPdfBytes.slice(0)) });
+      const loadingTask = pdfjsLib.getDocument({
+        data: new Uint8Array(this.editorPdfBytes.slice(0)),
+        cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+        cMapPacked: true,
+        standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+        useSystemFonts: false
+      });
       this.editorPdfDoc = await loadingTask.promise;
       this.editorTotalPages = this.editorPdfDoc.numPages;
       this.editorCurrentPage = 1;
