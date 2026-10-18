@@ -6,6 +6,16 @@
 const VUO_ADMIN = {
   activeTab: 'leads',
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   init() {
     this.bindEvents();
     this.switchTab(this.activeTab || 'leads');
@@ -1598,36 +1608,45 @@ const VUO_ADMIN = {
       const badgeColor = (typeof VUO_LEADS !== 'undefined' && VUO_LEADS.serviceBadges && VUO_LEADS.serviceBadges[l.serviceType]) || 'bg-slate-100 text-slate-800 border-slate-300';
       const serviceTitle = l.serviceLabel || (typeof VUO_LEADS !== 'undefined' && VUO_LEADS.serviceLabels && VUO_LEADS.serviceLabels[l.serviceType]) || l.serviceType || 'Service Inquiry';
       
+      const safeLeadId = this.escapeHtml(l.leadId || l.id || '');
+      const safeDate = this.escapeHtml(l.date || '');
+      const safeName = this.escapeHtml(l.name || 'Customer');
+      const safeMobile = this.escapeHtml(l.mobile || '');
+      const safeDistrict = this.escapeHtml(l.district || '—');
+      const safeBlock = this.escapeHtml(l.block || '');
+      const safeServiceTitle = this.escapeHtml(serviceTitle);
+      const safeDetails = this.escapeHtml(l.details || '—');
+
       const waMsg = `Hello ${l.name || 'Customer'},\nThis is VLE HELP DESK regarding your inquiry #${l.leadId || l.id} for "${serviceTitle}".\nHow may we assist you today?`;
-      const waUrl = `https://wa.me/91${l.mobile}?text=${encodeURIComponent(waMsg)}`;
+      const waUrl = `https://wa.me/91${encodeURIComponent(l.mobile || '')}?text=${encodeURIComponent(waMsg)}`;
       
       return `
         <tr class="border-b border-slate-100 hover:bg-slate-50 text-xs transition-colors">
           <td class="p-3">
-            <div class="font-mono font-bold text-sky-700">${l.leadId || l.id}</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">${l.date || ''}</div>
+            <div class="font-mono font-bold text-sky-700">${safeLeadId}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${safeDate}</div>
           </td>
           <td class="p-3">
-            <div class="font-bold text-slate-900">${l.name}</div>
+            <div class="font-bold text-slate-900">${safeName}</div>
             <div class="flex items-center gap-1.5 mt-0.5">
-              <a href="tel:${l.mobile}" class="font-mono text-slate-600 hover:text-sky-600 font-medium">${l.mobile}</a>
+              <a href="tel:${safeMobile}" class="font-mono text-slate-600 hover:text-sky-600 font-medium">${safeMobile}</a>
               <a href="${waUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-700" title="Chat on WhatsApp">
                 <i class="fa-brands fa-whatsapp text-sm"></i>
               </a>
             </div>
           </td>
           <td class="p-3">
-            <div class="font-semibold text-slate-700">${l.district || '—'}</div>
-            <div class="text-[11px] text-slate-500">${l.block || ''}</div>
+            <div class="font-semibold text-slate-700">${safeDistrict}</div>
+            <div class="text-[11px] text-slate-500">${safeBlock}</div>
           </td>
           <td class="p-3">
             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[11px] border ${badgeColor}">
-              ${serviceTitle}
+              ${safeServiceTitle}
             </span>
           </td>
           <td class="p-3 max-w-xs">
-            <p class="text-slate-600 text-[11px] line-clamp-2 leading-relaxed" title="${(l.details || '').replace(/"/g, '&quot;')}">
-              ${l.details || '—'}
+            <p class="text-slate-600 text-[11px] line-clamp-2 leading-relaxed" title="${safeDetails.replace(/"/g, '&quot;')}">
+              ${safeDetails}
             </p>
           </td>
           <td class="p-3">

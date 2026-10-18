@@ -9,6 +9,16 @@ const VUO_CREDITKHATA = {
   currentFilter: 'all', // 'all', 'overdue', 'paid'
   entries: [],
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   init() {
     this.loadEntries();
     this.renderMetrics();
@@ -326,17 +336,17 @@ const VUO_CREDITKHATA = {
       <body onload="window.print(); window.close();">
         <div class="receipt">
           <div class="header">
-            <div class="shop-title">${shopName}</div>
-            <div style="font-size: 10px;">${vleAddress}</div>
-            <div style="font-size: 10px;">Mob: ${vlePhone}</div>
+            <div class="shop-title">${this.escapeHtml(shopName)}</div>
+            <div style="font-size: 10px;">${this.escapeHtml(vleAddress)}</div>
+            <div style="font-size: 10px;">Mob: ${this.escapeHtml(vlePhone)}</div>
             <div style="margin-top: 4px; font-weight: bold; text-transform: uppercase; font-size: 10px; color: #b91c1c;">CUSTOMER UDHAR / CREDIT SLIP</div>
           </div>
-          <div class="row"><span>Slip No:</span><span class="bold">${entry.id}</span></div>
-          <div class="row"><span>Date:</span><span>${entry.date}</span></div>
-          <div class="row"><span>Customer:</span><span class="bold">${entry.name}</span></div>
-          <div class="row"><span>Mobile:</span><span>${entry.mobile}</span></div>
-          <div class="row"><span>Service:</span><span>${entry.service}</span></div>
-          ${entry.notes ? `<div class="row"><span>Notes:</span><span>${entry.notes}</span></div>` : ''}
+          <div class="row"><span>Slip No:</span><span class="bold">${this.escapeHtml(entry.id)}</span></div>
+          <div class="row"><span>Date:</span><span>${this.escapeHtml(entry.date)}</span></div>
+          <div class="row"><span>Customer:</span><span class="bold">${this.escapeHtml(entry.name)}</span></div>
+          <div class="row"><span>Mobile:</span><span>${this.escapeHtml(entry.mobile)}</span></div>
+          <div class="row"><span>Service:</span><span>${this.escapeHtml(entry.service)}</span></div>
+          ${entry.notes ? `<div class="row"><span>Notes:</span><span>${this.escapeHtml(entry.notes)}</span></div>` : ''}
           <div class="amount-box">
             DUE AMOUNT: ₹${entry.amount}/-
           </div>
@@ -435,9 +445,9 @@ const VUO_CREDITKHATA = {
           
           <div class="space-y-1">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="font-black text-slate-900 text-sm">${entry.name}</span>
-              <a href="tel:${entry.mobile}" class="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 hover:bg-sky-100">
-                <i class="fa-solid fa-phone mr-1"></i>${entry.mobile}
+              <span class="font-black text-slate-900 text-sm">${this.escapeHtml(entry.name)}</span>
+              <a href="tel:${this.escapeHtml(entry.mobile)}" class="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 hover:bg-sky-100">
+                <i class="fa-solid fa-phone mr-1"></i>${this.escapeHtml(entry.mobile)}
               </a>
               ${isPaid ? `
                 <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
@@ -455,8 +465,8 @@ const VUO_CREDITKHATA = {
             </div>
 
             <p class="text-xs font-medium text-slate-600">
-              <strong>Service:</strong> ${entry.service}
-              ${entry.notes ? `<span class="italic text-slate-500 ml-2">(${entry.notes})</span>` : ''}
+              <strong>Service:</strong> ${this.escapeHtml(entry.service)}
+              ${entry.notes ? `<span class="italic text-slate-500 ml-2">(${this.escapeHtml(entry.notes)})</span>` : ''}
             </p>
 
             <div class="flex items-center gap-3 text-[11px] text-slate-400">

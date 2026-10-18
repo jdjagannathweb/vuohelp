@@ -333,6 +333,16 @@ const VUO_JOB_ALERT = {
     }
   ],
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   init() {
     this.loadJobs();
     if (!this._initialized) {
@@ -614,12 +624,21 @@ const VUO_JOB_ALERT = {
 
     const docsCount = Array.isArray(job.documents) ? job.documents.length : 0;
     const docsListHtml = (Array.isArray(job.documents) && job.documents.length > 0)
-      ? job.documents.map(d => `<li class="flex items-start gap-2 py-1 border-b border-slate-100 text-xs text-slate-700 last:border-none"><i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-[11px] shrink-0"></i><span>${d}</span></li>`).join('')
+      ? job.documents.map(d => `<li class="flex items-start gap-2 py-1 border-b border-slate-100 text-xs text-slate-700 last:border-none"><i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-[11px] shrink-0"></i><span>${this.escapeHtml(d)}</span></li>`).join('')
       : `<li class="text-xs text-slate-500 py-1">Standard Government Job Documents (10th/12th certificate, Aadhaar, Photo & Signature).</li>`;
 
     const cleanSafeTitle = (job.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const cleanSafePost = (job.post || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeJobId = job.id;
+    const safeJobId = (job.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeOrg = this.escapeHtml(job.organization || 'Govt Department');
+    const safeTitle = this.escapeHtml(job.title || '');
+    const safeTitleOdia = this.escapeHtml(job.titleOdia || '');
+    const safeSalary = this.escapeHtml(job.salary || 'Govt Norms');
+    const safeVacancies = this.escapeHtml(job.vacancies || 'Check Notice');
+    const safeQual = this.escapeHtml(job.qualification || 'Matric / Degree');
+    const safeStartDate = this.escapeHtml(job.startDate || 'Started');
+    const safeLastDate = this.escapeHtml(job.lastDate || 'Closing Soon');
+    const safeAge = this.escapeHtml(job.ageLimit || '');
 
     return `
       <div class="bg-white rounded-2xl border border-slate-200 hover:border-amber-400 hover:shadow-xl transition-all duration-200 flex flex-col overflow-hidden group">
@@ -637,12 +656,12 @@ const VUO_JOB_ALERT = {
           <!-- Organization & Title -->
           <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <i class="fa-regular fa-building text-amber-500"></i>
-            <span class="truncate">${job.organization || 'Govt Department'}</span>
+            <span class="truncate">${safeOrg}</span>
           </div>
           <h3 class="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-800 transition-colors leading-snug mt-1">
-            ${job.title}
+            ${safeTitle}
           </h3>
-          ${job.titleOdia ? `<p class="text-xs font-semibold text-amber-700/90 mt-0.5 font-sans">${job.titleOdia}</p>` : ''}
+          ${job.titleOdia ? `<p class="text-xs font-semibold text-amber-700/90 mt-0.5 font-sans">${safeTitleOdia}</p>` : ''}
         </div>
 
         <!-- Key Metrics Strip: Salary, Vacancy & Qualification -->
@@ -652,7 +671,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm shrink-0 font-bold">₹</span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Salary / Pay Scale</span>
-              <span class="font-black text-emerald-800 text-xs truncate block mt-0.5">${job.salary || 'Govt Norms'}</span>
+              <span class="font-black text-emerald-800 text-xs truncate block mt-0.5">${safeSalary}</span>
             </div>
           </div>
 
@@ -661,7 +680,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs shrink-0 font-bold"><i class="fa-solid fa-users"></i></span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Total Vacancies</span>
-              <span class="font-extrabold text-slate-900 text-xs truncate block mt-0.5">${job.vacancies || 'Check Notice'}</span>
+              <span class="font-extrabold text-slate-900 text-xs truncate block mt-0.5">${safeVacancies}</span>
             </div>
           </div>
 
@@ -670,7 +689,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 font-bold"><i class="fa-solid fa-user-graduate"></i></span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Qualification</span>
-              <span class="font-bold text-slate-800 text-xs truncate block mt-0.5">${job.qualification || 'Matric / Degree'}</span>
+              <span class="font-bold text-slate-800 text-xs truncate block mt-0.5">${safeQual}</span>
             </div>
           </div>
         </div>
@@ -680,14 +699,14 @@ const VUO_JOB_ALERT = {
           <div class="flex items-center gap-1.5">
             <i class="fa-regular fa-calendar-check text-emerald-600"></i>
             <span class="text-slate-500">Apply Start:</span>
-            <span class="font-bold text-slate-900">${job.startDate || 'Started'}</span>
+            <span class="font-bold text-slate-900">${safeStartDate}</span>
           </div>
           <div class="flex items-center gap-1.5 font-extrabold">
             <i class="fa-regular fa-calendar-xmark text-rose-600"></i>
             <span class="text-slate-500">Last Date:</span>
-            <span class="text-rose-700">${job.lastDate || 'Closing Soon'}</span>
+            <span class="text-rose-700">${safeLastDate}</span>
           </div>
-          ${job.ageLimit ? `<div class="w-full text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cake-candles text-amber-500"></i> <span>Age Limit: <b>${job.ageLimit}</b></span></div>` : ''}
+          ${job.ageLimit ? `<div class="w-full text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cake-candles text-amber-500"></i> <span>Age Limit: <b>${safeAge}</b></span></div>` : ''}
         </div>
 
         <!-- Required Documents Accordion -->

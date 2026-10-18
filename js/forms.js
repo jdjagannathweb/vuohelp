@@ -184,6 +184,16 @@ const VUO_FORMS = {
   searchQuery: '',
   _initialized: false,
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   init() {
     if (!this._initialized) {
       this.bindEvents();
@@ -624,7 +634,7 @@ const VUO_FORMS = {
       container.innerHTML = `
         <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
           <i class="fa-solid fa-file-pdf text-4xl text-slate-300 mb-2"></i>
-          <p class="font-bold text-slate-700">No application forms found matching "${this.searchQuery}".</p>
+          <p class="font-bold text-slate-700">No application forms found matching "${this.escapeHtml(this.searchQuery)}".</p>
           <p class="text-xs text-slate-400 mt-1">Try searching for Form 121, Form 15G, Income, OBC, Caste, Subhadra, PAN, or Banking.</p>
         </div>
       `;
@@ -634,8 +644,11 @@ const VUO_FORMS = {
     const currentLang = localStorage.getItem('vuo_lang') || 'en';
 
     container.innerHTML = forms.map(f => {
-      const displayTitle = (currentLang === 'or' && f.titleOdia) ? f.titleOdia : f.title;
-      const subTitle = (currentLang === 'or') ? f.title : (f.titleOdia || '');
+      const rawDisplayTitle = (currentLang === 'or' && f.titleOdia) ? f.titleOdia : f.title;
+      const rawSubTitle = (currentLang === 'or') ? f.title : (f.titleOdia || '');
+      const displayTitle = this.escapeHtml(rawDisplayTitle || '');
+      const subTitle = this.escapeHtml(rawSubTitle || '');
+      const safeDesc = this.escapeHtml(f.desc || 'Official application form and document checklist for Odisha citizen services.');
 
       let catBadgeClass = 'bg-sky-100 text-sky-800 border-sky-200';
       if (f.category === 'subhadra') catBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
@@ -647,7 +660,7 @@ const VUO_FORMS = {
       else if (f.category === 'food') catBadgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
 
       const tagChips = (f.tags || []).slice(0, 3).map(t => 
-        `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">#${t}</span>`
+        `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">#${this.escapeHtml(t)}</span>`
       ).join('');
 
       let storageBadge = '';
@@ -669,13 +682,13 @@ const VUO_FORMS = {
             <div class="flex items-center justify-between gap-2 mb-3">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${catBadgeClass}">
-                  ${f.categoryName || 'CSC Form'}
+                  ${this.escapeHtml(f.categoryName || 'CSC Form')}
                 </span>
                 ${f.isCustom ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">✨ NEW / ADMIN ADDED</span>` : ''}
                 ${storageBadge}
               </div>
               <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-bold shrink-0">
-                <i class="fa-solid fa-file-pdf text-rose-500 mr-1"></i> ${f.size || 'PDF'}
+                <i class="fa-solid fa-file-pdf text-rose-500 mr-1"></i> ${this.escapeHtml(f.size || 'PDF')}
               </span>
             </div>
 
@@ -687,7 +700,7 @@ const VUO_FORMS = {
 
             <!-- Description -->
             <p class="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
-              ${f.desc || 'Official application form and document checklist for Odisha citizen services.'}
+              ${safeDesc}
             </p>
 
             <!-- Tags -->

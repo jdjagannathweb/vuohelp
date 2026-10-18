@@ -278,6 +278,21 @@ DEFAULT_JOB_SOURCES = [
     {"id": 5, "name": "Portal 5 (Police & Defense Recruitment)", "url": "https://www.freejobalert.com/police-defence-jobs/", "active": True}
 ]
 
+def is_safe_portal_url(url):
+    if not url or not isinstance(url, str):
+        return False
+    u = url.strip()
+    if not (u.startswith('http://') or u.startswith('https://')):
+        return False
+    lower = u.lower()
+    blocked = [
+        'localhost', '127.0.0.1', '0.0.0.0', '169.254.', '10.', '192.168.',
+        '172.16.', '172.17.', '172.18.', '172.19.', '172.20.', '172.21.',
+        '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.',
+        '172.28.', '172.29.', '172.30.', '172.31.', '[::1]', 'metadata.google.internal'
+    ]
+    return not any(b in lower for b in blocked)
+
 def get_job_sources():
     sources_file = os.path.join(DIRECTORY, "job_sources.json")
     if os.path.exists(sources_file):
@@ -316,7 +331,7 @@ def fetch_live_job_alerts(force=False, custom_sources=None):
     for src in sources:
         url = src.get('url', '').strip() if isinstance(src, dict) else str(src).strip()
         is_active = src.get('active', True) if isinstance(src, dict) else True
-        if not url or not url.startswith('http') or not is_active:
+        if not url or not is_safe_portal_url(url) or not is_active:
             continue
 
         try:
@@ -437,7 +452,10 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
     def send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-VUO-Auth')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
 
     def do_OPTIONS(self):
@@ -448,6 +466,13 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
+            # Protect against DoS memory exhaustion (limit 10MB)
+            if content_length > 10 * 1024 * 1024:
+                self.send_response(413)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(b'{"status":"error","message":"Payload exceeds 10MB limit"}')
+                return
             body = self.rfile.read(content_length) if content_length > 0 else b''
 
             # Endpoint: /api/log-vle-activity
@@ -560,11 +585,22 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
                 try:
                     payload = json.loads(body.decode('utf-8'))
                     if isinstance(payload, list) and len(payload) > 0:
-                        sources_file = os.path.join(DIRECTORY, "job_sources.json")
-                        with open(sources_file, 'w', encoding='utf-8') as f:
-                            json.dump(payload, f, ensure_ascii=False, indent=2)
-                        jobs, new_added = fetch_live_job_alerts(force=True, custom_sources=payload)
-                        resp = json.dumps({"status": "success", "message": "5 Job sources saved and sync completed", "count": len(jobs), "newAdded": new_added}).encode('utf-8')
+                        # Validate each portal source against SSRF
+                        clean_sources = []
+                        for s in payload:
+                            if isinstance(s, dict):
+                                s_url = s.get('url', '').strip()
+                                if s_url and not is_safe_portal_url(s_url):
+                                    continue
+                                clean_sources.append(s)
+                        if clean_sources:
+                            sources_file = os.path.join(DIRECTORY, "job_sources.json")
+                            with open(sources_file, 'w', encoding='utf-8') as f:
+                                json.dump(clean_sources, f, ensure_ascii=False, indent=2)
+                            jobs, new_added = fetch_live_job_alerts(force=True, custom_sources=clean_sources)
+                            resp = json.dumps({"status": "success", "message": f"{len(clean_sources)} Job sources verified and sync completed", "count": len(jobs), "newAdded": new_added}).encode('utf-8')
+                        else:
+                            resp = json.dumps({"status": "error", "message": "All submitted URLs were invalid or blocked for security"}).encode('utf-8')
                     else:
                         resp = json.dumps({"status": "error", "message": "Invalid sources payload"}).encode('utf-8')
                 except Exception as e:
@@ -672,6 +708,15 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
         # Clean query strings / hashes
         clean_path = self.path.split('?')[0].split('#')[0]
 
+        # Block direct download of server scripts and configuration files
+        FORBIDDEN_EXTENSIONS = ('.py', '.bat', '.cmd', '.sh', '.yaml', '.yml', '.env')
+        if any(clean_path.lower().endswith(ext) for ext in FORBIDDEN_EXTENSIONS):
+            self.send_response(403)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(b"403 Forbidden: Direct access to source code is restricted.")
+            return
+
         # If requesting root or empty, serve index.html
         if clean_path in ('', '/'):
             self.path = '/index.html'
@@ -688,7 +733,13 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 def run_server():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else PORT
+    env_port = os.environ.get('PORT')
+    if env_port and env_port.isdigit():
+        port = int(env_port)
+    elif len(sys.argv) > 1 and sys.argv[1].isdigit():
+        port = int(sys.argv[1])
+    else:
+        port = PORT
     for attempt in range(10):
         try:
             server = ThreadingHTTPServer(('0.0.0.0', port), VuoHttpHandler)
