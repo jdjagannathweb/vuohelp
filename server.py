@@ -5,6 +5,7 @@ import time
 import urllib.request
 import re
 import mimetypes
+import html
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 # Force UTF-8 on Windows command prompts
@@ -223,15 +224,35 @@ _jobs_cache = {
     "last_sync": 0
 }
 
-def determine_job_category(title, org, qual):
-    text = (title + " " + org + " " + qual).lower()
-    if any(k in text for k in ['odisha', 'ossc', 'osssc', 'opsc', 'bhubaneswar', 'cuttack', 'rourkela', 'sambalpur', 'puri', 'oav', 'anganwadi']):
+def determine_job_category(title, org, qual, source_url=''):
+    u = (source_url or '').lower()
+    if 'odisha' in u:
         return 'Odisha Govt'
-    elif any(k in text for k in ['rrb', 'railway', 'train', 'irctc', 'loco', 'ntpc']):
+    elif 'railway' in u:
         return 'Railway'
-    elif any(k in text for k in ['bank', 'ibps', 'sbi', 'rbi', 'nabard', 'canara', 'baroda', 'pnb']):
+    elif 'bank' in u:
         return 'Banking'
-    elif any(k in text for k in ['police', 'army', 'navy', 'airforce', 'crpf', 'bsf', 'cisf', 'itbp', 'defense', 'defence', 'agniveer', 'sepoy', 'constable']):
+    elif 'police' in u or 'defence' in u or 'defense' in u:
+        return 'Defense & Police'
+    elif 'government-jobs' in u or 'ssc' in u or 'upsc' in u:
+        return 'Central Govt'
+
+    text = (title + " " + org + " " + qual).lower()
+    if any(k in text for k in [
+        'odisha', 'ossc', 'osssc', 'opsc', 'bhubaneswar', 'cuttack', 'rourkela', 'sambalpur',
+        'puri', 'oav', 'anganwadi', 'jajpur', 'balasore', 'bhadrak', 'mayurbhanj', 'gajapati',
+        'ganjam', 'berhampur', 'brahmapur', 'koraput', 'kendrapara', 'jagatsinghpur', 'khordha',
+        'dhenkanal', 'angul', 'bolangir', 'balangir', 'kalahandi', 'nuapada', 'nabarangpur',
+        'rayagada', 'malkangiri', 'bargarh', 'jharsuguda', 'sundargarh', 'keonjhar', 'kandhamal',
+        'boudh', 'sonepur', 'subarnapur', 'nayagarh', 'deogarh', 'omc', 'gridco', 'optcl',
+        'opgc', 'ouat', 'chse', 'bse odisha', 'ojee'
+    ]):
+        return 'Odisha Govt'
+    elif any(k in text for k in ['rrb', 'railway', 'train', 'irctc', 'loco', 'ntpc', 'rites', 'ircon', 'kmrl', 'upmrc']):
+        return 'Railway'
+    elif any(k in text for k in ['bank', 'ibps', 'sbi', 'rbi', 'nabard', 'canara', 'baroda', 'pnb', 'uco', 'tmb']):
+        return 'Banking'
+    elif any(k in text for k in ['police', 'army', 'navy', 'airforce', 'crpf', 'bsf', 'cisf', 'itbp', 'defense', 'defence', 'agniveer', 'sepoy', 'constable', 'sainik school']):
         return 'Defense & Police'
     elif any(k in text for k in ['10th', '10 th', '8th', 'matric', '12th', '+2', 'intermediate']):
         return '10th & 12th Pass'
@@ -273,7 +294,7 @@ def get_job_documents_list(qual):
 DEFAULT_JOB_SOURCES = [
     {"id": 1, "name": "Portal 1 (Odisha Government Jobs)", "url": "https://www.freejobalert.com/odisha-government-jobs/", "active": True},
     {"id": 2, "name": "Portal 2 (Railway RRB Recruitment)", "url": "https://www.freejobalert.com/railway-jobs/", "active": True},
-    {"id": 3, "name": "Portal 3 (Staff Selection Commission SSC)", "url": "https://www.freejobalert.com/ssc/", "active": True},
+    {"id": 3, "name": "Portal 3 (Staff Selection & Central Govt Jobs)", "url": "https://www.freejobalert.com/government-jobs/", "active": True},
     {"id": 4, "name": "Portal 4 (Banking & IBPS Recruitment)", "url": "https://www.freejobalert.com/bank-jobs/", "active": True},
     {"id": 5, "name": "Portal 5 (Police & Defense Recruitment)", "url": "https://www.freejobalert.com/police-defence-jobs/", "active": True}
 ]
@@ -336,85 +357,129 @@ def fetch_live_job_alerts(force=False, custom_sources=None):
 
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            html = urllib.request.urlopen(req, timeout=9).read().decode('utf-8', errors='ignore')
-            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.S)
+            html_text = urllib.request.urlopen(req, timeout=10).read().decode('utf-8', errors='ignore')
+            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html_text, re.S)
 
-            for r in rows[1:]:
+            for r in rows:
                 cells = re.findall(r'<td[^>]*>(.*?)</td>', r, re.S)
-                if len(cells) >= 6:
-                    clean = [re.sub(r'<[^>]+>', ' ', c).strip() for c in cells]
-                    pdate = clean[0]
-                    board = clean[1]
-                    post = clean[2]
-                    posts = clean[3]
-                    qual = clean[4]
-                    ldate = clean[5]
+                if len(cells) < 6:
+                    continue
 
-                    if not post or not board or 'post date' in pdate.lower() or 'recruitment board' in board.lower():
-                        continue
+                clean = [re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', c))).strip() for c in cells]
+                pdate = clean[0]
+                if not pdate or not re.search(r'\d', pdate) or any(h in pdate.lower() for h in ['post date', 'date', 'advt']):
+                    continue
 
-                    links = re.findall(r'href=[\x27\x22]([^\x27\x22]+)[\x27\x22]', r)
-                    detail_link = links[0] if links else url
-                    if not detail_link.startswith('http'):
-                        from urllib.parse import urljoin
-                        detail_link = urljoin(url, detail_link)
+                col1, col2, col3, col4, col5 = clean[1], clean[2], clean[3], clean[4], clean[5]
 
-                    # Generate clean unique ID
-                    raw_id_str = f"{board}-{post}-{ldate}"
-                    clean_id = "job-" + re.sub(r'[^a-zA-Z0-9]+', '-', raw_id_str).strip('-').lower()[:45]
+                # Check if table is Type A (Odisha state style where col3 is Vacancies and col4 is Qualification)
+                # or Type B (Standard lattbl where col2 is Post Name – Vacancies and col3 is Qualification)
+                is_odisha = False
+                col3_lower = col3.lower()
+                if re.search(r'^\d+[\s,0-9]*\s*(posts?)?$', col3, re.I) or (
+                    'post' in col3_lower and not any(q in col3_lower for q in ['graduate', 'degree', 'pass', '10th', '12th', 'diploma', 'b.tech', 'iti', 'mbbs', 'ph.d', 'm.tech', 'b.ed'])
+                ):
+                    is_odisha = True
 
-                    cat = determine_job_category(post, board, qual)
-                    salary = estimate_job_salary(post, qual)
-                    docs = get_job_documents_list(qual)
+                if is_odisha:
+                    board = re.sub(r'\s*(Vacancy|Recruitment)\s*\d{4}.*$', '', col1, flags=re.I).strip() or col1
+                    post = col2
+                    vacancies = col3
+                    qual = col4
+                    ldate = col5
+                else:
+                    board = col1
+                    post_raw = col2
+                    if '–' in post_raw:
+                        parts = post_raw.split('–', 1)
+                    elif '-' in post_raw and ('post' in post_raw.lower() or re.search(r'-\s*\d+', post_raw)):
+                        parts = post_raw.rsplit('-', 1)
+                    else:
+                        parts = [post_raw]
+                    post = parts[0].strip()
+                    vacancies = parts[1].strip() if len(parts) > 1 else 'Check Notification'
+                    if vacancies and 'post' not in vacancies.lower() and re.search(r'^\d+[\s,0-9]*$', vacancies):
+                        vacancies += ' Posts'
+                    qual = col3
+                    ldate = col5
 
-                    scraped_jobs.append({
-                        "id": clean_id,
-                        "title": f"{board.split(' - ')[0]} - {post}",
-                        "titleOdia": f"{board.split(' - ')[0]} - {post}",
-                        "organization": board.split(' - ')[0],
-                        "post": post,
-                        "vacancies": posts,
-                        "qualification": qual,
-                        "ageLimit": "18 - 38 Years (Age relaxation as per Govt rules)",
-                        "salary": salary,
-                        "startDate": pdate,
-                        "lastDate": ldate,
-                        "category": cat,
-                        "status": "Active",
-                        "applyUrl": detail_link,
-                        "notificationUrl": detail_link,
-                        "officialUrl": detail_link,
-                        "sourceUrl": detail_link,
-                        "source": "Govt Recruitment Board",
-                        "documents": docs,
-                        "examFee": "Check official notification",
-                        "featured": False,
-                        "syncedAt": int(now * 1000)
-                    })
+                if not post or not board:
+                    continue
+
+                # Extract proper detail / notification link
+                links = re.findall(r'href=[\x27\x22]([^\x27\x22]+)[\x27\x22]', r)
+                detail_link = url
+                if links:
+                    for lk in reversed(links):
+                        if not lk.startswith('#') and 'javascript:' not in lk:
+                            detail_link = lk
+                            break
+                if not detail_link.startswith('http'):
+                    from urllib.parse import urljoin
+                    detail_link = urljoin(url, detail_link)
+
+                # Generate clean unique ID and title
+                clean_board = board.split(' - ')[0].split('  ')[0].strip()
+                clean_post = post.strip()
+                title_str = f"{clean_board} - {clean_post}" if clean_post else clean_board
+                raw_id_str = f"{clean_board}-{clean_post}-{ldate}"
+                clean_id = "job-" + re.sub(r'[^a-zA-Z0-9]+', '-', raw_id_str).strip('-').lower()[:45]
+
+                cat = determine_job_category(clean_post, clean_board, qual, url)
+                salary = estimate_job_salary(clean_post, qual)
+                docs = get_job_documents_list(qual)
+
+                scraped_jobs.append({
+                    "id": clean_id,
+                    "title": title_str,
+                    "titleOdia": title_str,
+                    "organization": clean_board,
+                    "post": clean_post,
+                    "vacancies": vacancies,
+                    "qualification": qual,
+                    "ageLimit": "18 - 38 Years (Age relaxation as per Govt rules)",
+                    "salary": salary,
+                    "startDate": pdate,
+                    "lastDate": ldate if ldate and ldate != '–' else 'Check Notification',
+                    "category": cat,
+                    "status": "Active",
+                    "applyUrl": detail_link,
+                    "notificationUrl": detail_link,
+                    "officialUrl": detail_link,
+                    "sourceUrl": detail_link,
+                    "source": "Govt Recruitment Board",
+                    "documents": docs,
+                    "examFee": "Check official notification",
+                    "featured": False,
+                    "syncedAt": int(now * 1000)
+                })
         except Exception as e:
             print(f"[Jobs Sync] Scrape error for {url}: {e}")
 
     if scraped_jobs:
         existing_map = { j.get('id'): j for j in _jobs_cache["jobs"] if j.get('id') }
         merged = []
+        seen_ids = set()
 
         # Prepend new scraped jobs
         for sj in scraped_jobs:
-            if sj['id'] not in existing_map:
+            if sj['id'] not in seen_ids:
                 merged.append(sj)
-                existing_map[sj['id']] = sj
-                new_added += 1
+                seen_ids.add(sj['id'])
+                if sj['id'] not in existing_map:
+                    new_added += 1
 
-        # Keep existing curated jobs
+        # Keep existing curated jobs with customized documents/featured status
         for ej in _jobs_cache["jobs"]:
-            if ej['id'] not in [s['id'] for s in scraped_jobs]:
-                merged.append(ej)
-            elif ej.get('featured') or ej.get('documents'):
-                # Prefer existing if curated with docs
-                pass
+            if ej.get('id') not in seen_ids:
+                # Discard legacy uncleaned entries
+                if '&#8211;' not in ej.get('title', '') and '&#8211;' not in ej.get('vacancies', ''):
+                    if ej.get('featured') or ej.get('documents'):
+                        merged.append(ej)
+                        seen_ids.add(ej['id'])
 
         if not merged:
-            merged = scraped_jobs + _jobs_cache["jobs"]
+            merged = scraped_jobs
 
         _jobs_cache["jobs"] = merged
         _jobs_cache["last_sync"] = now

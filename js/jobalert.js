@@ -548,8 +548,11 @@ const VUO_JOB_ALERT = {
       if (this.currentCategory === 'central' && job.category !== 'Central Govt') return false;
       if (this.currentCategory === 'railway' && job.category !== 'Railway') return false;
       if (this.currentCategory === 'banking' && job.category !== 'Banking') return false;
-      if (this.currentCategory === 'defense' && job.category !== 'Defense & Police') return false;
-      if (this.currentCategory === 'matric' && job.category !== '10th & 12th Pass') return false;
+      if (this.currentCategory === 'matric') {
+        const isMatric = job.category === '10th & 12th Pass' ||
+          /10th|10 th|8th|matric|12th|\+2|intermediate/i.test((job.qualification || '') + ' ' + (job.post || ''));
+        if (!isMatric) return false;
+      }
       if (this.currentCategory === 'closing') {
         const days = this.getDaysRemaining(job.lastDate);
         if (days > 7 || days < 0) return false;

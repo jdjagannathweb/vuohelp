@@ -2451,7 +2451,7 @@ const VUO_ADMIN = {
     const defaults = [
       { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
       { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
-      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/government-jobs/", active: true },
       { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
       { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
     ];
@@ -2532,7 +2532,7 @@ const VUO_ADMIN = {
     const defaults = [
       { id: 1, name: "Odisha Government Jobs", url: "https://www.freejobalert.com/odisha-government-jobs/", active: true },
       { id: 2, name: "Railway RRB Recruitment", url: "https://www.freejobalert.com/railway-jobs/", active: true },
-      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/ssc/", active: true },
+      { id: 3, name: "SSC & Central Recruitment", url: "https://www.freejobalert.com/government-jobs/", active: true },
       { id: 4, name: "Banking & IBPS Recruitment", url: "https://www.freejobalert.com/bank-jobs/", active: true },
       { id: 5, name: "Police & Defense Recruitment", url: "https://www.freejobalert.com/police-defence-jobs/", active: true }
     ];
