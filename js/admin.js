@@ -430,6 +430,7 @@ const VUO_ADMIN = {
     try { this.renderPopupSettings(); } catch (e) { console.warn("renderPopupSettings error:", e); }
     try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
     try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
+    try { this.renderCloudStorageSettings(); } catch (e) { console.warn("renderCloudStorageSettings error:", e); }
     try { this.renderVleActivityTable(); } catch (e) { console.warn("renderVleActivityTable error:", e); }
     try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
   },
@@ -1131,8 +1132,7 @@ const VUO_ADMIN = {
     showToast("Donation & Barcode/QR settings saved successfully!", "success");
   },
 
-  // ---------------- 7. FULL HD WELCOME POPUP & NOTICE MANAGEMENT ---------------- //
-  compressNoticeImage(file, maxDimension = 1280, quality = 0.82) {
+  compressNoticeImage(file, maxDimension = 800, quality = 0.75) {
     return new Promise((resolve, reject) => {
       if (!file) return reject(new Error("No file provided"));
       const reader = new FileReader();
@@ -1237,18 +1237,18 @@ const VUO_ADMIN = {
     const buttonLink = document.getElementById('adminPopupButtonLink') ? document.getElementById('adminPopupButtonLink').value.trim() : '#passphoto';
     let imageUrl = document.getElementById('adminPopupPosterUrl') ? document.getElementById('adminPopupPosterUrl').value.trim() : '';
 
-    // If a new photo file was chosen, upload to Firebase Storage if available
-    if (this._pendingPopupImageFile && typeof VUO_DB !== 'undefined' && VUO_DB.storage) {
+    // If a new photo file was chosen, attempt free Cloud Storage upload in background if available
+    if (this._pendingPopupImageFile && typeof VUO_CLOUD_STORAGE !== 'undefined') {
       try {
-        showToast("Uploading notice photo to Firebase Cloud Storage...", "info");
-        const fireUrl = await VUO_DB.uploadImageToStorage(this._pendingPopupImageFile);
-        if (fireUrl) {
-          imageUrl = fireUrl;
+        const cloudImg = await VUO_CLOUD_STORAGE.uploadImage(this._pendingPopupImageFile);
+        if (cloudImg && cloudImg.url && cloudImg.url.startsWith('http')) {
+          imageUrl = cloudImg.url;
           const urlInput = document.getElementById('adminPopupPosterUrl');
-          if (urlInput) urlInput.value = fireUrl;
+          if (urlInput) urlInput.value = cloudImg.url;
+          console.log(`☁️ Notice poster uploaded to ${cloudImg.provider}:`, cloudImg.url);
         }
       } catch (fbErr) {
-        console.warn("Firebase notice image upload fallback:", fbErr);
+        console.log("ℹ️ Cloud Storage fallback — using high-performance Firestore direct compression.");
       }
     }
 
@@ -1319,7 +1319,7 @@ const VUO_ADMIN = {
     if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized) {
       try {
         const firestoreObj = { ...popupObj };
-        if (firestoreObj.imageUrl && firestoreObj.imageUrl.length > 500000) {
+        if (firestoreObj.imageUrl && firestoreObj.imageUrl.length > 800000) {
           firestoreObj.imageUrl = '';
         }
         const cloudRes = await VUO_DB.cloudSavePopup(firestoreObj);
@@ -1530,6 +1530,130 @@ const VUO_ADMIN = {
       showToast("✅ All Links, Videos & News successfully synced to Cloud!", "success");
     } catch (e) {
       showToast("Sync error: " + e.message, "error");
+    }
+  },
+
+  // ---------------- FREE CLOUD STORAGE SETTINGS (CLOUDINARY & SUPABASE) ---------------- //
+  toggleStorageProviderFields() {
+    const isCloudinary = document.getElementById('radioProviderCloudinary')?.checked;
+    const clBox = document.getElementById('storageFieldsCloudinary');
+    const sbBox = document.getElementById('storageFieldsSupabase');
+    if (clBox && sbBox) {
+      if (isCloudinary) {
+        clBox.classList.remove('hidden');
+        sbBox.classList.add('hidden');
+      } else {
+        clBox.classList.add('hidden');
+        sbBox.classList.remove('hidden');
+      }
+    }
+  },
+
+  renderCloudStorageSettings() {
+    if (typeof VUO_CLOUD_STORAGE === 'undefined') return;
+    const cfg = VUO_CLOUD_STORAGE.getCloudConfig();
+    const isSupabase = cfg.provider === 'supabase';
+    
+    if (document.getElementById('radioProviderCloudinary')) document.getElementById('radioProviderCloudinary').checked = !isSupabase;
+    if (document.getElementById('radioProviderSupabase')) document.getElementById('radioProviderSupabase').checked = isSupabase;
+    
+    if (document.getElementById('csCloudName')) document.getElementById('csCloudName').value = cfg.cloudName || '';
+    if (document.getElementById('csUploadPreset')) document.getElementById('csUploadPreset').value = cfg.uploadPreset || '';
+    if (document.getElementById('csSupabaseUrl')) document.getElementById('csSupabaseUrl').value = cfg.supabaseUrl || '';
+    if (document.getElementById('csSupabaseKey')) document.getElementById('csSupabaseKey').value = cfg.supabaseAnonKey || '';
+    if (document.getElementById('csSupabaseBucket')) document.getElementById('csSupabaseBucket').value = cfg.supabaseBucket || 'vuo_files';
+
+    this.toggleStorageProviderFields();
+
+    // Update status card
+    const card = document.getElementById('storageStatusCard');
+    const dot = document.getElementById('storageStatusDot');
+    const title = document.getElementById('storageStatusTitle');
+    const desc = document.getElementById('storageStatusDesc');
+
+    if (card && dot && title && desc) {
+      if (cfg.cloudName && cfg.uploadPreset) {
+        card.className = "p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sky-50/80 border-sky-200 text-sky-950";
+        dot.className = "w-3.5 h-3.5 rounded-full bg-sky-500 shadow-sm";
+        title.textContent = `🟢 Cloudinary Connected (${cfg.cloudName})`;
+        desc.textContent = "25 GB Free Monthly Cloud Storage is active. All PDF uploads go directly to Cloudinary global CDN!";
+      } else if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+        card.className = "p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/80 border-emerald-200 text-emerald-950";
+        dot.className = "w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm";
+        title.textContent = `🟢 Supabase Storage Connected (${cfg.supabaseBucket || 'vuo_files'})`;
+        desc.textContent = "1 GB Free Permanent Cloud Storage is active. All PDF uploads go directly to your Supabase bucket!";
+      } else {
+        card.className = "p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border-slate-200 text-slate-800";
+        dot.className = "w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse";
+        title.textContent = "🟡 Local IndexedDB + Drive Mode (Cloud Storage Not Configured)";
+        desc.textContent = "Choose Cloudinary (25GB) or Supabase (1GB) below to enable 1-click cloud uploads for free!";
+      }
+    }
+  },
+
+  handleSaveCloudStorageSettings() {
+    const isCloudinary = document.getElementById('radioProviderCloudinary')?.checked;
+    const provider = isCloudinary ? 'cloudinary' : 'supabase';
+    const cloudName = document.getElementById('csCloudName') ? document.getElementById('csCloudName').value.trim() : '';
+    const uploadPreset = document.getElementById('csUploadPreset') ? document.getElementById('csUploadPreset').value.trim() : '';
+    const supabaseUrl = document.getElementById('csSupabaseUrl') ? document.getElementById('csSupabaseUrl').value.trim() : '';
+    const supabaseAnonKey = document.getElementById('csSupabaseKey') ? document.getElementById('csSupabaseKey').value.trim() : '';
+    const supabaseBucket = document.getElementById('csSupabaseBucket') ? document.getElementById('csSupabaseBucket').value.trim() : 'vuo_files';
+
+    if (provider === 'cloudinary' && (!cloudName || !uploadPreset)) {
+      showToast("Please enter Cloud Name and Upload Preset for Cloudinary.", "warning");
+      return;
+    }
+    if (provider === 'supabase' && (!supabaseUrl || !supabaseAnonKey)) {
+      showToast("Please enter Project URL and Anon Public Key for Supabase.", "warning");
+      return;
+    }
+
+    if (typeof VUO_CLOUD_STORAGE !== 'undefined') {
+      VUO_CLOUD_STORAGE.setCloudConfig({
+        provider,
+        cloudName,
+        uploadPreset,
+        supabaseUrl,
+        supabaseAnonKey,
+        supabaseBucket
+      });
+      this.renderCloudStorageSettings();
+      showToast(`🎉 ${provider === 'cloudinary' ? 'Cloudinary (25 GB)' : 'Supabase (1 GB)'} Storage settings saved successfully!`, "success");
+    }
+  },
+
+  async testCloudStorageUpload() {
+    if (typeof VUO_CLOUD_STORAGE === 'undefined') {
+      showToast("Cloud Storage module not loaded.", "error");
+      return;
+    }
+    const cfg = VUO_CLOUD_STORAGE.getCloudConfig();
+    if (!cfg.cloudName && !cfg.supabaseUrl) {
+      showToast("Please configure Cloudinary or Supabase credentials first.", "warning");
+      return;
+    }
+
+    showToast("Testing 1-Click Cloud Storage upload...", "info");
+    try {
+      const testBlob = new Blob(["VUO CSC HELP - Test Storage File"], { type: "text/plain" });
+      const testFile = new File([testBlob], "vuo_test_file.txt", { type: "text/plain" });
+      
+      let res = null;
+      if (cfg.cloudName && cfg.uploadPreset && (cfg.provider === 'auto' || cfg.provider === 'cloudinary')) {
+        res = await VUO_CLOUD_STORAGE.uploadToCloudinary(testFile, cfg, (m) => showToast(m, "info"));
+      } else if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+        res = await VUO_CLOUD_STORAGE.uploadToSupabase(testFile, cfg, (m) => showToast(m, "info"));
+      }
+
+      if (res && res.url) {
+        showToast(`✅ Cloud Storage Test Passed! Connected to ${res.provider}.`, "success");
+        this.renderCloudStorageSettings();
+      } else {
+        showToast("Upload completed, check storage console.", "info");
+      }
+    } catch (err) {
+      showToast("Test upload failed: " + err.message, "error");
     }
   },
 

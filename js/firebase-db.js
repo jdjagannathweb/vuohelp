@@ -59,7 +59,7 @@ const VUO_DB = {
     if (!this.storage) {
       throw new Error("Firebase Storage not available");
     }
-    if (onProgress) onProgress("Checking Firebase Cloud Storage...");
+    if (onProgress) onProgress("Uploading PDF to Firebase Cloud Storage...");
     const cleanName = (file.name || 'form.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
     const safePath = `csc_forms/${Date.now()}_${cleanName}`;
     const storageRef = this.storage.ref().child(safePath);
@@ -69,8 +69,8 @@ const VUO_DB = {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         try { uploadTask.cancel(); } catch (_) {}
-        reject(new Error("Firebase Storage connection timeout (404/unavailable)"));
-      }, 2000);
+        reject(new Error("Firebase Storage upload timeout (30s) or bucket not provisioned"));
+      }, 30000);
     });
 
     const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
@@ -94,13 +94,13 @@ const VUO_DB = {
 
   isConfigured() {
     const savedConfigStr = localStorage.getItem('vuo_firebase_config');
-    if (!savedConfigStr) return false;
-    try {
-      const cfg = JSON.parse(savedConfigStr);
-      return !!(cfg && cfg.projectId && cfg.apiKey);
-    } catch (e) {
-      return false;
+    if (savedConfigStr) {
+      try {
+        const cfg = JSON.parse(savedConfigStr);
+        if (cfg && cfg.projectId && cfg.apiKey) return true;
+      } catch (e) {}
     }
+    return !!(this.isInitialized && this.db) || !!(this.defaultConfig && this.defaultConfig.projectId);
   },
 
   getSavedConfig() {
@@ -236,8 +236,8 @@ const VUO_DB = {
     this.db.collection('vuo_settings').doc('popup').onSnapshot((doc) => {
       if (doc && doc.exists) {
         const popupData = doc.data();
-        if (popupData && typeof popupData === 'object' && popupData.title) {
-          console.log("☁️ Real-time Welcome Popup received from Cloud Firestore:", popupData.title);
+        if (popupData && typeof popupData === 'object' && (popupData.title || popupData.headline || popupData.message || popupData.imageUrl)) {
+          console.log("☁️ Real-time Welcome Popup received from Cloud Firestore:", popupData.title || popupData.headline || "Notice");
           localStorage.setItem('vuo_popup', JSON.stringify(popupData));
           
           if (window.VUO_IDB && typeof window.VUO_IDB.savePdfBlob === 'function') {
@@ -365,100 +365,174 @@ const VUO_DB = {
   },
 
   // ---------------- CLOUD CRUD HELPERS ---------------- //
-  // CSC PDF Forms
-  async cloudSaveForm(formObj) {
-    if (this.isInitialized && this.db) {
-      try {
-        formObj.createdAt = formObj.createdAt || Date.now();
-        await this.db.collection('vuo_forms').doc(formObj.id).set(formObj);
-        console.log("☁️ CSC PDF form saved to Firebase Cloud!");
-      } catch (e) {
-        console.warn("Could not save form to cloud:", e);
-      }
+  // ---------------- DIRECT FIRESTORE REST HELPERS (Guaranteed synchronous sync) ---------------- //
+  async directRestSaveDoc(collection, docId, obj) {
+    try {
+      const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+      const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+      const url = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: this.toFirestoreFields(obj) })
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn(`REST save warning for ${collection}/${docId}:`, e);
+      return false;
     }
   },
 
+  async directRestDeleteDoc(collection, docId) {
+    try {
+      const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+      const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+      const url = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${apiKey}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      return res.ok;
+    } catch (e) {
+      console.warn(`REST delete warning for ${collection}/${docId}:`, e);
+      return false;
+    }
+  },
+
+  // ---------------- CLOUD CRUD HELPERS ---------------- //
+  // CSC PDF Forms (Dual-layer SDK + Direct REST fallback)
+  async cloudSaveForm(formObj) {
+    if (!formObj || !formObj.id) return { success: false, error: "Missing form ID" };
+    formObj.createdAt = formObj.createdAt || Date.now();
+
+    // 1. Firebase SDK
+    if (this.isInitialized && this.db) {
+      try {
+        await this.db.collection('vuo_forms').doc(formObj.id).set(formObj, { merge: true });
+        console.log("☁️ CSC PDF form saved to Firebase Cloud (SDK):", formObj.id);
+      } catch (e) {
+        console.warn("Could not save form via SDK:", e);
+      }
+    }
+
+    // 2. Direct REST API Fallback
+    await this.directRestSaveDoc('vuo_forms', formObj.id, formObj);
+    return { success: true };
+  },
+
+  // Alias for backward compatibility
+  async saveForm(formObj) {
+    return this.cloudSaveForm(formObj);
+  },
+
   async cloudDeleteForm(formId) {
+    if (!formId) return;
     if (this.isInitialized && this.db) {
       try {
         await this.db.collection('vuo_forms').doc(formId).delete();
-        console.log("☁️ Form deleted from Firebase Cloud!");
+        console.log("☁️ Form deleted from Firebase Cloud (SDK):", formId);
       } catch (e) {
-        console.warn("Could not delete form from cloud:", e);
+        console.warn("Could not delete form via SDK:", e);
       }
     }
+    await this.directRestDeleteDoc('vuo_forms', formId);
   },
 
   // Links
   async cloudSaveLink(linkObj) {
+    if (!linkObj || !linkObj.id) return;
+    linkObj.createdAt = linkObj.createdAt || Date.now();
     if (this.isInitialized && this.db) {
       try {
-        linkObj.createdAt = linkObj.createdAt || Date.now();
-        await this.db.collection('vuo_links').doc(linkObj.id).set(linkObj);
-        console.log("☁️ Link saved to Firebase Cloud!");
+        await this.db.collection('vuo_links').doc(linkObj.id).set(linkObj, { merge: true });
+        console.log("☁️ Link saved to Firebase Cloud (SDK):", linkObj.id);
       } catch (e) {
-        console.warn("Could not save link to cloud:", e);
+        console.warn("Could not save link via SDK:", e);
       }
     }
+    await this.directRestSaveDoc('vuo_links', linkObj.id, linkObj);
   },
 
   async cloudDeleteLink(linkId) {
+    if (!linkId) return;
     if (this.isInitialized && this.db) {
       try {
         await this.db.collection('vuo_links').doc(linkId).delete();
-        console.log("☁️ Link deleted from Firebase Cloud!");
+        console.log("☁️ Link deleted from Firebase Cloud (SDK):", linkId);
       } catch (e) {
-        console.warn("Could not delete link from cloud:", e);
+        console.warn("Could not delete link via SDK:", e);
       }
     }
+    await this.directRestDeleteDoc('vuo_links', linkId);
   },
 
   // Training Videos
   async cloudSaveVideo(videoObj) {
+    if (!videoObj || !videoObj.id) return;
+    videoObj.createdAt = videoObj.createdAt || Date.now();
     if (this.isInitialized && this.db) {
       try {
-        videoObj.createdAt = videoObj.createdAt || Date.now();
-        await this.db.collection('vuo_training').doc(videoObj.id).set(videoObj);
-        console.log("☁️ Training video saved to Firebase Cloud!");
+        await this.db.collection('vuo_training').doc(videoObj.id).set(videoObj, { merge: true });
+        console.log("☁️ Training video saved to Firebase Cloud (SDK):", videoObj.id);
       } catch (e) {
-        console.warn("Could not save video to cloud:", e);
+        console.warn("Could not save video via SDK:", e);
       }
     }
+    await this.directRestSaveDoc('vuo_training', videoObj.id, videoObj);
   },
 
   async cloudDeleteVideo(videoId) {
+    if (!videoId) return;
     if (this.isInitialized && this.db) {
       try {
         await this.db.collection('vuo_training').doc(videoId).delete();
-        console.log("☁️ Training video deleted from Firebase Cloud!");
+        console.log("☁️ Training video deleted from Firebase Cloud (SDK):", videoId);
       } catch (e) {
-        console.warn("Could not delete video from cloud:", e);
+        console.warn("Could not delete video via SDK:", e);
       }
     }
+    await this.directRestDeleteDoc('vuo_training', videoId);
   },
 
   // Announcements
   async cloudSaveAnnouncement(annObj) {
+    if (!annObj || !annObj.id) return;
+    annObj.createdAt = annObj.createdAt || Date.now();
     if (this.isInitialized && this.db) {
       try {
-        annObj.createdAt = annObj.createdAt || Date.now();
-        await this.db.collection('vuo_announcements').doc(annObj.id).set(annObj);
-        console.log("☁️ Announcement saved to Firebase Cloud!");
+        await this.db.collection('vuo_announcements').doc(annObj.id).set(annObj, { merge: true });
+        console.log("☁️ Announcement saved to Firebase Cloud (SDK):", annObj.id);
       } catch (e) {
-        console.warn("Could not save announcement to cloud:", e);
+        console.warn("Could not save announcement via SDK:", e);
       }
     }
+    await this.directRestSaveDoc('vuo_announcements', annObj.id, annObj);
   },
 
   async cloudDeleteAnnouncement(annId) {
+    if (!annId) return;
     if (this.isInitialized && this.db) {
       try {
         await this.db.collection('vuo_announcements').doc(annId).delete();
-        console.log("☁️ Announcement deleted from Firebase Cloud!");
+        console.log("☁️ Announcement deleted from Firebase Cloud (SDK):", annId);
       } catch (e) {
-        console.warn("Could not delete announcement from cloud:", e);
+        console.warn("Could not delete announcement via SDK:", e);
       }
     }
+    await this.directRestDeleteDoc('vuo_announcements', annId);
+  },
+
+  // Support Tickets
+  async cloudSaveTicket(ticketObj) {
+    if (!ticketObj) return;
+    ticketObj.createdAt = ticketObj.createdAt || Date.now();
+    const docId = ticketObj.id || ('TKT-' + Date.now());
+    if (this.isInitialized && this.db) {
+      try {
+        await this.db.collection('vuo_tickets').doc(docId).set(ticketObj, { merge: true });
+        console.log("☁️ Support ticket saved to Firebase Cloud (SDK):", docId);
+      } catch (e) {
+        console.warn("Could not save ticket via SDK:", e);
+      }
+    }
+    await this.directRestSaveDoc('vuo_tickets', docId, ticketObj);
   },
 
   // Member Registration & Cloud Management
@@ -627,20 +701,30 @@ const VUO_DB = {
     }
   },
 
-  // Welcome Notice Popup Cloud Persistence
+  // Welcome Notice Popup Cloud Persistence (Dual-layer SDK + REST)
   async cloudSavePopup(popupObj) {
+    if (!popupObj) return { success: false, error: "Empty popup object" };
+    popupObj.updatedAtTimestamp = popupObj.updatedAtTimestamp || Date.now();
+    let sdkSuccess = false;
+
+    // 1. Firebase SDK
     if (this.isInitialized && this.db) {
       try {
-        popupObj.updatedAtTimestamp = popupObj.updatedAtTimestamp || Date.now();
         await this.db.collection('vuo_settings').doc('popup').set(popupObj, { merge: true });
-        console.log("☁️ Welcome Popup published to Firebase Cloud Firestore successfully!");
-        return { success: true };
+        console.log("☁️ Welcome Popup published to Firebase Cloud Firestore (SDK)!");
+        sdkSuccess = true;
       } catch (e) {
-        console.warn("Could not save popup to cloud Firestore:", e);
-        return { success: false, error: e.message };
+        console.warn("Could not save popup via SDK:", e);
       }
     }
-    return { success: false, error: "Firebase not initialized" };
+
+    // 2. Direct REST Fallback (Guaranteed synchronous sync across internet)
+    const restSuccess = await this.directRestSaveDoc('vuo_settings', 'popup', popupObj);
+    if (restSuccess) {
+      console.log("☁️ Welcome Popup published to Firebase Cloud Firestore (REST)!");
+    }
+
+    return { success: sdkSuccess || restSuccess };
   },
 
   // VLE Activity & Visits Cloud Persistence

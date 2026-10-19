@@ -7091,7 +7091,7 @@ body {
           <i class="fa-solid fa-users-viewfinder text-teal-600"></i> VLE Visits &amp; Downloads (<span id="adminTotalVleCount">0</span>)
         </button>
         <button type="button" onclick="VUO_ADMIN.switchTab('firebase')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="firebase">
-          <i class="fa-solid fa-fire text-amber-600"></i> Firebase Cloud Sync
+          <i class="fa-solid fa-cloud text-amber-600"></i> Cloud Sync &amp; Free Storage
         </button>
         <button type="button" onclick="VUO_ADMIN.switchTab('jobalerts')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="jobalerts">
           <i class="fa-solid fa-briefcase text-amber-600"></i> Job Alerts &amp; 5 Sync Portals (<span id="adminTotalJobsCount">0</span>)
@@ -8073,6 +8073,120 @@ body {
             <li>Click on <strong>"Build -> Firestore Database"</strong> -> Click <strong>"Create Database"</strong> -> Select <strong>"Start in test mode"</strong>.</li>
             <li>Click on the <strong>Web Icon (&lt;/&gt;)</strong> in Project Overview to create a Web App, then copy & paste the config keys above!</li>
           </ol>
+        </div>
+
+        <!-- Free Cloud File Storage (Cloudinary & Supabase) Section -->
+        <div class="pt-6 border-t border-slate-200 space-y-5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl shadow-xs">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-black text-slate-900 font-heading">Free Cloud File Storage (PDF Forms &amp; Images)</h3>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">100% Free • No Credit Card</span>
+              </div>
+              <p class="text-xs text-slate-500">Host your PDF application forms and Notice posters directly on free cloud storage without paying for Firebase Blaze.</p>
+            </div>
+          </div>
+
+          <!-- Cloud Storage Provider Status Card -->
+          <div id="storageStatusCard" class="p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border-slate-200">
+            <div class="flex items-center gap-3">
+              <div id="storageStatusDot" class="w-3.5 h-3.5 rounded-full bg-slate-400"></div>
+              <div>
+                <p class="text-xs font-bold text-slate-800" id="storageStatusTitle">Cloud Storage Status</p>
+                <p class="text-[11px] text-slate-500" id="storageStatusDesc">Select a free provider below (Cloudinary 25GB or Supabase 1GB).</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="VUO_ADMIN.testCloudStorageUpload()" class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-vial"></i>
+                <span>Test 1-Click Upload</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Storage Provider Form -->
+          <form id="adminCloudStorageForm" onsubmit="event.preventDefault(); VUO_ADMIN.handleSaveCloudStorageSettings();" class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+            <!-- Provider Selection Tabs -->
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-2">Choose Free Cloud Storage Provider:</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-sky-400 transition-all has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/50">
+                  <input type="radio" name="cloudStorageProvider" value="cloudinary" id="radioProviderCloudinary" class="mt-0.5 text-sky-600 focus:ring-sky-500" onchange="VUO_ADMIN.toggleStorageProviderFields()" checked />
+                  <div>
+                    <div class="flex items-center gap-1.5 font-bold text-slate-900">
+                      <i class="fa-solid fa-cloud text-sky-500"></i> Cloudinary
+                      <span class="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">25 GB Free Monthly</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Ultra-fast worldwide CDN for PDFs and photos. Easiest setup with Unsigned Preset.</p>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-400 transition-all has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                  <input type="radio" name="cloudStorageProvider" value="supabase" id="radioProviderSupabase" class="mt-0.5 text-emerald-600 focus:ring-emerald-500" onchange="VUO_ADMIN.toggleStorageProviderFields()" />
+                  <div>
+                    <div class="flex items-center gap-1.5 font-bold text-slate-900">
+                      <i class="fa-solid fa-database text-emerald-600"></i> Supabase Storage
+                      <span class="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">1 GB Free Permanent</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Open-source Firebase alternative. Dedicated public bucket with direct URLs.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Cloudinary Fields -->
+            <div id="storageFieldsCloudinary" class="space-y-3 pt-2">
+              <div class="p-3 bg-sky-50 rounded-xl border border-sky-100 text-[11.5px] text-sky-900 flex items-center justify-between">
+                <span>Free account at <a href="https://cloudinary.com/users/register_free" target="_blank" class="font-bold underline text-sky-700">cloudinary.com</a> (No credit card needed).</span>
+                <span class="font-bold text-sky-600 text-xs">25 GB Free/mo</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Cloud Name *</label>
+                  <input type="text" id="csCloudName" placeholder="e.g. dxyz123ab" class="w-full px-3 py-2 text-xs border rounded-lg font-mono focus:ring-1 focus:ring-sky-500" />
+                  <p class="text-[10.5px] text-slate-400 mt-0.5">Found at top left of your Cloudinary Dashboard</p>
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Upload Preset (Unsigned) *</label>
+                  <input type="text" id="csUploadPreset" placeholder="e.g. vuo_public or ml_default" class="w-full px-3 py-2 text-xs border rounded-lg font-mono focus:ring-1 focus:ring-sky-500" />
+                  <p class="text-[10.5px] text-slate-400 mt-0.5">Settings ⚙️ &rarr; Upload &rarr; Add upload preset (Mode: Unsigned)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Supabase Fields -->
+            <div id="storageFieldsSupabase" class="hidden space-y-3 pt-2">
+              <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-[11.5px] text-emerald-900 flex items-center justify-between">
+                <span>Free account at <a href="https://supabase.com" target="_blank" class="font-bold underline text-emerald-700">supabase.com</a> (No credit card needed).</span>
+                <span class="font-bold text-emerald-600 text-xs">1 GB Bucket Free</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div class="sm:col-span-2">
+                  <label class="block font-bold text-slate-700 mb-1">Project URL *</label>
+                  <input type="text" id="csSupabaseUrl" placeholder="https://xyzabcdef.supabase.co" class="w-full px-3 py-2 text-xs border rounded-lg font-mono focus:ring-1 focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Bucket Name</label>
+                  <input type="text" id="csSupabaseBucket" placeholder="vuo_files" value="vuo_files" class="w-full px-3 py-2 text-xs border rounded-lg font-mono focus:ring-1 focus:ring-emerald-500" />
+                </div>
+                <div class="sm:col-span-3">
+                  <label class="block font-bold text-slate-700 mb-1">Anon Public Key (anon public) *</label>
+                  <input type="text" id="csSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full px-3 py-2 text-xs border rounded-lg font-mono focus:ring-1 focus:ring-emerald-500" />
+                  <p class="text-[10.5px] text-slate-400 mt-0.5">Project Settings &rarr; API &rarr; Project API keys &rarr; 'anon' public key</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 flex flex-wrap gap-3">
+              <button type="submit" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save Free Storage Settings</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -12111,9 +12225,10 @@ window.vuoResolveDriveFormUrl = function(form) {
           }
         }
 
-        if (typeof VUO_DB !== 'undefined' && VUO_DB.isConfigured && VUO_DB.isConfigured()) {
+        if (typeof VUO_DB !== 'undefined') {
           try {
-            await VUO_DB.saveForm(newForm);
+            await (VUO_DB.cloudSaveForm ? VUO_DB.cloudSaveForm(newForm) : (VUO_DB.saveForm ? VUO_DB.saveForm(newForm) : Promise.resolve()));
+            console.log("☁️ PDF form saved to Cloud Firestore!");
           } catch (fbErr) {
             console.warn("Firebase form sync error:", fbErr);
           }
@@ -12333,6 +12448,7 @@ window.vuoResolveDriveFormUrl = function(form) {
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <script src="js/firebase-db.js?v=14.0"></script>
+  <script src="js/cloud-storage.js?v=14.0"></script>
   <script src="js/data.js?v=14.0"></script>
   <script src="js/i18n.js?v=14.0"></script>
   <script src="js/auth.js?v=14.0"></script>
