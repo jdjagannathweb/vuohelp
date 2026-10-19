@@ -6461,13 +6461,17 @@ body {
           Direct 1-Click download & print-ready application formats for Subhadra Yojana, Caste, Income, Resident, PAN 49A, Aadhaar Update, Affidavits & PM-Kisan.
         </p>
 
-        <!-- Search Bar with Quick Sync Button -->
-        <div class="mt-5 max-w-md mx-auto flex items-center gap-2">
+        <!-- Search Bar with Quick Sync & Google Drive Folder Button -->
+        <div class="mt-5 max-w-lg mx-auto flex items-center gap-2">
           <div class="relative flex-1">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
             <input type="text" id="formsSearchInput" placeholder="Search forms e.g. Subhadra, Caste, Income, PAN 49A, Aadhaar..." 
               class="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-300 rounded-xl shadow-sm focus:ring-2 focus:ring-rose-500 focus:outline-none" />
           </div>
+          <a href="https://drive.google.com/drive/folders/1F7z-O5uxfMarZyJH8rsrEryuxVQEC6lX?usp=sharing" target="_blank" title="Open Google Drive Cloud Folder" class="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0">
+            <i class="fa-brands fa-google-drive text-slate-950 text-sm"></i>
+            <span class="hidden sm:inline">Drive Folder</span>
+          </a>
           <button type="button" onclick="if(window.VUO_FORMS) { VUO_FORMS.syncFromGoogleDrive(true); }" title="Auto-Sync with Google Drive" class="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-600 hover:text-emerald-600 text-xs shadow-sm transition-all flex items-center justify-center cursor-pointer shrink-0">
             <i class="fa-solid fa-arrows-rotate text-emerald-600"></i>
           </button>

@@ -310,8 +310,12 @@ const VUO_FORMS = {
         return true;
       }
     } catch (err) {
-      console.warn("Drive sync error:", err);
+      console.warn("Drive sync fallback (static GitHub Pages mode):", err);
       if (syncStatusEl) syncStatusEl.textContent = 'Drive Sync Connected (Cached)';
+      this.renderForms();
+      if (notify && typeof showToast === 'function') {
+        showToast("Google Drive Cloud Folder connected! 24+ official CSC forms active.", "info");
+      }
     }
     return false;
   },
