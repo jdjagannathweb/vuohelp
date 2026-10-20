@@ -1172,11 +1172,49 @@ const VUO_ADMIN = {
     const raw = url.trim();
     if (!raw) return { type: 'none', raw: '' };
 
-    // 1. If wrapped in iframe, extract src
     let testStr = raw;
     const iframeMatch = raw.match(/src=["']([^"']+)["']/i);
     if (iframeMatch && iframeMatch[1]) {
       testStr = iframeMatch[1];
+    }
+
+    // 1. YouTube Video ID (11 chars) matcher
+    let videoId = '';
+    const patterns = [
+      /[?&]v=([a-zA-Z0-9_-]{11})/,
+      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+    ];
+
+    for (let i = 0; i < patterns.length; i++) {
+      const match = testStr.match(patterns[i]);
+      if (match && match[1]) {
+        videoId = match[1];
+        break;
+      }
+    }
+
+    if (!videoId && (testStr.includes('youtube') || testStr.includes('youtu.be'))) {
+      const fallbackMatch = testStr.match(/(?:v\/|v=|vi\/|youtu\.be\/|\/)([a-zA-Z0-9_-]{11})/);
+      if (fallbackMatch && fallbackMatch[1]) {
+        videoId = fallbackMatch[1];
+      }
+    }
+
+    if (videoId) {
+      return {
+        type: 'youtube',
+        videoId: videoId,
+        thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        maxResThumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+        fallbackThumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`,
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
+        watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        raw: raw
+      };
     }
 
     // 2. Playlist check: list=PL...
@@ -1187,41 +1225,27 @@ const VUO_ADMIN = {
         type: 'youtube',
         videoId: '',
         playlistId: pId,
-        thumbnailUrl: 'https://img.youtube.com/vi/default/hqdefault.jpg',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
         embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${pId}&rel=0`,
         watchUrl: `https://www.youtube.com/playlist?list=${pId}`,
         raw: raw
       };
     }
 
-    // 3. YouTube Video ID (11 chars) matcher
-    const ytMatch = testStr.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?(?:.*&)?v=))([a-zA-Z0-9_-]{11})/i)
-      || testStr.match(/(?:youtube\.com|youtu\.be).*(?:v=|\/)([a-zA-Z0-9_-]{11})(?:[&?\s]|$)/i);
-
-    if (ytMatch && ytMatch[1]) {
-      const videoId = ytMatch[1];
-      return {
-        type: 'youtube',
-        videoId: videoId,
-        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-        maxResThumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
-        watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
-        raw: raw
-      };
-    }
-
-    // 4. Any other YouTube link
+    // 3. Any other YouTube URL
     if (testStr.includes('youtube.com') || testStr.includes('youtu.be')) {
       const cleanUrl = testStr.startsWith('http') ? testStr : `https://${testStr}`;
       return {
-        type: 'youtube_link',
+        type: 'youtube',
+        videoId: '',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
+        embedUrl: cleanUrl,
         watchUrl: cleanUrl,
         raw: raw
       };
     }
 
-    // 5. Standard Image
+    // 4. Standard Image
     return {
       type: 'image',
       imageUrl: raw,
@@ -1239,7 +1263,7 @@ const VUO_ADMIN = {
 
     const media = this.parseMediaUrl(val);
 
-    if (media.type === 'youtube' || media.type === 'youtube_link') {
+    if (media.type === 'youtube') {
       if (preview) {
         preview.src = '';
         preview.classList.add('hidden');
@@ -1248,8 +1272,15 @@ const VUO_ADMIN = {
         videoPreview.classList.remove('hidden');
       }
       if (videoThumb) {
-        videoThumb.src = media.thumbnailUrl || 'https://img.youtube.com/vi/default/hqdefault.jpg';
         videoThumb.classList.remove('hidden');
+        videoThumb.src = media.maxResThumbnail || media.thumbnailUrl;
+        videoThumb.onerror = function() {
+          if (this.src !== media.thumbnailUrl) {
+            this.src = media.thumbnailUrl;
+          } else if (media.fallbackThumbnail && this.src !== media.fallbackThumbnail) {
+            this.src = media.fallbackThumbnail;
+          }
+        };
       }
       if (videoLink) {
         videoLink.href = media.watchUrl;
