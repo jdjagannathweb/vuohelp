@@ -219,7 +219,7 @@ function renderWhatsappCommunityBanner() {
     enabled: true,
     title: "Join Odisha CSC VLE WhatsApp Community",
     desc: "Get instant daily CSC updates, Odisha Govt scheme notifications & technical support directly on WhatsApp.",
-    link: "https://chat.whatsapp.com/",
+    link: "https://chat.whatsapp.com/DaaKvtlF2NN3baGvdRnfiE",
     buttonText: "Join WhatsApp Community"
   };
 
@@ -230,27 +230,76 @@ function renderWhatsappCommunityBanner() {
     settings = defaultData;
   }
 
-  const banner = document.getElementById('dashWhatsappBanner');
-  const btn = document.getElementById('dashWhatsappCommunityBtn');
-  const titleEl = document.getElementById('dashWhatsappTitle');
-  const descEl = document.getElementById('dashWhatsappDesc');
+  const isEnabled = settings.enabled !== false;
+  const link = (settings.link && settings.link.trim()) ? settings.link.trim() : (defaultData.link || 'https://chat.whatsapp.com/DaaKvtlF2NN3baGvdRnfiE');
+  const title = (settings.title && settings.title.trim()) ? settings.title.trim() : defaultData.title;
+  const desc = (settings.desc && settings.desc.trim()) ? settings.desc.trim() : defaultData.desc;
+  const btnText = (settings.buttonText && settings.buttonText.trim()) ? settings.buttonText.trim() : (defaultData.buttonText || 'Join WhatsApp Community');
 
-  if (!banner) return;
-  if (settings.enabled === false) {
-    banner.classList.add('hidden');
-    banner.style.display = 'none';
-    return;
+  // 1. Prominent Dashboard Banner
+  const banner = document.getElementById('dashWhatsappBanner');
+  if (banner) {
+    banner.style.display = isEnabled ? 'block' : 'none';
+    if (isEnabled) banner.classList.remove('hidden'); else banner.classList.add('hidden');
+    const bTitle = document.getElementById('dashWhatsappTitle');
+    const bDesc = document.getElementById('dashWhatsappDesc');
+    const bBtn = document.getElementById('dashWhatsappCommunityBtn');
+    if (bTitle) bTitle.textContent = title;
+    if (bDesc) bDesc.textContent = desc;
+    if (bBtn) {
+      bBtn.href = link;
+      bBtn.innerHTML = `<i class="fa-brands fa-whatsapp text-emerald-600 text-lg"></i> <span>${btnText}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-emerald-700 ml-1"></i>`;
+    }
   }
 
-  banner.classList.remove('hidden');
-  banner.style.display = 'block';
+  // 2. Main Digital Toolbox Option Card on Dashboard
+  const toolCard = document.getElementById('dashToolWhatsappCard');
+  if (toolCard) {
+    toolCard.style.display = isEnabled ? 'flex' : 'none';
+    if (isEnabled) toolCard.classList.remove('hidden'); else toolCard.classList.add('hidden');
+    const tTitle = document.getElementById('dashToolWhatsappTitle');
+    const tDesc = document.getElementById('dashToolWhatsappDesc');
+    const tBtn = document.getElementById('dashToolWhatsappBtn');
+    if (tTitle) tTitle.textContent = title;
+    if (tDesc) tDesc.textContent = desc;
+    if (tBtn) {
+      tBtn.href = link;
+      tBtn.innerHTML = `<i class="fa-brands fa-whatsapp text-base"></i> <span>${btnText}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-0.5"></i>`;
+    }
+  }
 
-  if (titleEl && settings.title) titleEl.textContent = settings.title;
-  if (descEl && settings.desc) descEl.textContent = settings.desc;
-  if (btn) {
-    btn.href = settings.link || 'https://chat.whatsapp.com/';
-    const btnText = settings.buttonText || 'Join WhatsApp Community';
-    btn.innerHTML = `<i class="fa-brands fa-whatsapp text-emerald-600 text-lg"></i> <span>${btnText}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-emerald-700 ml-1"></i>`;
+  // 3. Hero Action CTA Button & Quick Jump Chip
+  const heroCta = document.getElementById('heroWhatsappCtaBtn');
+  if (heroCta) {
+    heroCta.href = link;
+    heroCta.style.display = isEnabled ? 'inline-flex' : 'none';
+    if (isEnabled) heroCta.classList.remove('hidden'); else heroCta.classList.add('hidden');
+  }
+  const heroChip = document.getElementById('heroWhatsappChip');
+  if (heroChip) {
+    heroChip.href = link;
+    heroChip.style.display = isEnabled ? 'inline-flex' : 'none';
+    if (isEnabled) heroChip.classList.remove('hidden'); else heroChip.classList.add('hidden');
+  }
+
+  // 4. Header Navigation Button
+  const headerBtn = document.getElementById('headerWhatsappBtn');
+  if (headerBtn) {
+    headerBtn.href = link;
+    headerBtn.style.display = isEnabled ? 'inline-flex' : 'none';
+    if (isEnabled) headerBtn.classList.remove('hidden'); else headerBtn.classList.add('hidden');
+  }
+
+  // 5. Personal VLE Dashboard Modal Link
+  const modalLink = document.getElementById('dashModalWhatsappLink');
+  if (modalLink) {
+    modalLink.href = link;
+    modalLink.style.display = isEnabled ? 'block' : 'none';
+    if (isEnabled) modalLink.classList.remove('hidden'); else modalLink.classList.add('hidden');
+    const mTitle = document.getElementById('dashModalWhatsappTitle');
+    const mDesc = document.getElementById('dashModalWhatsappDesc');
+    if (mTitle) mTitle.textContent = title;
+    if (mDesc) mDesc.textContent = desc;
   }
 }
 
@@ -906,6 +955,9 @@ const VUO_APP = {
             window.location.hash = targetHash;
             VUO_APP.handleRoute(routeName);
             window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof renderWhatsappCommunityBanner === 'function') {
+      renderWhatsappCommunityBanner();
+    }
           }
           setTimeout(() => {
             closeDropdown(0);

@@ -1568,6 +1568,9 @@ const VUO_AUTH_MODAL = {
     if (!modal) return;
 
     this.renderDashboard();
+    if (typeof renderWhatsappCommunityBanner === 'function') {
+      renderWhatsappCommunityBanner();
+    }
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
   },

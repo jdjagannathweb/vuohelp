@@ -1767,7 +1767,7 @@ const VUO_DATA = {
     title: "Join Odisha CSC VLE WhatsApp Community",
     titleOdia: "ଓଡ଼ିଶା CSC VLE ହ୍ୱାଟ୍ସଆପ୍ ଗ୍ରୁପ୍‌ରେ ସାମିଲ ହୁଅନ୍ତୁ",
     desc: "Get instant daily CSC updates, Odisha Govt scheme notifications, technical guidance & union announcements directly on your phone.",
-    link: "https://chat.whatsapp.com/",
+    link: "https://chat.whatsapp.com/DaaKvtlF2NN3baGvdRnfiE",
     buttonText: "Join WhatsApp Community"
   },
 
