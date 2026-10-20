@@ -419,6 +419,7 @@ const VUO_ADMIN = {
     try { this.renderSupportTickets(); } catch (e) { console.warn("renderSupportTickets error:", e); }
     try { this.renderDonationSettings(); } catch (e) { console.warn("renderDonationSettings error:", e); }
     try { this.renderPopupSettings(); } catch (e) { console.warn("renderPopupSettings error:", e); }
+    try { this.renderWhatsappCommunityAdmin(); } catch (e) { console.warn("renderWhatsappCommunityAdmin error:", e); }
     try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
     try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
     try { this.renderCloudStorageSettings(); } catch (e) { console.warn("renderCloudStorageSettings error:", e); }
@@ -1341,6 +1342,80 @@ const VUO_ADMIN = {
     }
   },
 
+  renderWhatsappCommunityAdmin() {
+    const defaultData = (typeof VUO_DATA !== 'undefined' && VUO_DATA.whatsappCommunity) ? VUO_DATA.whatsappCommunity : {
+      enabled: true,
+      title: "Join Odisha CSC VLE WhatsApp Community",
+      desc: "Get instant daily CSC updates, Odisha Govt scheme notifications & technical support directly on WhatsApp.",
+      link: "https://chat.whatsapp.com/",
+      buttonText: "Join Official WhatsApp Group"
+    };
+
+    let saved;
+    try {
+      saved = JSON.parse(localStorage.getItem('vuo_whatsapp_community')) || defaultData;
+    } catch (_) {
+      saved = defaultData;
+    }
+
+    const enabledEl = document.getElementById('adminWhatsappEnabled');
+    const linkEl = document.getElementById('adminWhatsappLink');
+    const titleEl = document.getElementById('adminWhatsappTitle');
+    const descEl = document.getElementById('adminWhatsappDesc');
+    const btnTextEl = document.getElementById('adminWhatsappBtnText');
+    const testLink = document.getElementById('adminWhatsappTestLink');
+
+    if (enabledEl) enabledEl.checked = saved.enabled !== false;
+    if (linkEl) {
+      linkEl.value = saved.link || '';
+      linkEl.addEventListener('input', () => {
+        if (testLink) testLink.href = linkEl.value.trim() || '#';
+      });
+    }
+    if (titleEl) titleEl.value = saved.title || defaultData.title;
+    if (descEl) descEl.value = saved.desc || defaultData.desc;
+    if (btnTextEl) btnTextEl.value = saved.buttonText || defaultData.buttonText;
+    if (testLink) testLink.href = saved.link || '#';
+  },
+
+  async handleSaveWhatsappCommunity() {
+    const enabled = document.getElementById('adminWhatsappEnabled') ? document.getElementById('adminWhatsappEnabled').checked : true;
+    const link = document.getElementById('adminWhatsappLink') ? document.getElementById('adminWhatsappLink').value.trim() : '';
+    const title = document.getElementById('adminWhatsappTitle') ? document.getElementById('adminWhatsappTitle').value.trim() : 'Join Odisha CSC VLE WhatsApp Community';
+    const desc = document.getElementById('adminWhatsappDesc') ? document.getElementById('adminWhatsappDesc').value.trim() : '';
+    const buttonText = document.getElementById('adminWhatsappBtnText') ? document.getElementById('adminWhatsappBtnText').value.trim() : 'Join Official WhatsApp Group';
+
+    const obj = {
+      enabled,
+      link,
+      title,
+      desc,
+      buttonText,
+      updatedAt: new Date().toLocaleString()
+    };
+
+    localStorage.setItem('vuo_whatsapp_community', JSON.stringify(obj));
+
+    // Publish to Firebase Cloud Firestore if connected
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized && VUO_DB.db) {
+      try {
+        await VUO_DB.db.collection('vuo_settings').doc('whatsapp_community').set(obj, { merge: true });
+      } catch (err) {
+        console.warn("WhatsApp community cloud sync error:", err);
+      }
+    }
+
+    // Live update Dashboard banner
+    if (typeof renderWhatsappCommunityBanner === 'function') {
+      renderWhatsappCommunityBanner();
+    }
+
+    const testLink = document.getElementById('adminWhatsappTestLink');
+    if (testLink) testLink.href = link || '#';
+
+    showToast("WhatsApp Community link updated and published to dashboard successfully!", "success");
+  },
+
   clearPopupImage() {
     const preview = document.getElementById('adminPopupPosterPreview');
     const videoPreview = document.getElementById('adminPopupVideoPreview');
@@ -1515,19 +1590,12 @@ const VUO_ADMIN = {
       mEl.style.whiteSpace = 'pre-line';
     }
 
-    const imgEl = document.getElementById('welcomePopupImage');
-    const imgWrapper = document.getElementById('welcomePopupImageWrapper');
-    const imgZoom = document.getElementById('welcomePopupImageZoom');
-
-    if (imageUrl && imageUrl.trim()) {
-      if (imgEl) {
-        imgEl.src = imageUrl;
-        imgEl.classList.remove('hidden');
+    // Live update open visitor popup modal if currently open
+    if (typeof openWelcomePopup === 'function') {
+      const modal = document.getElementById('welcomePopupModal');
+      if (modal && modal.style.display === 'flex' && !modal.classList.contains('hidden')) {
+        openWelcomePopup(popupObj);
       }
-      if (imgWrapper) imgWrapper.classList.remove('hidden');
-      if (imgZoom) imgZoom.href = imageUrl;
-    } else {
-      if (imgWrapper) imgWrapper.classList.add('hidden');
     }
 
     const btnEl = document.getElementById('welcomePopupActionBtn');

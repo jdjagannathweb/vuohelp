@@ -232,6 +232,22 @@ const VUO_DB = {
       }
     }, (err) => console.warn("Lead services listener error:", err));
 
+    // 6.5. WhatsApp Community Realtime Sync across all devices
+    this.db.collection('vuo_settings').doc('whatsapp_community').onSnapshot((doc) => {
+      if (doc && doc.exists) {
+        const data = doc.data();
+        if (data && data.link) {
+          localStorage.setItem('vuo_whatsapp_community', JSON.stringify(data));
+          if (typeof renderWhatsappCommunityBanner === 'function') {
+            renderWhatsappCommunityBanner();
+          }
+          if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderWhatsappCommunityAdmin === 'function') {
+            VUO_ADMIN.renderWhatsappCommunityAdmin();
+          }
+        }
+      }
+    }, (err) => console.warn("WhatsApp community listener error:", err));
+
     // 7. Welcome Notice Popup Realtime Sync (across all devices & public users)
     this.db.collection('vuo_settings').doc('popup').onSnapshot((doc) => {
       if (doc && doc.exists) {

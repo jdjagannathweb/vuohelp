@@ -1497,6 +1497,41 @@ body {
 
         </div>
       </div>
+<!-- 2.5 Prominent WhatsApp Community Banner (Admin Configurable) -->
+      <div id="dashWhatsappBanner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-10">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-6 sm:p-7 text-white shadow-xl shadow-emerald-900/15 border border-emerald-400/30 flex flex-col md:flex-row items-center justify-between gap-6 group">
+          <!-- Background Ambient Glow & Watermark -->
+          <div class="absolute -right-8 -bottom-10 text-emerald-500/15 text-[150px] font-black pointer-events-none select-none">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+
+          <div class="flex items-center gap-4 sm:gap-5 relative z-10 text-center sm:text-left">
+            <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-white/15 border border-white/20 backdrop-blur-md flex items-center justify-center text-3xl sm:text-4xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+              <i class="fa-brands fa-whatsapp text-emerald-200"></i>
+            </div>
+            <div class="space-y-1">
+              <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-300/30 text-[10.5px] font-black tracking-wide text-emerald-200 uppercase">
+                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                <span>OFFICIAL VLE NETWORK • 5,000+ MEMBERS</span>
+              </div>
+              <h3 id="dashWhatsappTitle" class="text-lg sm:text-xl md:text-2xl font-black font-heading leading-tight drop-shadow-xs">
+                Join Odisha CSC VLE WhatsApp Community
+              </h3>
+              <p id="dashWhatsappDesc" class="text-xs sm:text-[13px] text-emerald-100/90 max-w-xl font-medium leading-relaxed">
+                Get instant daily CSC updates, Odisha Govt scheme circulars, technical guidance & union announcements directly on your phone.
+              </p>
+            </div>
+          </div>
+
+          <div class="relative z-10 shrink-0 w-full sm:w-auto flex justify-center">
+            <a id="dashWhatsappCommunityBtn" href="https://chat.whatsapp.com/" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-900 font-black text-xs sm:text-sm shadow-xl shadow-emerald-950/25 border-2 border-white/80 hover:border-emerald-300 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5 cursor-pointer">
+              <i class="fa-brands fa-whatsapp text-emerald-600 text-lg"></i>
+              <span>Join WhatsApp Community</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-emerald-700 ml-1"></i>
+            </a>
+          </div>
+        </div>
+      </div>
 
       <!-- 3. Main VLE Digital Toolbox Grid with Interactive Category Tabs -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
@@ -7088,6 +7123,9 @@ body {
         <button type="button" onclick="VUO_ADMIN.switchTab('welcome_popup')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="welcome_popup">
           <i class="fa-solid fa-image text-purple-600"></i> Welcome Popup HD
         </button>
+        <button type="button" onclick="VUO_ADMIN.switchTab('whatsapp')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-950 border border-slate-200 hover:border-emerald-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="whatsapp">
+          <i class="fa-brands fa-whatsapp text-emerald-600"></i> WhatsApp Community
+        </button>
         <button type="button" onclick="VUO_ADMIN.switchTab('security')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="security">
           <i class="fa-solid fa-shield-halved text-emerald-600"></i> Security &amp; Password
         </button>
@@ -7931,6 +7969,69 @@ body {
             <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
               <i class="fa-solid fa-floppy-disk"></i>
               <span>Save Popup Settings</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+<!-- WhatsApp Community Management Pane -->
+      <div id="admin_pane_whatsapp" class="admin-tab-pane hidden mt-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-2">
+          <div>
+            <h3 class="text-base sm:text-lg font-black font-heading text-slate-900 flex items-center gap-2">
+              <i class="fa-brands fa-whatsapp text-emerald-600 text-xl"></i>
+              <span>VLE WhatsApp Community Management</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Manage the official WhatsApp Community Group / Channel link displayed on the main dashboard.</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 self-start sm:self-auto">
+            🟢 Active Dashboard Widget
+          </span>
+        </div>
+
+        <form id="adminWhatsappForm" onsubmit="event.preventDefault(); VUO_ADMIN.handleSaveWhatsappCommunity();" class="space-y-4 max-w-3xl">
+          <div class="flex items-center gap-3 p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl">
+            <input type="checkbox" id="adminWhatsappEnabled" checked class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500" />
+            <div>
+              <label for="adminWhatsappEnabled" class="text-xs font-black text-slate-800 cursor-pointer">Enable WhatsApp Community Banner on Dashboard</label>
+              <p class="text-[11px] text-slate-500">When enabled, a prominent "Join Our WhatsApp Community" banner will appear on the homepage.</p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">
+              <i class="fa-brands fa-whatsapp text-emerald-600 mr-1"></i> WhatsApp Group / Channel Invite Link <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <input type="url" id="adminWhatsappLink" placeholder="https://chat.whatsapp.com/GXYZ123456... or https://whatsapp.com/channel/..." required class="w-full px-3 py-2.5 pr-28 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono" />
+              <a id="adminWhatsappTestLink" href="#" target="_blank" class="absolute right-2 top-2 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-all">
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Test Link
+              </a>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Paste your WhatsApp Group link or WhatsApp Channel link here.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Community Title / Heading</label>
+              <input type="text" id="adminWhatsappTitle" placeholder="Join Odisha CSC VLE WhatsApp Community" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-semibold" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Button Action Text</label>
+              <input type="text" id="adminWhatsappBtnText" placeholder="Join Official WhatsApp Group" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-semibold" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Description / Subtitle</label>
+            <textarea id="adminWhatsappDesc" rows="2" placeholder="Get instant daily CSC updates, Odisha Govt scheme notifications & technical support directly on WhatsApp." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-medium"></textarea>
+          </div>
+
+          <div class="pt-3 flex flex-wrap items-center gap-3">
+            <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Save WhatsApp Community Settings</span>
             </button>
           </div>
         </form>

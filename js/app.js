@@ -214,12 +214,98 @@ const VUO_SEARCH = {
 };
 
 // Modal & Popup Global Handlers
-function openWelcomePopup() {
+function renderWhatsappCommunityBanner() {
+  const defaultData = (typeof VUO_DATA !== 'undefined' && VUO_DATA.whatsappCommunity) ? VUO_DATA.whatsappCommunity : {
+    enabled: true,
+    title: "Join Odisha CSC VLE WhatsApp Community",
+    desc: "Get instant daily CSC updates, Odisha Govt scheme notifications & technical support directly on WhatsApp.",
+    link: "https://chat.whatsapp.com/",
+    buttonText: "Join WhatsApp Community"
+  };
+
+  let settings;
+  try {
+    settings = JSON.parse(localStorage.getItem('vuo_whatsapp_community')) || defaultData;
+  } catch (_) {
+    settings = defaultData;
+  }
+
+  const banner = document.getElementById('dashWhatsappBanner');
+  const btn = document.getElementById('dashWhatsappCommunityBtn');
+  const titleEl = document.getElementById('dashWhatsappTitle');
+  const descEl = document.getElementById('dashWhatsappDesc');
+
+  if (!banner) return;
+  if (settings.enabled === false) {
+    banner.classList.add('hidden');
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.classList.remove('hidden');
+  banner.style.display = 'block';
+
+  if (titleEl && settings.title) titleEl.textContent = settings.title;
+  if (descEl && settings.desc) descEl.textContent = settings.desc;
+  if (btn) {
+    btn.href = settings.link || 'https://chat.whatsapp.com/';
+    const btnText = settings.buttonText || 'Join WhatsApp Community';
+    btn.innerHTML = `<i class="fa-brands fa-whatsapp text-emerald-600 text-lg"></i> <span>${btnText}</span> <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-emerald-700 ml-1"></i>`;
+  }
+}
+
+function playWelcomePopupVideo() {
+  const iframeEl = document.getElementById('welcomePopupIframe');
+  const overlayEl = document.getElementById('welcomePopupPlayOverlay');
+  const thumbEl = document.getElementById('welcomePopupVideoThumb');
+  if (iframeEl && iframeEl.dataset.embedUrl) {
+    iframeEl.src = iframeEl.dataset.embedUrl + (iframeEl.dataset.embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+    iframeEl.classList.remove('hidden');
+    iframeEl.style.display = 'block';
+    if (overlayEl) {
+      overlayEl.classList.add('hidden');
+      overlayEl.style.display = 'none';
+    }
+    if (thumbEl) {
+      thumbEl.classList.add('hidden');
+      thumbEl.style.display = 'none';
+    }
+  }
+}
+
+function openWelcomePopup(overrideSettings) {
   const modal = document.getElementById('welcomePopupModal');
   if (!modal) return;
 
-  // Load latest popup settings
-  const popupSettings = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
+  // 1. Base settings from localStorage
+  let popupSettings = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
+
+  // 2. If called with override, merge it
+  if (overrideSettings && typeof overrideSettings === 'object') {
+    popupSettings = { ...popupSettings, ...overrideSettings };
+  } else {
+    // ONLY override from Admin Panel if the admin panel is currently active/visible AND the url input has a value
+    const adminPane = document.getElementById('admin_pane_welcome_popup');
+    const isAdminActive = adminPane && !adminPane.classList.contains('hidden') && adminPane.style.display !== 'none';
+    const liveUrlInput = document.getElementById('adminPopupPosterUrl');
+
+    if (isAdminActive && liveUrlInput && liveUrlInput.value.trim()) {
+      popupSettings.imageUrl = liveUrlInput.value.trim();
+      const liveTitle = document.getElementById('adminPopupTitle');
+      const liveHeadline = document.getElementById('adminPopupHeadline');
+      const liveMessage = document.getElementById('adminPopupMessage');
+      const liveBadge = document.getElementById('adminPopupBadgeText');
+      const liveBtnText = document.getElementById('adminPopupButtonText');
+      const liveBtnLink = document.getElementById('adminPopupButtonLink');
+      if (liveTitle && liveTitle.value.trim()) popupSettings.title = liveTitle.value.trim();
+      if (liveHeadline && liveHeadline.value.trim()) popupSettings.headline = liveHeadline.value.trim();
+      if (liveMessage && liveMessage.value.trim()) popupSettings.message = liveMessage.value.trim();
+      if (liveBadge && liveBadge.value.trim()) popupSettings.badgeText = liveBadge.value.trim();
+      if (liveBtnText && liveBtnText.value.trim()) popupSettings.buttonText = liveBtnText.value.trim();
+      if (liveBtnLink && liveBtnLink.value.trim()) popupSettings.buttonLink = liveBtnLink.value.trim();
+    }
+  }
+
   const badgeEl = document.getElementById('welcomePopupBadge');
   const titleEl = document.getElementById('welcomePopupTitle');
   const headlineEl = document.getElementById('welcomePopupHeadline');
@@ -228,6 +314,12 @@ function openWelcomePopup() {
   const imgWrapper = document.getElementById('welcomePopupImageWrapper');
   const imgZoom = document.getElementById('welcomePopupImageZoom');
   const btnEl = document.getElementById('welcomePopupActionBtn');
+  const videoBox = document.getElementById('welcomePopupVideoBox');
+  const imageBox = document.getElementById('welcomePopupImageBox');
+  const iframeEl = document.getElementById('welcomePopupIframe');
+  const videoThumbEl = document.getElementById('welcomePopupVideoThumb');
+  const playOverlayEl = document.getElementById('welcomePopupPlayOverlay');
+  const videoWatchBtn = document.getElementById('welcomePopupVideoWatchBtn');
 
   if (badgeEl) {
     let bText = popupSettings.badgeText || 'OFFICIAL NOTIFICATION';
@@ -252,48 +344,254 @@ function openWelcomePopup() {
     messageEl.style.whiteSpace = 'pre-line';
   }
 
-  const applyPopupImage = (url) => {
-    if (url && url.trim()) {
-      if (imgEl) {
-        imgEl.src = url;
-        imgEl.classList.remove('hidden');
+  const parseMediaUrl = (url) => {
+    if (!url || typeof url !== 'string') return { type: 'none', raw: '' };
+    const raw = url.trim();
+    if (!raw) return { type: 'none', raw: '' };
+
+    let testStr = raw;
+    const iframeMatch = raw.match(/src=["']([^"']+)["']/i);
+    if (iframeMatch && iframeMatch[1]) {
+      testStr = iframeMatch[1];
+    }
+
+    let videoId = '';
+    const patterns = [
+      /[?&]v=([a-zA-Z0-9_-]{11})/,
+      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+    ];
+
+    for (let i = 0; i < patterns.length; i++) {
+      const match = testStr.match(patterns[i]);
+      if (match && match[1]) {
+        videoId = match[1];
+        break;
       }
-      if (imgWrapper) imgWrapper.classList.remove('hidden');
+    }
+
+    if (!videoId && (testStr.includes('youtube') || testStr.includes('youtu.be'))) {
+      const fallbackMatch = testStr.match(/(?:v\/|v=|vi\/|youtu\.be\/|\/)([a-zA-Z0-9_-]{11})/);
+      if (fallbackMatch && fallbackMatch[1]) {
+        videoId = fallbackMatch[1];
+      }
+    }
+
+    if (videoId) {
+      return {
+        type: 'youtube',
+        videoId: videoId,
+        thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        fallbackThumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`,
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
+        watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        raw: raw
+      };
+    }
+
+    const playlistMatch = testStr.match(/[?&]list=(PL[\w-]+)/i);
+    if (playlistMatch && (testStr.includes('youtube.com') || testStr.includes('youtu.be'))) {
+      const pId = playlistMatch[1];
+      return {
+        type: 'youtube',
+        videoId: '',
+        playlistId: pId,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
+        embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${pId}&rel=0`,
+        watchUrl: `https://www.youtube.com/playlist?list=${pId}`,
+        raw: raw
+      };
+    }
+
+    if (testStr.includes('youtube.com') || testStr.includes('youtu.be')) {
+      const cleanUrl = testStr.startsWith('http') ? testStr : `https://${testStr}`;
+      return {
+        type: 'youtube',
+        videoId: '',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
+        embedUrl: cleanUrl,
+        watchUrl: cleanUrl,
+        raw: raw
+      };
+    }
+
+    return {
+      type: 'image',
+      imageUrl: raw,
+      raw: raw
+    };
+  };
+
+  const applyPopupMedia = (url) => {
+    const media = parseMediaUrl(url);
+
+    if (media.type === 'youtube') {
+      if (imgWrapper) {
+        imgWrapper.classList.remove('hidden');
+        imgWrapper.style.display = 'flex';
+      }
+      if (imageBox) {
+        imageBox.classList.add('hidden');
+        imageBox.style.display = 'none';
+      }
       if (imgZoom) {
-        imgZoom.href = url;
+        imgZoom.classList.add('hidden');
+        imgZoom.style.display = 'none';
+      }
+      if (imgEl) {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        imgEl.style.display = 'none';
+      }
+
+      if (videoBox) {
+        videoBox.classList.remove('hidden');
+        videoBox.style.display = 'flex';
+      }
+      
+      // Setup YouTube Video Card with HD Thumbnail & Play Button
+      if (videoThumbEl) {
+        videoThumbEl.classList.remove('hidden');
+        videoThumbEl.style.display = 'block';
+        videoThumbEl.src = media.thumbnailUrl;
+        videoThumbEl.onerror = function() {
+          if (media.fallbackThumbnail && this.src !== media.fallbackThumbnail) {
+            this.src = media.fallbackThumbnail;
+          }
+        };
+      }
+      if (playOverlayEl) {
+        playOverlayEl.classList.remove('hidden');
+        playOverlayEl.style.display = 'flex';
+      }
+      if (iframeEl) {
+        iframeEl.classList.add('hidden');
+        iframeEl.style.display = 'none';
+        iframeEl.src = '';
+        iframeEl.dataset.embedUrl = media.embedUrl;
+      }
+      if (videoWatchBtn) {
+        videoWatchBtn.href = media.watchUrl;
+        videoWatchBtn.classList.remove('hidden');
+        videoWatchBtn.style.display = 'inline-flex';
+      }
+
+      // Action Button
+      if (btnEl) {
+        const bText = (popupSettings.buttonText && popupSettings.buttonText.trim()) ? popupSettings.buttonText : 'Watch Video on YouTube';
+        const bLink = (popupSettings.buttonLink && popupSettings.buttonLink.trim() && popupSettings.buttonLink !== '#passphoto') ? popupSettings.buttonLink : media.watchUrl;
+        btnEl.innerHTML = `<i class="fa-brands fa-youtube text-base mr-1"></i> <span>${bText}</span>`;
+        btnEl.href = bLink;
+        btnEl.target = '_blank';
+        btnEl.className = 'flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2';
+        btnEl.classList.remove('hidden');
+        btnEl.style.display = 'inline-flex';
+      }
+    } else if (media.type === 'image' && media.imageUrl) {
+      if (videoBox) {
+        videoBox.classList.add('hidden');
+        videoBox.style.display = 'none';
+      }
+      if (iframeEl) {
+        iframeEl.src = '';
+        iframeEl.classList.add('hidden');
+        iframeEl.style.display = 'none';
+      }
+      if (videoWatchBtn) {
+        videoWatchBtn.classList.add('hidden');
+        videoWatchBtn.style.display = 'none';
+      }
+
+      if (imgWrapper) {
+        imgWrapper.classList.remove('hidden');
+        imgWrapper.style.display = 'flex';
+      }
+      if (imageBox) {
+        imageBox.classList.remove('hidden');
+        imageBox.style.display = 'flex';
+      }
+      if (imgEl) {
+        imgEl.src = media.imageUrl;
+        imgEl.classList.remove('hidden');
+        imgEl.style.display = 'block';
+      }
+      if (imgZoom) {
+        imgZoom.href = media.imageUrl;
         imgZoom.classList.remove('hidden');
+        imgZoom.style.display = 'inline-flex';
+      }
+      if (btnEl) {
+        if (popupSettings.buttonText && popupSettings.buttonText.trim()) {
+          btnEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>${popupSettings.buttonText}</span>`;
+          btnEl.href = popupSettings.buttonLink || '#passphoto';
+          btnEl.target = (btnEl.href.startsWith('http')) ? '_blank' : '_self';
+          btnEl.className = 'flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2';
+          btnEl.classList.remove('hidden');
+          btnEl.style.display = 'inline-flex';
+        } else {
+          btnEl.classList.add('hidden');
+          btnEl.style.display = 'none';
+        }
       }
     } else {
-      if (imgWrapper) imgWrapper.classList.add('hidden');
-      if (imgZoom) imgZoom.classList.add('hidden');
+      if (imgWrapper) {
+        imgWrapper.classList.add('hidden');
+        imgWrapper.style.display = 'none';
+      }
+      if (imageBox) {
+        imageBox.classList.add('hidden');
+        imageBox.style.display = 'none';
+      }
+      if (videoBox) {
+        videoBox.classList.add('hidden');
+        videoBox.style.display = 'none';
+      }
+      if (imgZoom) {
+        imgZoom.classList.add('hidden');
+        imgZoom.style.display = 'none';
+      }
+      if (videoWatchBtn) {
+        videoWatchBtn.classList.add('hidden');
+        videoWatchBtn.style.display = 'none';
+      }
+      if (iframeEl) {
+        iframeEl.src = '';
+        iframeEl.classList.add('hidden');
+        iframeEl.style.display = 'none';
+      }
+      if (imgEl) {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        imgEl.style.display = 'none';
+      }
+      if (btnEl) {
+        if (popupSettings.buttonText && popupSettings.buttonText.trim()) {
+          btnEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>${popupSettings.buttonText}</span>`;
+          btnEl.href = popupSettings.buttonLink || '#passphoto';
+          btnEl.target = (btnEl.href.startsWith('http')) ? '_blank' : '_self';
+          btnEl.className = 'flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2';
+          btnEl.classList.remove('hidden');
+          btnEl.style.display = 'inline-flex';
+        } else {
+          btnEl.classList.add('hidden');
+          btnEl.style.display = 'none';
+        }
+      }
     }
   };
 
-  applyPopupImage(popupSettings.imageUrl);
+  applyPopupMedia(popupSettings.imageUrl);
 
-  // Fallback to IndexedDB if image in localStorage was truncated or stored in IDB
-  if ((!popupSettings.imageUrl || popupSettings.imageUrl === 'indexeddb' || popupSettings.imageUrl.length < 30) && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
+  // Fallback to IndexedDB ONLY if imageUrl was saved as 'indexeddb'
+  if (popupSettings.imageUrl === 'indexeddb' && window.VUO_IDB && typeof window.VUO_IDB.getPdfBlob === 'function') {
     window.VUO_IDB.getPdfBlob('vuo_popup_image').then(entry => {
-      if (entry && entry.data) {
-        applyPopupImage(entry.data);
-      } else {
-        return window.VUO_IDB.getPdfBlob('vuo_popup_settings');
-      }
-    }).then(entry => {
-      if (entry && entry.data && entry.data.imageUrl && entry.data.imageUrl !== 'indexeddb') {
-        applyPopupImage(entry.data.imageUrl);
+      if (entry && entry.data && entry.data.startsWith('data:image')) {
+        applyPopupMedia(entry.data);
       }
     }).catch(err => console.warn(err));
-  }
-
-  if (btnEl) {
-    if (popupSettings.buttonText && popupSettings.buttonText.trim()) {
-      btnEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>${popupSettings.buttonText}</span>`;
-      btnEl.href = popupSettings.buttonLink || '#passphoto';
-      btnEl.classList.remove('hidden');
-    } else {
-      btnEl.classList.add('hidden');
-    }
   }
 
   modal.classList.remove('hidden');
@@ -306,6 +604,17 @@ function closeWelcomePopup() {
     modal.classList.add('hidden');
     modal.style.display = 'none';
   }
+  // Immediately stop video playback so audio does not keep playing in the background
+  const iframeEl = document.getElementById('welcomePopupIframe');
+  if (iframeEl) {
+    iframeEl.src = '';
+    iframeEl.classList.add('hidden');
+  }
+  const overlayEl = document.getElementById('welcomePopupPlayOverlay');
+  if (overlayEl) overlayEl.classList.remove('hidden');
+  const thumbEl = document.getElementById('welcomePopupVideoThumb');
+  if (thumbEl) thumbEl.classList.remove('hidden');
+
   sessionStorage.setItem('vuo_popup_closed', '1');
 
   const dontShow = document.getElementById('dontShowPopupToday')?.checked;
@@ -442,6 +751,7 @@ const VUO_APP = {
     }
     if (typeof initWelcomePopup === 'function') {
       initWelcomePopup();
+    renderWhatsappCommunityBanner();
     }
 
     // Listen for language changes
@@ -758,8 +1068,12 @@ const VUO_APP = {
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) {
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
+            if (id === 'welcomePopupModal') {
+              closeWelcomePopup();
+            } else {
+              modal.classList.add('hidden');
+              modal.style.display = 'none';
+            }
             if (id === 'videoPlayerModal' && typeof VUO_TRAINING !== 'undefined') {
               VUO_TRAINING.closePlayer();
             }
@@ -776,8 +1090,12 @@ const VUO_APP = {
         modalIds.forEach(id => {
           const m = document.getElementById(id);
           if (m && (!m.classList.contains('hidden') || m.style.display !== 'none')) {
-            m.classList.add('hidden');
-            m.style.display = 'none';
+            if (id === 'welcomePopupModal') {
+              closeWelcomePopup();
+            } else {
+              m.classList.add('hidden');
+              m.style.display = 'none';
+            }
             if (id === 'videoPlayerModal' && typeof VUO_TRAINING !== 'undefined') {
               VUO_TRAINING.closePlayer();
             }

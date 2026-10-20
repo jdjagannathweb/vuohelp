@@ -1761,6 +1761,16 @@ const VUO_DATA = {
     note: "Your voluntary contribution supports server hosting, free tool development & VLE union legal assistance."
   },
 
+  // Official VLE WhatsApp Community Settings (Admin Manageable)
+  whatsappCommunity: {
+    enabled: true,
+    title: "Join Odisha CSC VLE WhatsApp Community",
+    titleOdia: "ଓଡ଼ିଶା CSC VLE ହ୍ୱାଟ୍ସଆପ୍ ଗ୍ରୁପ୍‌ରେ ସାମିଲ ହୁଅନ୍ତୁ",
+    desc: "Get instant daily CSC updates, Odisha Govt scheme notifications, technical guidance & union announcements directly on your phone.",
+    link: "https://chat.whatsapp.com/",
+    buttonText: "Join WhatsApp Community"
+  },
+
   // Full HD Welcome Announcement Popup Settings (Admin Manageable)
   popupSettings: {
     enabled: true,
