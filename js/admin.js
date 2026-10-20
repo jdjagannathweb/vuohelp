@@ -248,12 +248,8 @@ const VUO_ADMIN = {
         const urlInput = document.getElementById('adminPopupPosterUrl');
         const zoomBtn = document.getElementById('adminPopupPreviewZoom');
 
-        if (preview) {
-          preview.src = res.dataUrl;
-          preview.classList.remove('hidden');
-        }
         if (urlInput) urlInput.value = res.dataUrl;
-        if (zoomBtn) zoomBtn.href = res.dataUrl;
+        this.updatePopupMediaPreview(res.dataUrl);
 
         this._pendingPopupImageBlob = res.dataUrl;
 
@@ -308,14 +304,7 @@ const VUO_ADMIN = {
     const popUrlInput = document.getElementById('adminPopupPosterUrl');
     if (popUrlInput) {
       popUrlInput.addEventListener('input', (e) => {
-        const preview = document.getElementById('adminPopupPosterPreview');
-        const zoomBtn = document.getElementById('adminPopupPreviewZoom');
-        const val = e.target.value.trim();
-        if (preview && val) {
-          preview.src = val;
-          preview.classList.remove('hidden');
-          if (zoomBtn) zoomBtn.href = val;
-        }
+        this.updatePopupMediaPreview(e.target.value.trim());
       });
     }
 
@@ -1176,12 +1165,119 @@ const VUO_ADMIN = {
     });
   },
 
+  parseMediaUrl(url) {
+    if (!url || typeof url !== 'string') return { type: 'none', raw: '' };
+    const trimmed = url.trim();
+    if (!trimmed) return { type: 'none', raw: '' };
+
+    const ytMatch = trimmed.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    if (ytMatch && ytMatch[1]) {
+      const videoId = ytMatch[1];
+      return {
+        type: 'youtube',
+        videoId: videoId,
+        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
+        watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        raw: trimmed
+      };
+    }
+
+    return {
+      type: 'image',
+      imageUrl: trimmed,
+      raw: trimmed
+    };
+  },
+
+  updatePopupMediaPreview(val) {
+    const preview = document.getElementById('adminPopupPosterPreview');
+    const videoPreview = document.getElementById('adminPopupVideoPreview');
+    const videoThumb = document.getElementById('adminPopupVideoThumb');
+    const videoLink = document.getElementById('adminPopupVideoOverlayLink');
+    const zoomBtn = document.getElementById('adminPopupPreviewZoom');
+    const badge = document.getElementById('adminPopupUrlTypeBadge');
+
+    const media = this.parseMediaUrl(val);
+
+    if (media.type === 'youtube') {
+      if (preview) {
+        preview.src = '';
+        preview.classList.add('hidden');
+      }
+      if (videoPreview) {
+        videoPreview.classList.remove('hidden');
+      }
+      if (videoThumb) {
+        videoThumb.src = media.thumbnailUrl;
+      }
+      if (videoLink) {
+        videoLink.href = media.watchUrl;
+      }
+      if (zoomBtn) {
+        zoomBtn.href = media.watchUrl;
+        zoomBtn.innerHTML = '<i class="fa-brands fa-youtube text-red-500 mr-1"></i> Open & Watch on YouTube';
+        zoomBtn.classList.remove('hidden');
+      }
+      if (badge) {
+        badge.innerHTML = '<i class="fa-brands fa-youtube text-red-600 mr-1"></i> YouTube Video';
+        badge.className = 'absolute right-2 top-2 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200';
+        badge.classList.remove('hidden');
+      }
+
+      // Auto-suggest action button text/link if empty or default
+      const btnTextInput = document.getElementById('adminPopupButtonText');
+      const btnLinkInput = document.getElementById('adminPopupButtonLink');
+      if (btnTextInput && (!btnTextInput.value.trim() || btnTextInput.value === 'View Details' || btnTextInput.value === 'Open Notice')) {
+        btnTextInput.value = '▶ Watch Video on YouTube';
+      }
+      if (btnLinkInput && (!btnLinkInput.value.trim() || btnLinkInput.value === '#passphoto')) {
+        btnLinkInput.value = media.watchUrl;
+      }
+    } else if (media.type === 'image') {
+      if (videoPreview) {
+        videoPreview.classList.add('hidden');
+      }
+      if (preview) {
+        preview.src = media.imageUrl;
+        preview.classList.remove('hidden');
+      }
+      if (zoomBtn) {
+        zoomBtn.href = media.imageUrl;
+        zoomBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Open Image';
+        zoomBtn.classList.remove('hidden');
+      }
+      if (badge) {
+        badge.innerHTML = '<i class="fa-solid fa-image text-purple-600 mr-1"></i> HD Image';
+        badge.className = 'absolute right-2 top-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200';
+        badge.classList.remove('hidden');
+      }
+    } else {
+      if (preview) {
+        preview.src = '';
+        preview.classList.add('hidden');
+      }
+      if (videoPreview) {
+        videoPreview.classList.add('hidden');
+      }
+      if (zoomBtn) {
+        zoomBtn.href = '#';
+        zoomBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Open Media';
+      }
+      if (badge) {
+        badge.classList.add('hidden');
+      }
+    }
+  },
+
   clearPopupImage() {
     const preview = document.getElementById('adminPopupPosterPreview');
+    const videoPreview = document.getElementById('adminPopupVideoPreview');
     const urlInput = document.getElementById('adminPopupPosterUrl');
     const fileInput = document.getElementById('adminPopupPosterFile');
     const statusEl = document.getElementById('adminPopupPhotoStatus');
     const zoomBtn = document.getElementById('adminPopupPreviewZoom');
+    const badge = document.getElementById('adminPopupUrlTypeBadge');
 
     if (urlInput) urlInput.value = '';
     if (fileInput) fileInput.value = '';
@@ -1189,13 +1285,18 @@ const VUO_ADMIN = {
       preview.src = '';
       preview.classList.add('hidden');
     }
-    if (zoomBtn) zoomBtn.href = '#';
+    if (videoPreview) videoPreview.classList.add('hidden');
+    if (badge) badge.classList.add('hidden');
+    if (zoomBtn) {
+      zoomBtn.href = '#';
+      zoomBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Open Media';
+    }
     if (statusEl) {
-      statusEl.innerHTML = `<span class="text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-block text-[11px] font-semibold"><i class="fa-solid fa-info-circle mr-1"></i> Photo removed. Notice will display as text-only.</span>`;
+      statusEl.innerHTML = `<span class="text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-block text-[11px] font-semibold"><i class="fa-solid fa-info-circle mr-1"></i> Media removed. Notice will display as text-only.</span>`;
       statusEl.classList.remove('hidden');
     }
     this._pendingPopupImageBlob = '';
-    showToast("Notice photo removed. Click 'Save Popup Settings' to publish changes.", "info");
+    showToast("Notice media removed. Click 'Save Popup Settings' to publish changes.", "info");
   },
 
   renderPopupSettings() {
@@ -1211,20 +1312,7 @@ const VUO_ADMIN = {
     if (document.getElementById('adminPopupButtonLink')) document.getElementById('adminPopupButtonLink').value = pop.buttonLink || '#passphoto';
     if (document.getElementById('adminPopupPosterUrl')) document.getElementById('adminPopupPosterUrl').value = pop.imageUrl || '';
     
-    const preview = document.getElementById('adminPopupPosterPreview');
-    const zoomBtn = document.getElementById('adminPopupPreviewZoom');
-
-    if (preview) {
-      if (pop.imageUrl && pop.imageUrl.trim()) {
-        preview.src = pop.imageUrl;
-        preview.classList.remove('hidden');
-        if (zoomBtn) zoomBtn.href = pop.imageUrl;
-      } else {
-        preview.src = '';
-        preview.classList.add('hidden');
-        if (zoomBtn) zoomBtn.href = '#';
-      }
-    }
+    this.updatePopupMediaPreview(pop.imageUrl || '');
   },
 
   async handleSavePopupSettings() {
@@ -1254,7 +1342,10 @@ const VUO_ADMIN = {
 
     // If title is blank, provide a sensible default so save is never blocked
     if (!title) {
-      title = imageUrl ? "Official Notice / ଅଫିସିଆଲ୍ ନୋଟିସ୍" : "Official Digital Updates — VLE HELP DESK";
+      const media = this.parseMediaUrl(imageUrl);
+      title = media.type === 'youtube'
+        ? "Official Video Updates — VLE HELP DESK"
+        : (imageUrl ? "Official Notice / ଅଫିସିଆଲ୍ ନୋଟିସ୍" : "Official Digital Updates — VLE HELP DESK");
       const titleInput = document.getElementById('adminPopupTitle');
       if (titleInput) titleInput.value = title;
     }
