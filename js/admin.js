@@ -303,8 +303,10 @@ const VUO_ADMIN = {
 
     const popUrlInput = document.getElementById('adminPopupPosterUrl');
     if (popUrlInput) {
-      popUrlInput.addEventListener('input', (e) => {
-        this.updatePopupMediaPreview(e.target.value.trim());
+      ['input', 'paste', 'change', 'keyup'].forEach(evt => {
+        popUrlInput.addEventListener(evt, () => {
+          this.updatePopupMediaPreview(popUrlInput.value.trim());
+        });
       });
     }
 
@@ -1167,26 +1169,63 @@ const VUO_ADMIN = {
 
   parseMediaUrl(url) {
     if (!url || typeof url !== 'string') return { type: 'none', raw: '' };
-    const trimmed = url.trim();
-    if (!trimmed) return { type: 'none', raw: '' };
+    const raw = url.trim();
+    if (!raw) return { type: 'none', raw: '' };
 
-    const ytMatch = trimmed.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    // 1. If wrapped in iframe, extract src
+    let testStr = raw;
+    const iframeMatch = raw.match(/src=["']([^"']+)["']/i);
+    if (iframeMatch && iframeMatch[1]) {
+      testStr = iframeMatch[1];
+    }
+
+    // 2. Playlist check: list=PL...
+    const playlistMatch = testStr.match(/[?&]list=(PL[\w-]+)/i);
+    if (playlistMatch && (testStr.includes('youtube.com') || testStr.includes('youtu.be'))) {
+      const pId = playlistMatch[1];
+      return {
+        type: 'youtube',
+        videoId: '',
+        playlistId: pId,
+        thumbnailUrl: 'https://img.youtube.com/vi/default/hqdefault.jpg',
+        embedUrl: `https://www.youtube-nocookie.com/embed/videoseries?list=${pId}&rel=0`,
+        watchUrl: `https://www.youtube.com/playlist?list=${pId}`,
+        raw: raw
+      };
+    }
+
+    // 3. YouTube Video ID (11 chars) matcher
+    const ytMatch = testStr.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?(?:.*&)?v=))([a-zA-Z0-9_-]{11})/i)
+      || testStr.match(/(?:youtube\.com|youtu\.be).*(?:v=|\/)([a-zA-Z0-9_-]{11})(?:[&?\s]|$)/i);
+
     if (ytMatch && ytMatch[1]) {
       const videoId = ytMatch[1];
       return {
         type: 'youtube',
         videoId: videoId,
         thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        maxResThumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
         embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
         watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
-        raw: trimmed
+        raw: raw
       };
     }
 
+    // 4. Any other YouTube link
+    if (testStr.includes('youtube.com') || testStr.includes('youtu.be')) {
+      const cleanUrl = testStr.startsWith('http') ? testStr : `https://${testStr}`;
+      return {
+        type: 'youtube_link',
+        watchUrl: cleanUrl,
+        raw: raw
+      };
+    }
+
+    // 5. Standard Image
     return {
       type: 'image',
-      imageUrl: trimmed,
-      raw: trimmed
+      imageUrl: raw,
+      raw: raw
     };
   },
 
@@ -1200,7 +1239,7 @@ const VUO_ADMIN = {
 
     const media = this.parseMediaUrl(val);
 
-    if (media.type === 'youtube') {
+    if (media.type === 'youtube' || media.type === 'youtube_link') {
       if (preview) {
         preview.src = '';
         preview.classList.add('hidden');
@@ -1209,7 +1248,8 @@ const VUO_ADMIN = {
         videoPreview.classList.remove('hidden');
       }
       if (videoThumb) {
-        videoThumb.src = media.thumbnailUrl;
+        videoThumb.src = media.thumbnailUrl || 'https://img.youtube.com/vi/default/hqdefault.jpg';
+        videoThumb.classList.remove('hidden');
       }
       if (videoLink) {
         videoLink.href = media.watchUrl;
@@ -1228,13 +1268,13 @@ const VUO_ADMIN = {
       // Auto-suggest action button text/link if empty or default
       const btnTextInput = document.getElementById('adminPopupButtonText');
       const btnLinkInput = document.getElementById('adminPopupButtonLink');
-      if (btnTextInput && (!btnTextInput.value.trim() || btnTextInput.value === 'View Details' || btnTextInput.value === 'Open Notice')) {
+      if (btnTextInput && (!btnTextInput.value.trim() || btnTextInput.value === 'Explore Digital Tools' || btnTextInput.value === 'View Details' || btnTextInput.value === 'Open Notice')) {
         btnTextInput.value = '▶ Watch Video on YouTube';
       }
       if (btnLinkInput && (!btnLinkInput.value.trim() || btnLinkInput.value === '#passphoto')) {
         btnLinkInput.value = media.watchUrl;
       }
-    } else if (media.type === 'image') {
+    } else if (media.type === 'image' && media.imageUrl) {
       if (videoPreview) {
         videoPreview.classList.add('hidden');
       }
