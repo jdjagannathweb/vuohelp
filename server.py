@@ -110,119 +110,71 @@ def fetch_live_youtube_videos(force=False):
 
     new_added = 0
     try:
-        channel_url = 'https://www.youtube.com/channel/UCjxf06z3rx9DObtaTfaJfqg/videos'
-        req = urllib.request.Request(channel_url, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
+        import xml.etree.ElementTree as ET
+        rss_url = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCjxf06z3rx9DObtaTfaJfqg'
+        req = urllib.request.Request(rss_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
-        html = urllib.request.urlopen(req, timeout=12).read().decode('utf-8', errors='ignore')
-        match = re.search(r'var ytInitialData = ({.*?});</script>', html)
-        if match:
-            data = json.loads(match.group(1))
-            scraped_videos = []
-            seen_ids = set()
+        xml_data = urllib.request.urlopen(req, timeout=12).read()
+        root = ET.fromstring(xml_data)
+        ns = {'atom': 'http://www.w3.org/2005/Atom', 'yt': 'http://www.youtube.com/xml/schemas/2015', 'media': 'http://search.yahoo.com/mrss/'}
 
-            def extract_from_json(obj):
-                if isinstance(obj, dict):
-                    if 'lockupViewModel' in obj:
-                        lvm = obj['lockupViewModel']
-                        vid = lvm.get('contentId')
-                        if vid and vid not in seen_ids:
-                            seen_ids.add(vid)
-                            lmv = lvm.get('metadata', {}).get('lockupMetadataViewModel', {})
-                            title = lmv.get('title', {}).get('content', '')
-                            rows = lmv.get('metadata', {}).get('contentMetadataViewModel', {}).get('metadataRows', [])
-                            views = '1K'
-                            published = ''
-                            if rows and len(rows) > 0:
-                                parts = rows[0].get('metadataParts', [])
-                                if len(parts) > 0:
-                                    views = parts[0].get('accessibilityLabel', parts[0].get('text', {}).get('content', ''))
-                                if len(parts) > 1:
-                                    published = parts[1].get('accessibilityLabel', parts[1].get('text', {}).get('content', ''))
-                            
-                            duration = '10:00 min'
-                            overlays = lvm.get('contentImage', {}).get('thumbnailViewModel', {}).get('overlays', [])
-                            for ov in overlays:
-                                badges = ov.get('thumbnailBottomOverlayViewModel', {}).get('badges', [])
-                                for b in badges:
-                                    tbvm = b.get('thumbnailBadgeViewModel', {})
-                                    if 'text' in tbvm:
-                                        duration = f"{tbvm['text']} min" if ':' in tbvm['text'] else tbvm['text']
-                                        break
-                            
-                            clean_views = views.replace('views', '').replace('view', '').strip()
-                            if not clean_views: clean_views = '1K'
-                            cat = categorize_youtube_video(title)
+        scraped_videos = []
+        for entry in root.findall('atom:entry', ns):
+            vid = entry.find('yt:videoId', ns).text
+            title = entry.find('atom:title', ns).text
+            published = entry.find('atom:published', ns).text
+            media_desc = entry.find('media:group/media:description', ns)
+            desc = media_desc.text if media_desc is not None else ''
 
-                            scraped_videos.append({
-                                'id': f"tr-{vid}",
-                                'youtubeId': vid,
-                                'title': title,
-                                'titleOdia': title,
-                                'category': cat,
-                                'desc': f"{title} - Step-by-step Odia tutorial from Odia Digital Sikhya.",
-                                'duration': duration,
-                                'views': clean_views,
-                                'badge': 'NEW' if any(w in published for w in ['day', 'week', 'month']) else 'Popular',
-                                'link': f"https://www.youtube.com/watch?v={vid}",
-                                'published': published,
-                                'syncedAt': int(now * 1000)
-                            })
-                    for v in obj.values():
-                        extract_from_json(v)
-                elif isinstance(obj, list):
-                    for it in obj:
-                        extract_from_json(it)
+            cat = categorize_youtube_video(title)
+            scraped_videos.append({
+                'id': f"tr-{vid}",
+                'youtubeId': vid,
+                'title': title,
+                'titleOdia': title,
+                'category': cat,
+                'desc': desc or f"{title} - Step-by-step Odia tutorial from Odia Digital Sikhya.",
+                'duration': '10:00 min',
+                'views': '1K',
+                'badge': 'NEW',
+                'link': f"https://www.youtube.com/watch?v={vid}",
+                'published': published,
+                'publishedAt': published,
+                'syncedAt': int(now * 1000)
+            })
 
-            extract_from_json(data)
+        if scraped_videos:
+            existing_map = { v.get('youtubeId'): v for v in _training_cache["videos"] if v.get('youtubeId') }
+            for sv in scraped_videos:
+                yid = sv['youtubeId']
+                if yid not in existing_map:
+                    new_added += 1
+                existing_map[yid] = sv
 
-            if scraped_videos:
-                # Deduplication: Map existing videos by youtubeId
-                existing_map = { v.get('youtubeId'): v for v in _training_cache["videos"] if v.get('youtubeId') }
-                merged = []
-                
-                # Check for brand new videos to prepend
-                for sv in scraped_videos:
-                    yid = sv['youtubeId']
-                    if yid not in existing_map:
-                        merged.append(sv)
-                        new_added += 1
-                
-                # Append all existing videos (preserving any custom changes/additions)
-                for ev in _training_cache["videos"]:
-                    merged.append(ev)
+            def get_sort_key(v):
+                return v.get('publishedAt') or v.get('published') or ''
 
-                # Also add any scraped videos that were in scraped but not in merged
-                merged_ids = { v.get('youtubeId') for v in merged if v.get('youtubeId') }
-                for sv in scraped_videos:
-                    if sv['youtubeId'] not in merged_ids:
-                        merged.append(sv)
-                        merged_ids.add(sv['youtubeId'])
+            merged = list(existing_map.values())
+            merged.sort(key=get_sort_key, reverse=True)
+            if merged:
+                merged[0]['badge'] = 'LATEST'
 
-                _training_cache["videos"] = merged
-                _training_cache["last_sync"] = now
+            _training_cache["videos"] = merged
+            _training_cache["last_sync"] = now
 
-                # Persist to disk
-                try:
-                    with open(cache_file, 'w', encoding='utf-8') as f:
-                        json.dump(merged, f, ensure_ascii=False, indent=2)
-                except Exception as ef:
-                    print(f"[YouTube Sync] Error writing cache file: {ef}")
+            try:
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(merged, f, ensure_ascii=False, indent=2)
+            except Exception as ef:
+                print(f"[YouTube Sync] Error writing cache file: {ef}")
 
-                return merged, new_added
+            return merged, new_added
     except Exception as e:
-        print(f"[YouTube Sync] Error scraping YouTube channel: {e}")
+        print(f"[YouTube Sync] Error fetching YouTube RSS: {e}")
 
-    # Fallback to existing
     _training_cache["last_sync"] = now
     return _training_cache["videos"], 0
-
-# In-memory cache for Job Alerts
-_jobs_cache = {
-    "jobs": [],
-    "last_sync": 0
-}
 
 def determine_job_category(title, org, qual, source_url=''):
     u = (source_url or '').lower()

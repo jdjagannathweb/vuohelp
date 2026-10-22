@@ -2,6 +2,7 @@
  * VUO CSC HELP - Training Section
  * YouTube video tutorials hub for CSC VLEs with interactive player modal and category filters
  * Synchronizes video links and metadata from YouTube Channel "Odia Digital Sikhya"
+ * AUTO-SYNC & AUTO-SORT: Newest uploads are automatically discovered and placed at the top (newest first).
  */
 
 const VUO_TRAINING = {
@@ -10,6 +11,44 @@ const VUO_TRAINING = {
   channelId: 'UCjxf06z3rx9DObtaTfaJfqg',
   channelUrl: 'https://www.youtube.com/channel/UCjxf06z3rx9DObtaTfaJfqg',
   isSyncing: false,
+
+  getVideoTimestamp(v) {
+    if (!v) return 0;
+    if (typeof v.publishedTimestamp === 'number' && v.publishedTimestamp > 0) {
+      return v.publishedTimestamp;
+    }
+    const raw = v.published || v.publishedAt || v.date_published;
+    if (raw && typeof raw === 'string') {
+      const parsed = Date.parse(raw);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+
+      const s = raw.toLowerCase();
+      const now = Date.now();
+      const match = s.match(/(\d+)/);
+      const n = match ? parseInt(match[1], 10) : 1;
+      if (s.includes('hour')) return now - (n * 3600 * 1000);
+      if (s.includes('day')) return now - (n * 86400 * 1000);
+      if (s.includes('week')) return now - (n * 7 * 86400 * 1000);
+      if (s.includes('month')) return now - (n * 30 * 86400 * 1000);
+      if (s.includes('year')) return now - (n * 365 * 86400 * 1000);
+    }
+    if (typeof v.syncedAt === 'number') return v.syncedAt;
+    return 0;
+  },
+
+  formatVideoDate(v) {
+    const raw = v.published || v.publishedAt || v.date_published;
+    if (!raw) return '';
+    if (typeof raw === 'string' && raw.includes('-') && raw.length >= 10) {
+      try {
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      } catch (_) {}
+    }
+    return String(raw).replace(/ago/i, '').trim();
+  },
 
   handleSearchInput(e) {
     this.searchQuery = (e.target.value || '').trim();
@@ -45,24 +84,24 @@ const VUO_TRAINING = {
     if (!this._initialized) {
       this.bindEvents();
       this._initialized = true;
-      // Auto-sync channel videos in background when user opens the site
-      setTimeout(() => {
-        this.syncFromYouTubeChannel(true);
-      }, 1500);
     }
     this.renderVideos();
     this.updateCategoryCounts();
+
+    // Auto-sync live channel uploads in background whenever user loads/visits training
+    setTimeout(() => {
+      this.syncFromYouTubeChannel(true);
+    }, 800);
   },
 
   bindEvents() {
-    // Training category filter buttons
     document.querySelectorAll('.training-cat-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.training-cat-btn').forEach(b => {
-          b.className = 'training-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all';
+          b.className = 'training-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer';
         });
         const target = e.currentTarget;
-        target.className = 'training-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 border border-sky-600 text-white shadow-sm transition-all';
+        target.className = 'training-cat-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 border border-sky-600 text-white shadow-sm transition-all cursor-pointer';
         this.currentCategory = target.getAttribute('data-cat');
         this.renderVideos();
       });
@@ -97,7 +136,7 @@ const VUO_TRAINING = {
 
       const videoMap = new Map();
 
-      // 1. Load stored videos from localStorage first
+      // 1. Load stored videos from localStorage
       const stored = localStorage.getItem('vuo_training');
       if (stored) {
         try {
@@ -119,19 +158,29 @@ const VUO_TRAINING = {
         }
       }
 
-      // 2. Complement with defaultVideos if not already in storage
+      // 2. Complement with defaultVideos if not already present
       defaultVideos.forEach(v => {
         const yId = v.youtubeId || (v.id && !v.id.startsWith('tr-') ? v.id : null);
-        if (yId && !deletedSet.has(yId) && !deletedSet.has(v.id) && yId !== 'dQw4w9WgXcQ' && !videoMap.has(yId)) {
-          videoMap.set(yId, {
-            ...v,
-            youtubeId: yId,
-            link: v.link || `https://www.youtube.com/watch?v=${yId}`
-          });
+        if (yId && !deletedSet.has(yId) && !deletedSet.has(v.id) && yId !== 'dQw4w9WgXcQ') {
+          if (!videoMap.has(yId)) {
+            videoMap.set(yId, {
+              ...v,
+              youtubeId: yId,
+              link: v.link || `https://www.youtube.com/watch?v=${yId}`
+            });
+          } else {
+            // Update publish date metadata if default has newer info
+            const existing = videoMap.get(yId);
+            if (!existing.publishedAt && v.publishedAt) existing.publishedAt = v.publishedAt;
+            if (!existing.published && v.published) existing.published = v.published;
+          }
         }
       });
 
-      return Array.from(videoMap.values());
+      const list = Array.from(videoMap.values());
+      // Strict sorting: Latest/newest uploaded videos ALWAYS in front (first)
+      list.sort((a, b) => this.getVideoTimestamp(b) - this.getVideoTimestamp(a));
+      return list;
     } catch (e) {
       console.error("Error in getAllVideos:", e);
       return (typeof VUO_DATA !== 'undefined') ? VUO_DATA.trainingVideos : [];
@@ -140,8 +189,10 @@ const VUO_TRAINING = {
 
   saveVideos(videos) {
     try {
-      // Store lightweight link metadata only (no full video blobs)
-      const sanitized = videos.map(v => ({
+      // Sort strictly before saving
+      const sorted = [...videos].sort((a, b) => this.getVideoTimestamp(b) - this.getVideoTimestamp(a));
+
+      const sanitized = sorted.map((v, idx) => ({
         id: v.id || `tr-${v.youtubeId}`,
         youtubeId: v.youtubeId,
         title: v.title || 'CSC Tutorial',
@@ -150,16 +201,18 @@ const VUO_TRAINING = {
         desc: v.desc || `${v.title} - Step-by-step Odia tutorial from Odia Digital Sikhya.`,
         duration: v.duration || 'Full Tutorial',
         views: v.views || '1K',
-        badge: v.badge || 'Tutorial',
+        badge: (idx === 0) ? 'LATEST' : (v.badge || (idx < 5 ? 'NEW' : 'Tutorial')),
         link: v.link || `https://www.youtube.com/watch?v=${v.youtubeId}`,
         published: v.published || '',
+        publishedAt: v.publishedAt || v.published || '',
+        publishedTimestamp: this.getVideoTimestamp(v),
         isCustom: !!v.isCustom,
         syncedAt: v.syncedAt || Date.now()
       }));
 
       localStorage.setItem('vuo_training', JSON.stringify(sanitized));
 
-      // Push to backend server file if on web server
+      // Push to backend server if accessible
       if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
         fetch('api/save-training-videos', {
           method: 'POST',
@@ -174,8 +227,13 @@ const VUO_TRAINING = {
       }
 
       // Sync with Firebase Firestore
-      if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveVideo) {
-        sanitized.slice(0, 10).forEach(v => VUO_DB.cloudSaveVideo(v));
+      if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized && VUO_DB.db) {
+        try {
+          VUO_DB.db.collection('vuo_settings').doc('training_videos').set({
+            videos: sanitized.slice(0, 50),
+            updatedAt: new Date().toISOString()
+          }, { merge: true }).catch(() => {});
+        } catch (_) {}
       }
 
       return true;
@@ -207,10 +265,10 @@ const VUO_TRAINING = {
   },
 
   /**
-   * Automatically fetch and sync all videos from YouTube Channel in real-time.
-   * - Saves ONLY video links and metadata (no full video file downloads)
-   * - Deduplicates: once a video link is saved, it is preserved and not re-duplicated
-   * - Retains deleted items: never brings back videos deleted by admin/user
+   * Real-time YouTube Channel Auto-Sync Engine
+   * Fetches the official YouTube channel RSS feed in real-time.
+   * Discovers newly uploaded videos, assigns accurate published dates,
+   * sorts them descending (NEWEST FIRST), and updates the UI instantly.
    */
   async syncFromYouTubeChannel(silent = false) {
     if (this.isSyncing) return;
@@ -218,120 +276,87 @@ const VUO_TRAINING = {
 
     const syncBtn = document.getElementById('syncYouTubeVideosBtn');
     if (syncBtn) {
-      syncBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing...`;
+      syncBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Checking YouTube...`;
       syncBtn.disabled = true;
     }
 
     if (!silent && typeof showToast === 'function') {
-      showToast("Connecting to YouTube channel & checking for new tutorials...", "info");
+      showToast("Connecting to YouTube channel & syncing latest tutorials...", "info");
     }
 
     let fetchedItems = [];
 
-    // --- STEP 1: Fast & Reliable Backend Server Sync --- //
-    if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-      try {
-        const res = await fetch('api/sync-youtube-videos');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
-            fetchedItems = data.videos;
-          }
-        }
-      } catch (e) {
-        console.warn("Backend YouTube sync endpoint check:", e);
-      }
+    // --- STRATEGY 1: Live YouTube RSS Feed via JSON Gateway (Fastest, zero-rate-limit) --- //
+    const rssFeedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${this.channelId}`;
+    const feedJsonGateway = `https://feed2json.org/convert?url=${encodeURIComponent(rssFeedUrl)}`;
 
-      // Check training_videos.json directly if /api/ not reached
-      if (fetchedItems.length === 0) {
-        try {
-          const res = await fetch('training_videos.json?t=' + Date.now());
-          if (res.ok) {
-            const list = await res.json();
-            if (Array.isArray(list) && list.length > 0) {
-              fetchedItems = list;
-            }
-          }
-        } catch (e2) {
-          console.warn("Direct training_videos.json check:", e2);
-        }
-      }
-    }
-
-    // --- STEP 2: Client-side Proxy Scraper Fallback (for static hosts) --- //
-    if (fetchedItems.length === 0) {
-      const channelUrl = `https://www.youtube.com/channel/${this.channelId}/videos`;
-      const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(channelUrl)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(channelUrl)}`
-      ];
-
-      for (const proxyUrl of proxies) {
-        try {
-          const res = await fetch(proxyUrl);
-          if (res.ok) {
-            const html = await res.text();
-            const match = html.match(/var ytInitialData = ({.*?});<\/script>/);
+    try {
+      const res = await fetch(feedJsonGateway);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          fetchedItems = data.items.map(item => {
+            const url = item.url || '';
+            let vid = '';
+            const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
             if (match) {
-              const ytData = JSON.parse(match[1]);
-              const list = [];
-              const seen = new Set();
+              vid = match[1];
+            } else if (item.id && /^[a-zA-Z0-9_-]{11}$/.test(item.id)) {
+              vid = item.id;
+            }
 
-              const extract = (obj) => {
-                if (obj && typeof obj === 'object') {
-                  if (obj.lockupViewModel) {
-                    const lvm = obj.lockupViewModel;
-                    const vid = lvm.contentId;
-                    if (vid && !seen.has(vid)) {
-                      seen.add(vid);
-                      const title = lvm.metadata?.lockupMetadataViewModel?.title?.content || 'Tutorial';
-                      const rows = lvm.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows || [];
-                      let views = '1K';
-                      let published = '';
-                      if (rows[0]?.metadataParts) {
-                        views = rows[0].metadataParts[0]?.accessibilityLabel || rows[0].metadataParts[0]?.text?.content || '1K';
-                        published = rows[0].metadataParts[1]?.accessibilityLabel || rows[0].metadataParts[1]?.text?.content || '';
-                      }
-                      let duration = '10:00 min';
-                      const badges = lvm.contentImage?.thumbnailViewModel?.overlays?.[0]?.thumbnailBottomOverlayViewModel?.badges || [];
-                      if (badges[0]?.thumbnailBadgeViewModel?.text) {
-                        duration = badges[0].thumbnailBadgeViewModel.text + ' min';
-                      }
+            return {
+              id: `tr-${vid}`,
+              youtubeId: vid,
+              title: item.title || 'CSC Tutorial',
+              titleOdia: item.title || 'CSC Tutorial',
+              category: this.categorizeVideo(item.title),
+              desc: `${item.title} - Official Odisha CSC VLE tutorial by Jagannath Dash (Odia Digital Sikhya).`,
+              duration: '10:00 min',
+              views: 'Latest',
+              badge: 'NEW',
+              link: `https://www.youtube.com/watch?v=${vid}`,
+              published: item.date_published || '',
+              publishedAt: item.date_published || '',
+              publishedTimestamp: item.date_published ? Date.parse(item.date_published) : Date.now(),
+              syncedAt: Date.now()
+            };
+          }).filter(v => v.youtubeId);
+        }
+      }
+    } catch (errGateway) {
+      console.warn("Live feed2json gateway check:", errGateway);
+    }
 
-                      list.push({
-                        id: `tr-${vid}`,
-                        youtubeId: vid,
-                        title: title,
-                        titleOdia: title,
-                        category: this.categorizeVideo(title),
-                        desc: `${title} - Step-by-step Odia tutorial from Odia Digital Sikhya.`,
-                        duration: duration,
-                        views: views.replace(/views?/gi, '').trim() || '1K',
-                        badge: 'NEW',
-                        link: `https://www.youtube.com/watch?v=${vid}`,
-                        published: published,
-                        syncedAt: Date.now()
-                      });
-                    }
-                  }
-                  Object.values(obj).forEach(extract);
-                }
-              };
-
-              extract(ytData);
-              if (list.length > 0) {
-                fetchedItems = list;
-                break;
-              }
+    // --- STRATEGY 2: Backend Server Sync (if running on Python server) --- //
+    if (fetchedItems.length === 0) {
+      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+        try {
+          const res = await fetch('api/sync-youtube-videos');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+              fetchedItems = data.videos;
             }
           }
-        } catch (errProxy) {
-          console.warn("Proxy scraper attempt failed:", errProxy);
-        }
+        } catch (_) {}
       }
     }
 
-    // --- STEP 3: Deduplication and Automatic Persistence --- //
+    // --- STRATEGY 3: Direct training_videos.json with Cache Bust --- //
+    if (fetchedItems.length === 0) {
+      try {
+        const res = await fetch('training_videos.json?t=' + Date.now());
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0) {
+            fetchedItems = list;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // --- MERGE & SORT BY LATEST FIRST --- //
     try {
       const deletedIds = JSON.parse(localStorage.getItem('vuo_deleted_video_ids') || '[]');
       const deletedSet = new Set(deletedIds);
@@ -343,46 +368,54 @@ const VUO_TRAINING = {
       });
 
       let newAddedCount = 0;
-      const newlyDiscovered = [];
 
       fetchedItems.forEach(item => {
         const yId = item.youtubeId || (item.id && !item.id.startsWith('tr-') ? item.id : null);
         if (!yId || deletedSet.has(yId) || deletedSet.has(item.id)) return;
 
-        // If video is ALREADY synced & saved, do NOT duplicate it!
         if (existingMap.has(yId)) {
-          // Update view count/duration if newer data is available without duplicating
+          // Update publish date and metadata
           const prev = existingMap.get(yId);
-          if (item.views && item.views !== 'Latest') prev.views = item.views;
-          if (item.duration && item.duration !== 'Full Tutorial') prev.duration = item.duration;
+          if (item.published && !prev.published) prev.published = item.published;
+          if (item.publishedAt) prev.publishedAt = item.publishedAt;
+          if (item.title && (!prev.title || prev.title.length < item.title.length)) {
+            prev.title = item.title;
+            prev.titleOdia = item.titleOdia || item.title;
+          }
           return;
         }
 
-        // It is a brand new video upload!
+        // New upload discovered
         const formatted = {
           id: item.id || `tr-${yId}`,
           youtubeId: yId,
           title: item.title,
           titleOdia: item.titleOdia || item.title,
           category: item.category || this.categorizeVideo(item.title),
-          desc: item.desc || `${item.title} - Step-by-step Odia tutorial from Odia Digital Sikhya.`,
+          desc: item.desc || `${item.title} - Official Odisha CSC VLE tutorial by Jagannath Dash.`,
           duration: item.duration || '10:00 min',
           views: item.views || '1K',
-          badge: item.badge || 'NEW',
+          badge: 'NEW',
           link: `https://www.youtube.com/watch?v=${yId}`,
           published: item.published || '',
+          publishedAt: item.publishedAt || item.published || '',
+          publishedTimestamp: item.publishedTimestamp || this.getVideoTimestamp(item),
           syncedAt: Date.now()
         };
 
-        newlyDiscovered.push(formatted);
         existingMap.set(yId, formatted);
         newAddedCount++;
       });
 
-      // Construct final unified list (newest discoveries at the top, followed by existing saved)
-      const finalVideos = [...newlyDiscovered, ...existingVideos];
+      // Construct final unified list strictly sorted descending (newest first)
+      const finalVideos = Array.from(existingMap.values());
+      finalVideos.sort((a, b) => this.getVideoTimestamp(b) - this.getVideoTimestamp(a));
 
-      // Automatically persist to localStorage, IndexedDB & backend
+      // Mark first video as LATEST
+      if (finalVideos.length > 0) {
+        finalVideos[0].badge = 'LATEST';
+      }
+
       this.saveVideos(finalVideos);
       this.renderVideos();
       this.updateCategoryCounts();
@@ -393,11 +426,11 @@ const VUO_TRAINING = {
 
       if (newAddedCount > 0) {
         if (typeof showToast === 'function') {
-          showToast(`🔥 ${newAddedCount} new tutorial link(s) automatically synced & saved!`, "success");
+          showToast(`🔥 ${newAddedCount} new video(s) synced! Latest video is placed at the top.`, "success");
         }
       } else if (!silent) {
         if (typeof showToast === 'function') {
-          showToast(`All ${finalVideos.length} tutorials are up-to-date and saved!`, "success");
+          showToast(`All ${finalVideos.length} tutorials are up-to-date and sorted newest-first!`, "success");
         }
       }
     } catch (errMerge) {
@@ -423,13 +456,18 @@ const VUO_TRAINING = {
     };
 
     videos.forEach(v => {
-      const cat = v.category;
-      if (countMap[cat] !== undefined) {
-        countMap[cat]++;
+      if (v.category && countMap.hasOwnProperty(v.category)) {
+        countMap[v.category]++;
+      } else if (v.category) {
+        const catL = v.category.toLowerCase();
+        if (catL.includes('scheme')) countMap['Government Schemes']++;
+        else if (catL.includes('service')) countMap['Government Services']++;
+        else if (catL.includes('bank')) countMap['Banking']++;
+        else if (catL.includes('gov') || catL.includes('apaar')) countMap['e-Governance']++;
+        else countMap['CSC Training']++;
       }
     });
 
-    // Update buttons in DOM
     document.querySelectorAll('.training-cat-btn').forEach(btn => {
       const cat = btn.getAttribute('data-cat');
       if (cat === 'all') {
@@ -453,6 +491,9 @@ const VUO_TRAINING = {
     if (!container) return;
 
     let videos = this.getAllVideos();
+
+    // Strict newest-first sorting
+    videos.sort((a, b) => this.getVideoTimestamp(b) - this.getVideoTimestamp(a));
 
     // 1. Filter by category
     if (this.currentCategory && this.currentCategory !== 'all') {
@@ -519,7 +560,7 @@ const VUO_TRAINING = {
       return;
     }
 
-    container.innerHTML = videos.map(video => {
+    container.innerHTML = videos.map((video, idx) => {
       const isOdia = typeof currentLanguage !== 'undefined' && currentLanguage === 'or';
       const rawTitle = isOdia && video.titleOdia ? video.titleOdia : video.title;
       let displayTitle = this.escapeHtml(rawTitle);
@@ -534,9 +575,24 @@ const VUO_TRAINING = {
       }
       const thumbUrl = `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
       const ytLink = `https://www.youtube.com/watch?v=${video.youtubeId}`;
+      const dateLabel = this.formatVideoDate(video);
+
+      // Latest highlight badge for index 0
+      let badgeHtml = '';
+      if (idx === 0 || video.badge === 'LATEST') {
+        badgeHtml = `
+          <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[10px] font-black z-10 animate-pulse flex items-center gap-1 shadow-md border border-emerald-400/50">
+            <i class="fa-solid fa-bolt text-amber-300"></i> LATEST UPLOAD
+          </span>`;
+      } else if (video.badge === 'NEW' || idx < 4) {
+        badgeHtml = `
+          <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black z-10 flex items-center gap-1 shadow-sm">
+            NEW
+          </span>`;
+      }
 
       return `
-        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+        <div class="bg-white border ${idx === 0 ? 'border-emerald-300 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-200'} rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
           <div>
             <!-- Video Thumbnail Header with Official YouTube Thumbnail -->
             <div class="relative bg-slate-900 aspect-video flex items-center justify-center cursor-pointer overflow-hidden" 
@@ -563,6 +619,8 @@ const VUO_TRAINING = {
               <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-sky-600/90 text-white text-[10px] font-bold z-10">
                 ${video.category}
               </span>
+
+              ${badgeHtml}
             </div>
 
             <!-- Content Details -->
@@ -577,7 +635,10 @@ const VUO_TRAINING = {
           </div>
 
           <div class="px-4 pb-4 pt-1 flex items-center justify-between border-t border-slate-100">
-            <span class="text-[11px] text-slate-400">👁️ ${video.views || '1K'} views</span>
+            <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+              <span>👁️ ${video.views || '1K'}</span>
+              ${dateLabel ? `<span class="text-slate-300">•</span><span class="text-slate-500 font-medium">${dateLabel}</span>` : ''}
+            </div>
             <div class="flex items-center gap-1.5">
               <a href="${ytLink}" target="_blank" title="Watch on YouTube"
                 class="px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
@@ -622,7 +683,6 @@ const VUO_TRAINING = {
     modalTitle.textContent = isOdia && video.titleOdia ? video.titleOdia : video.title;
     modalDesc.textContent = video.desc || '';
 
-    // Responsive embed with official YouTube iframe + direct YouTube link
     playerContainer.innerHTML = `
       <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-black flex items-center justify-center">
         <iframe class="w-full h-full" src="https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0" 
@@ -651,11 +711,10 @@ const VUO_TRAINING = {
       modal.style.display = 'none';
     }
     if (playerContainer) {
-      playerContainer.innerHTML = ''; // Stop video playback
+      playerContainer.innerHTML = '';
     }
   },
 
-  // Alias for compatibility
   closePlayer() {
     this.closeVideoModal();
   }

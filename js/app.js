@@ -800,8 +800,15 @@ const VUO_APP = {
     }
     if (typeof initWelcomePopup === 'function') {
       initWelcomePopup();
-    renderWhatsappCommunityBanner();
+      renderWhatsappCommunityBanner();
     }
+
+    // Auto-sync training videos in background
+    setTimeout(() => {
+      if (typeof VUO_TRAINING !== 'undefined' && typeof VUO_TRAINING.syncFromYouTubeChannel === 'function') {
+        VUO_TRAINING.syncFromYouTubeChannel(true);
+      }
+    }, 2500);
 
     // Listen for language changes
     window.addEventListener('languageChanged', () => {
@@ -1388,6 +1395,9 @@ const VUO_APP = {
       if (subTab) {
         VUO_TRAINING.currentCategory = subTab;
         VUO_TRAINING.renderVideos();
+      }
+      if (typeof VUO_TRAINING !== 'undefined' && typeof VUO_TRAINING.syncFromYouTubeChannel === 'function') {
+        setTimeout(() => VUO_TRAINING.syncFromYouTubeChannel(true), 300);
       }
     } else if (viewName === 'leads') {
       if (typeof VUO_LEADS !== 'undefined') {
