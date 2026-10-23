@@ -180,6 +180,12 @@ const VUO_TRAINING = {
       const list = Array.from(videoMap.values());
       // Strict sorting: Latest/newest uploaded videos ALWAYS in front (first)
       list.sort((a, b) => this.getVideoTimestamp(b) - this.getVideoTimestamp(a));
+      if (list.length > 0) {
+        list[0].badge = 'LATEST';
+        for (let i = 1; i < Math.min(5, list.length); i++) {
+          if (list[i].badge === 'LATEST') list[i].badge = 'NEW';
+        }
+      }
       return list;
     } catch (e) {
       console.error("Error in getAllVideos:", e);
@@ -286,64 +292,20 @@ const VUO_TRAINING = {
 
     let fetchedItems = [];
 
-    // --- STRATEGY 1: Live YouTube RSS Feed via JSON Gateway (Fastest, zero-rate-limit) --- //
-    const rssFeedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${this.channelId}`;
-    const feedJsonGateway = `https://feed2json.org/convert?url=${encodeURIComponent(rssFeedUrl)}`;
-
-    try {
-      const res = await fetch(feedJsonGateway);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.items) && data.items.length > 0) {
-          fetchedItems = data.items.map(item => {
-            const url = item.url || '';
-            let vid = '';
-            const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
-            if (match) {
-              vid = match[1];
-            } else if (item.id && /^[a-zA-Z0-9_-]{11}$/.test(item.id)) {
-              vid = item.id;
-            }
-
-            return {
-              id: `tr-${vid}`,
-              youtubeId: vid,
-              title: item.title || 'CSC Tutorial',
-              titleOdia: item.title || 'CSC Tutorial',
-              category: this.categorizeVideo(item.title),
-              desc: `${item.title} - Official Odisha CSC VLE tutorial by Jagannath Dash (Odia Digital Sikhya).`,
-              duration: '10:00 min',
-              views: 'Latest',
-              badge: 'NEW',
-              link: `https://www.youtube.com/watch?v=${vid}`,
-              published: item.date_published || '',
-              publishedAt: item.date_published || '',
-              publishedTimestamp: item.date_published ? Date.parse(item.date_published) : Date.now(),
-              syncedAt: Date.now()
-            };
-          }).filter(v => v.youtubeId);
-        }
-      }
-    } catch (errGateway) {
-      console.warn("Live feed2json gateway check:", errGateway);
-    }
-
-    // --- STRATEGY 2: Backend Server Sync (if running on Python server) --- //
-    if (fetchedItems.length === 0) {
-      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-        try {
-          const res = await fetch('api/sync-youtube-videos');
-          if (res.ok) {
-            const data = await res.json();
-            if (data && Array.isArray(data.videos) && data.videos.length > 0) {
-              fetchedItems = data.videos;
-            }
+    // --- STRATEGY 1: Backend Server Live Sync (scrapes YouTube directly on server) --- //
+    if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+      try {
+        const res = await fetch('api/sync-youtube-videos');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+            fetchedItems = data.videos;
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
     }
 
-    // --- STRATEGY 3: Direct training_videos.json with Cache Bust --- //
+    // --- STRATEGY 2: Direct training_videos.json with Timestamp Cache Bust --- //
     if (fetchedItems.length === 0) {
       try {
         const res = await fetch('training_videos.json?t=' + Date.now());
@@ -354,6 +316,45 @@ const VUO_TRAINING = {
           }
         }
       } catch (_) {}
+    }
+
+    // --- STRATEGY 3: Fallback YouTube Channel RSS / JSON Gateway --- //
+    if (fetchedItems.length === 0) {
+      try {
+        const rssFeedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${this.channelId}`;
+        const feedJsonGateway = `https://feed2json.org/convert?url=${encodeURIComponent(rssFeedUrl)}`;
+        const res = await fetch(feedJsonGateway);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.items) && data.items.length > 0) {
+            fetchedItems = data.items.map(item => {
+              const url = item.url || '';
+              let vid = '';
+              const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+              if (match) vid = match[1];
+              else if (item.id && /^[a-zA-Z0-9_-]{11}$/.test(item.id)) vid = item.id;
+              return {
+                id: `tr-${vid}`,
+                youtubeId: vid,
+                title: item.title || 'CSC Tutorial',
+                titleOdia: item.title || 'CSC Tutorial',
+                category: this.categorizeVideo(item.title),
+                desc: `${item.title} - Official Odisha CSC VLE tutorial by Jagannath Dash (Odia Digital Sikhya).`,
+                duration: '10:00 min',
+                views: 'Latest',
+                badge: 'NEW',
+                link: `https://www.youtube.com/watch?v=${vid}`,
+                published: item.date_published || '',
+                publishedAt: item.date_published || '',
+                publishedTimestamp: item.date_published ? Date.parse(item.date_published) : Date.now(),
+                syncedAt: Date.now()
+              };
+            }).filter(v => v.youtubeId);
+          }
+        }
+      } catch (errGateway) {
+        console.warn("Live gateway check:", errGateway);
+      }
     }
 
     // --- MERGE & SORT BY LATEST FIRST --- //

@@ -2495,26 +2495,55 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
       let rows = Math.ceil(totalCopies / cols);
 
       const mmToPx = 300 / 25.4;
-      const marginX = Math.round(sheetW * 0.035);
-      const marginY = (this.currentPaper === 'a4')
-        ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
-        : Math.round(sheetH * 0.04);
-      const gapX = Math.round(sheetW * 0.02);
-      const gapY = Math.round(sheetH * 0.02);
+      let photoW, photoH, gapX, gapY, startX, startY;
 
-      const maxPhotoW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
-      const maxPhotoH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+      if (this.currentPaper === 'a4') {
+        const baseW = Math.round((presetObj.w || 30.48) * mmToPx);
+        const baseH = Math.round((presetObj.h || 38.1) * mmToPx);
+        photoW = baseW;
+        photoH = baseH;
 
-      let photoW = maxPhotoW;
-      let photoH = Math.round(photoW / ratio);
-      if (photoH > maxPhotoH) {
-        photoH = maxPhotoH;
-        photoW = Math.round(photoH * ratio);
+        const minGaps = (cols + 1) * 20;
+        if (cols * photoW + minGaps > sheetW) {
+          const avail = sheetW - minGaps;
+          const scale = avail / (cols * photoW);
+          photoW = Math.floor(photoW * scale);
+          photoH = Math.floor(photoH * scale);
+        }
+
+        const remW = sheetW - (cols * photoW);
+        if (cols >= 6) {
+          gapX = Math.max(16, Math.floor(remW / (cols + 1)));
+          const gridW = cols * photoW + (cols - 1) * gapX;
+          startX = Math.max(12, Math.floor((sheetW - gridW) / 2));
+        } else {
+          gapX = Math.min(Math.round(sheetW * 0.02), Math.max(25, Math.floor(remW / (cols + 1))));
+          const gridW = cols * photoW + (cols - 1) * gapX;
+          startX = Math.floor((sheetW - gridW) / 2);
+        }
+
+        gapY = Math.round(sheetW * 0.015);
+        startY = Math.max(4, Math.round(0.03 * 10 * mmToPx));
+      } else {
+        const marginX = Math.round(sheetW * 0.035);
+        const marginY = Math.round(sheetH * 0.04);
+        gapX = Math.round(sheetW * 0.02);
+        gapY = Math.round(sheetH * 0.02);
+
+        const maxPhotoW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+        const maxPhotoH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+        photoW = maxPhotoW;
+        photoH = Math.round(photoW / ratio);
+        if (photoH > maxPhotoH) {
+          photoH = maxPhotoH;
+          photoW = Math.round(photoH * ratio);
+        }
+
+        const gridW = cols * photoW + (cols - 1) * gapX;
+        startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
+        startY = marginY;
       }
-
-      const gridW = cols * photoW + (cols - 1) * gapX;
-      const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
-      const startY = marginY;
 
       let count = 0;
       for (let r = 0; r < rows; r++) {
@@ -2572,40 +2601,60 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     let basePhotoW = Math.round(presetObj.w * mmToPx);
     let basePhotoH = Math.round(presetObj.h * mmToPx);
 
-    // Margins and gaps
-    const marginX = Math.round(sheetW * 0.035);
-    const marginY = (this.currentPaper === 'a4')
-      ? Math.max(4, Math.round(0.03 * 10 * mmToPx))
-      : Math.round(sheetH * 0.04);
-    const gapX = Math.round(sheetW * 0.02);
-    const gapY = Math.round(sheetH * 0.02);
+    let photoW, photoH, gapX, gapY, startX, startY;
 
-    const maxAvailW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
-    const maxAvailH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
-
-    let photoW = basePhotoW;
-    let photoH = basePhotoH;
-
-    if (photoW > maxAvailW || photoH > maxAvailH) {
-      const scaleW = maxAvailW / photoW;
-      const scaleH = maxAvailH / photoH;
-      const s = Math.min(scaleW, scaleH);
-      photoW = Math.floor(photoW * s);
-      photoH = Math.floor(photoH * s);
-    }
-
-    // Compute grid dimensions and center placement
-    const gridW = cols * photoW + (cols - 1) * gapX;
-    const gridH = rows * photoH + (rows - 1) * gapY;
-    const startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
-
-    let startY = marginY;
     if (this.currentPaper === 'a4') {
-      // User requirement: "jab bhi a4 select ho ta he to photo uparse 0.03cm chod ke photo dikhna chahiye"
-      // 0.03 cm = 0.3 mm (~4 px at 300 DPI). Top cutting border starts at 0 px, photo starts at 4 px (0.03 cm).
-      startY = Math.max(4, Math.round(0.03 * 10 * mmToPx));
+      // A4 Sheet: Balanced side margins and uniform photo gaps
+      // User requirement: "pass photo a4 output me dekho do site me jagah jyada reheta he use thoda kam karo jeise ek photo se dusra photo same rahe aur left aur right me bhi same rahe"
+      photoW = basePhotoW;
+      photoH = basePhotoH;
+
+      const minGaps = (cols + 1) * 20;
+      if (cols * photoW + minGaps > sheetW) {
+        const avail = sheetW - minGaps;
+        const scale = avail / (cols * photoW);
+        photoW = Math.floor(photoW * scale);
+        photoH = Math.floor(photoH * scale);
+      }
+
+      const remW = sheetW - (cols * photoW);
+      if (cols >= 6) {
+        // Equal spacing between all photos and equal side margins:
+        // Left Margin == Gap Between Photos == Right Margin
+        gapX = Math.max(16, Math.floor(remW / (cols + 1)));
+        const gridW = cols * photoW + (cols - 1) * gapX;
+        startX = Math.max(12, Math.floor((sheetW - gridW) / 2));
+      } else {
+        gapX = Math.min(Math.round(sheetW * 0.02), Math.max(25, Math.floor(remW / (cols + 1))));
+        const gridW = cols * photoW + (cols - 1) * gapX;
+        startX = Math.floor((sheetW - gridW) / 2);
+      }
+
+      gapY = Math.round(sheetW * 0.015); // ~37px (~3.1mm) vertical cutting space
+      startY = Math.max(4, Math.round(0.03 * 10 * mmToPx)); // 0.03 cm top margin
     } else {
-      // For 4x6 and other dedicated cards, center nicely
+      const marginX = Math.round(sheetW * 0.035);
+      const marginY = Math.round(sheetH * 0.04);
+      gapX = Math.round(sheetW * 0.02);
+      gapY = Math.round(sheetH * 0.02);
+
+      const maxAvailW = Math.floor((sheetW - 2 * marginX - (cols - 1) * gapX) / cols);
+      const maxAvailH = Math.floor((sheetH - 2 * marginY - (rows - 1) * gapY) / rows);
+
+      photoW = basePhotoW;
+      photoH = basePhotoH;
+
+      if (photoW > maxAvailW || photoH > maxAvailH) {
+        const scaleW = maxAvailW / photoW;
+        const scaleH = maxAvailH / photoH;
+        const s = Math.min(scaleW, scaleH);
+        photoW = Math.floor(photoW * s);
+        photoH = Math.floor(photoH * s);
+      }
+
+      const gridW = cols * photoW + (cols - 1) * gapX;
+      const gridH = rows * photoH + (rows - 1) * gapY;
+      startX = Math.max(marginX, Math.floor((sheetW - gridW) / 2));
       startY = Math.max(marginY, Math.floor((sheetH - gridH) / 2));
     }
 
