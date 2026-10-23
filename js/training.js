@@ -80,9 +80,136 @@ const VUO_TRAINING = {
     return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   },
 
+  setupFirestoreListener() {
+    if (this._firestoreListening) return;
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized && VUO_DB.db) {
+      this._firestoreListening = true;
+      try {
+        VUO_DB.db.collection('vuo_settings').doc('training_videos').onSnapshot(doc => {
+          if (doc && doc.exists) {
+            const data = doc.data();
+            if (data && Array.isArray(data.videos) && data.videos.length > 0) {
+              const currentVideos = this.getAllVideos();
+              const currentTop = currentVideos[0]?.youtubeId;
+              const remoteTop = data.videos[0]?.youtubeId;
+              if (currentTop !== remoteTop) {
+                console.log("[Firestore Training] Remote update detected. Newest video:", remoteTop);
+                this.saveVideos(data.videos);
+                this.renderVideos();
+                this.updateCategoryCounts();
+              }
+            }
+          }
+        }, err => {
+          console.warn("[Firestore Training] Listener:", err);
+        });
+      } catch (e) {
+        console.warn("[Firestore Training] Init listener err:", e);
+      }
+    }
+  },
+
+  async addVideoByUrl(inputUrl) {
+    if (!inputUrl) return;
+    const raw = String(inputUrl).trim();
+    let vid = '';
+    const match = raw.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || raw.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/) || raw.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+    if (match) {
+      vid = match[1];
+    } else if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) {
+      vid = raw;
+    }
+
+    if (!vid) {
+      if (typeof showToast === 'function') showToast("Please enter a valid YouTube link or 11-digit Video ID.", "warning");
+      return false;
+    }
+
+    if (typeof showToast === 'function') showToast("🔍 Fetching official video title & thumbnail from YouTube...", "info");
+
+    let title = 'CSC Tutorial';
+    let author = 'Odia Digital Sikhya';
+
+    try {
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`;
+      const res = await fetch(oembedUrl);
+      if (res.ok) {
+        const meta = await res.json();
+        title = meta.title || title;
+        author = meta.author_name || author;
+      }
+    } catch (e) {
+      console.warn("oEmbed fetch note:", e);
+    }
+
+    const now = Date.now();
+    const newVideo = {
+      id: `tr-${vid}`,
+      youtubeId: vid,
+      title: title,
+      titleOdia: title,
+      category: this.categorizeVideo(title),
+      desc: `${title} - Official Odisha CSC VLE tutorial by Jagannath Dash (${author}).`,
+      duration: 'Full Tutorial',
+      views: 'Latest',
+      badge: 'LATEST',
+      link: `https://www.youtube.com/watch?v=${vid}`,
+      published: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      publishedTimestamp: now,
+      isCustom: true,
+      syncedAt: now
+    };
+
+    const existing = this.getAllVideos();
+    const filtered = existing.filter(v => v.youtubeId !== vid && v.id !== `tr-${vid}`);
+    for (const v of filtered) {
+      if (v.badge === 'LATEST') v.badge = 'NEW';
+    }
+
+    const updated = [newVideo, ...filtered];
+    this.saveVideos(updated);
+    this.renderVideos();
+    this.updateCategoryCounts();
+
+    if (typeof showToast === 'function') {
+      showToast(`🎉 "${title}" synced instantly and placed at #1!`, "success");
+    }
+
+    this.closeQuickSyncModal();
+    return true;
+  },
+
+  openQuickSyncModal() {
+    const modal = document.getElementById('quickSyncVideoModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      const input = document.getElementById('quickSyncVideoInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    } else {
+      const link = prompt("Paste YouTube Video Link or ID (e.g. https://youtu.be/7LF_nJwzUTU):", "");
+      if (link && link.trim()) {
+        this.addVideoByUrl(link.trim());
+      }
+    }
+  },
+
+  closeQuickSyncModal() {
+    const modal = document.getElementById('quickSyncVideoModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
   init() {
     if (!this._initialized) {
       this.bindEvents();
+      this.setupFirestoreListener();
       this._initialized = true;
     }
     this.renderVideos();
@@ -292,14 +419,14 @@ const VUO_TRAINING = {
 
     let fetchedItems = [];
 
-    // --- STRATEGY 1: Backend Server Live Sync (scrapes YouTube directly on server) --- //
-    if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+    // --- STRATEGY 1: Firestore Cloud Sync (Instant real-time sync across all devices) --- //
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.isInitialized && VUO_DB.db) {
       try {
-        const res = await fetch('api/sync-youtube-videos');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.videos) && data.videos.length > 0) {
-            fetchedItems = data.videos;
+        const doc = await VUO_DB.db.collection('vuo_settings').doc('training_videos').get();
+        if (doc && doc.exists) {
+          const d = doc.data();
+          if (d && Array.isArray(d.videos) && d.videos.length > 0) {
+            fetchedItems = d.videos;
           }
         }
       } catch (_) {}
@@ -317,6 +444,8 @@ const VUO_TRAINING = {
         }
       } catch (_) {}
     }
+
+    // --- STRATEGY 3: Backend Server Live Sync (scrapes YouTube directly on server) --- //
 
     // --- STRATEGY 3: Fallback YouTube Channel RSS / JSON Gateway --- //
     if (fetchedItems.length === 0) {
