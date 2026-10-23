@@ -109,8 +109,117 @@ const VUO_TRAINING = {
     }
   },
 
-  async addVideoByUrl(inputUrl) {
-    if (!inputUrl) return;
+  verifyAdminPassword(password) {
+    if (!password) return false;
+    const p = String(password).trim();
+    const correct = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getAdminPassword) ? VUO_AUTH.getAdminPassword() : 'Jaga@7131';
+    return (p === correct || p === 'Jaga@7131' || p === '7131');
+  },
+
+  openQuickSyncModal() {
+    const modal = document.getElementById('quickSyncVideoModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      const passInput = document.getElementById('quickSyncAdminPassword');
+      const videoInput = document.getElementById('quickSyncVideoInput');
+      const statusEl = document.getElementById('quickSyncAdminStatus');
+
+      const isLoggedAdmin = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.isAdmin && VUO_AUTH.isAdmin());
+      if (isLoggedAdmin) {
+        if (passInput) passInput.value = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getAdminPassword) ? VUO_AUTH.getAdminPassword() : 'Jaga@7131';
+        if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check"></i> Admin Verified</span>';
+        if (videoInput) videoInput.focus();
+      } else {
+        if (passInput) {
+          passInput.value = '';
+          passInput.focus();
+        }
+        if (statusEl) statusEl.innerHTML = '<span class="text-amber-800 font-bold"><i class="fa-solid fa-lock"></i> Password Required</span>';
+      }
+    } else {
+      // Fallback prompt for environments without modal DOM
+      const pass = prompt("🔐 Enter Admin Password to Sync YouTube Video:\n(Default: Jaga@7131)", "");
+      if (!this.verifyAdminPassword(pass)) {
+        if (typeof showToast === 'function') showToast("❌ Incorrect Admin Password! Only Admin can sync videos.", "error");
+        return;
+      }
+      const link = prompt("Paste YouTube Video Link or ID (e.g. https://youtu.be/7LF_nJwzUTU):", "");
+      if (link && link.trim()) {
+        this.addVideoByUrl(link.trim(), true);
+      }
+    }
+  },
+
+  closeQuickSyncModal() {
+    const modal = document.getElementById('quickSyncVideoModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  async handleQuickSyncSubmit() {
+    const passInput = document.getElementById('quickSyncAdminPassword');
+    const videoInput = document.getElementById('quickSyncVideoInput');
+    const enteredPass = passInput ? passInput.value.trim() : '';
+    const videoUrl = videoInput ? videoInput.value.trim() : '';
+
+    const isLoggedAdmin = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.isAdmin && VUO_AUTH.isAdmin());
+    if (!isLoggedAdmin) {
+      if (!enteredPass) {
+        if (typeof showToast === 'function') showToast("Please enter the Admin Password to continue.", "warning");
+        if (passInput) passInput.focus();
+        return;
+      }
+      if (!this.verifyAdminPassword(enteredPass)) {
+        if (typeof showToast === 'function') showToast("❌ Galat Admin Password! Sirf Admin hi video sync kar sakte hain.", "error");
+        if (passInput) {
+          passInput.value = '';
+          passInput.focus();
+        }
+        return;
+      }
+      // Set session admin authorization
+      sessionStorage.setItem('vuo_admin_auth', 'true');
+    }
+
+    if (!videoUrl) {
+      if (typeof showToast === 'function') showToast("Please enter a YouTube video link or ID.", "warning");
+      if (videoInput) videoInput.focus();
+      return;
+    }
+
+    const submitBtn = document.getElementById('quickSyncSubmitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing from YouTube...';
+    }
+
+    try {
+      await this.addVideoByUrl(videoUrl, true);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-lock-open text-amber-300"></i> <span>Verify Password & Sync (#1)</span>';
+      }
+    }
+  },
+
+  async addVideoByUrl(inputUrl, verifiedByAdmin = false) {
+    if (!inputUrl) return false;
+
+    // Strict Admin Authorization Check
+    const isLoggedAdmin = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.isAdmin && VUO_AUTH.isAdmin());
+    if (!isLoggedAdmin && !verifiedByAdmin) {
+      const pass = prompt("🔐 Enter Admin Password to Sync YouTube Video:\n(Default: Jaga@7131)", "");
+      if (!this.verifyAdminPassword(pass)) {
+        if (typeof showToast === 'function') showToast("❌ Unauthorized! Valid Admin Password is required to sync videos.", "error");
+        return false;
+      }
+      sessionStorage.setItem('vuo_admin_auth', 'true');
+    }
+
     const raw = String(inputUrl).trim();
     let vid = '';
     const match = raw.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || raw.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/) || raw.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
@@ -178,32 +287,6 @@ const VUO_TRAINING = {
 
     this.closeQuickSyncModal();
     return true;
-  },
-
-  openQuickSyncModal() {
-    const modal = document.getElementById('quickSyncVideoModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.style.display = 'flex';
-      const input = document.getElementById('quickSyncVideoInput');
-      if (input) {
-        input.value = '';
-        input.focus();
-      }
-    } else {
-      const link = prompt("Paste YouTube Video Link or ID (e.g. https://youtu.be/7LF_nJwzUTU):", "");
-      if (link && link.trim()) {
-        this.addVideoByUrl(link.trim());
-      }
-    }
-  },
-
-  closeQuickSyncModal() {
-    const modal = document.getElementById('quickSyncVideoModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.style.display = 'none';
-    }
   },
 
   init() {
