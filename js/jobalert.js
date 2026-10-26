@@ -30,7 +30,12 @@ const VUO_JOB_ALERT = {
     try {
       const raw = localStorage.getItem('vuo_deleted_job_ids');
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+      // Clean up any stale URLs or non-ID strings from previous versions
+      if (Array.isArray(parsed)) {
+        const cleanIds = parsed.filter(item => typeof item === 'string' && !item.includes('http') && !item.includes('/') && item.length < 90);
+        return new Set(cleanIds);
+      }
+      return new Set();
     } catch (e) {
       return new Set();
     }
@@ -40,11 +45,21 @@ const VUO_JOB_ALERT = {
     if (!job) return false;
     const deleted = this.getDeletedJobIds();
     if (!deleted || deleted.size === 0) return false;
-    if (typeof job === 'string') return deleted.has(job);
-    const id = job.id || '';
-    const url = (job.applyUrl || job.sourceUrl || '').trim();
-    const title = (job.title || '').trim().toLowerCase();
-    return deleted.has(id) || (url && deleted.has(url)) || (title && deleted.has(title));
+    // Strictly match by unique job ID only so adding/editing jobs with links or titles is never falsely blocked
+    const id = typeof job === 'string' ? job : (job.id || '');
+    return id ? deleted.has(id) : false;
+  },
+
+  unmarkJobAsDeleted(id, url) {
+    if (!id && !url) return;
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      if (!raw) return;
+      let list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      list = list.filter(item => item !== id && (!url || item !== url.trim()));
+      localStorage.setItem('vuo_deleted_job_ids', JSON.stringify(list));
+    } catch (e) {}
   },
 
   init() {

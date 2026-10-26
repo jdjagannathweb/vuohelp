@@ -870,10 +870,11 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
                         if os.path.exists(cache_file):
                             with open(cache_file, 'r', encoding='utf-8') as f:
                                 jobs = json.load(f)
-                        # Replace if exists, else prepend
+                        # Replace if exists by ID or applyUrl, else prepend
                         job_id = payload.get('id') or f"job-{int(time.time())}"
                         payload['id'] = job_id
-                        idx = next((i for i, j in enumerate(jobs) if j.get('id') == job_id), -1)
+                        apply_url = payload.get('applyUrl', '')
+                        idx = next((i for i, j in enumerate(jobs) if j.get('id') == job_id or (apply_url and j.get('applyUrl') == apply_url)), -1)
                         if idx >= 0:
                             jobs[idx] = payload
                         else:

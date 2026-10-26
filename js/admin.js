@@ -3248,10 +3248,10 @@ const VUO_ADMIN = {
     if (e && e.preventDefault) e.preventDefault();
 
     const title = (document.getElementById('adminCustomJobTitle')?.value || '').trim();
-    const org = (document.getElementById('adminCustomJobOrg')?.value || '').trim();
+    const org = (document.getElementById('adminCustomJobOrg')?.value || '').trim() || 'Government Recruitment Board';
     const category = document.getElementById('adminCustomJobCategory')?.value || 'Odisha Govt';
     const vacancies = (document.getElementById('adminCustomJobVacancies')?.value || '').trim() || 'Various Posts';
-    const salary = (document.getElementById('adminCustomJobSalary')?.value || '').trim();
+    const salary = (document.getElementById('adminCustomJobSalary')?.value || '').trim() || 'Govt Pay Scale';
     const qual = (document.getElementById('adminCustomJobQual')?.value || '').trim() || 'Matric / Degree';
     const startDate = (document.getElementById('adminCustomJobStartDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
     const lastDate = (document.getElementById('adminCustomJobLastDate')?.value || '').trim();
@@ -3266,7 +3266,8 @@ const VUO_ADMIN = {
 
     let docs = [];
     if (docsRaw) {
-      docs = docsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      docs = docsRaw.split('
+').map(s => s.trim()).filter(Boolean);
     } else {
       docs = [
         "10th Class Board Certificate & Marksheet",
@@ -3278,15 +3279,18 @@ const VUO_ADMIN = {
       ];
     }
 
+    // Generate unique ID based on title slug or timestamp
+    const slugId = 'job-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) + '-' + Date.now();
+
     const newJob = {
-      id: `custom-job-${Date.now()}`,
+      id: slugId,
       title: title,
       titleOdia: title,
-      organization: org || 'Government Recruitment Board',
+      organization: org,
       post: title,
       vacancies: vacancies,
       qualification: qual,
-      salary: salary || 'Govt Pay Scale',
+      salary: salary,
       startDate: startDate,
       lastDate: lastDate,
       category: category,
@@ -3300,12 +3304,30 @@ const VUO_ADMIN = {
       syncedAt: Date.now()
     };
 
+    // Unmark any accidental deletion of this ID or URL
+    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.unmarkJobAsDeleted === 'function') {
+      VUO_JOB_ALERT.unmarkJobAsDeleted(slugId, applyUrl);
+    }
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      if (raw) {
+        let delList = JSON.parse(raw);
+        if (Array.isArray(delList)) {
+          delList = delList.filter(item => item !== slugId && item !== applyUrl);
+          localStorage.setItem('vuo_deleted_job_ids', JSON.stringify(delList));
+        }
+      }
+    } catch (e) {}
+
+    // Save to localStorage vuo_custom_job_alerts (replace if existing applyUrl, else prepend)
     try {
       let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      custom = custom.filter(j => j.applyUrl !== applyUrl && j.id !== slugId);
       custom.unshift(newJob);
       localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
     } catch(err) {}
 
+    // Save to server
     try {
       fetch('/api/save-job-alert', {
         method: 'POST',
@@ -3314,11 +3336,13 @@ const VUO_ADMIN = {
       }).catch(() => {});
     } catch(err) {}
 
+    // Update in-memory VUO_JOB_ALERT.jobs
     if (typeof VUO_JOB_ALERT !== 'undefined') {
       if (!Array.isArray(VUO_JOB_ALERT.jobs)) VUO_JOB_ALERT.jobs = [];
+      VUO_JOB_ALERT.jobs = VUO_JOB_ALERT.jobs.filter(j => j.applyUrl !== applyUrl && j.id !== slugId);
       VUO_JOB_ALERT.jobs.unshift(newJob);
-      VUO_JOB_ALERT.renderStats();
-      VUO_JOB_ALERT.renderJobs();
+      if (typeof VUO_JOB_ALERT.renderStats === 'function') VUO_JOB_ALERT.renderStats();
+      if (typeof VUO_JOB_ALERT.renderJobs === 'function') VUO_JOB_ALERT.renderJobs();
     }
 
     const form = document.getElementById('adminAddJobAlertForm');
@@ -3387,12 +3411,12 @@ const VUO_ADMIN = {
 
     const title = (document.getElementById('adminEditJobTitle')?.value || '').trim();
     const category = document.getElementById('adminEditJobCategory')?.value || 'Odisha Govt';
-    const org = (document.getElementById('adminEditJobOrg')?.value || '').trim();
+    const org = (document.getElementById('adminEditJobOrg')?.value || '').trim() || 'Government Department';
     const post = (document.getElementById('adminEditJobPost')?.value || '').trim() || title;
     const vacancies = (document.getElementById('adminEditJobVacancies')?.value || '').trim() || 'Various Posts';
-    const salary = (document.getElementById('adminEditJobSalary')?.value || '').trim();
-    const qual = (document.getElementById('adminEditJobQual')?.value || '').trim();
-    const startDate = (document.getElementById('adminEditJobStartDate')?.value || '').trim();
+    const salary = (document.getElementById('adminEditJobSalary')?.value || '').trim() || 'Govt Pay Scale';
+    const qual = (document.getElementById('adminEditJobQual')?.value || '').trim() || 'Prescribed Qualification';
+    const startDate = (document.getElementById('adminEditJobStartDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
     const lastDate = (document.getElementById('adminEditJobLastDate')?.value || '').trim();
     const applyUrl = (document.getElementById('adminEditJobApplyUrl')?.value || '').trim();
     const notifUrl = (document.getElementById('adminEditJobNotifUrl')?.value || '').trim() || applyUrl;
@@ -3404,12 +3428,26 @@ const VUO_ADMIN = {
       return;
     }
 
-    const docs = docsRaw ? docsRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    const docs = docsRaw ? docsRaw.split('
+').map(s => s.trim()).filter(Boolean) : [
+      "10th Class Board Certificate & Marksheet",
+      "+2 / Degree Marksheet & Passing Certificate",
+      "Aadhaar Card (Mobile Linked for OTP)",
+      "Recent Passport Size Color Photo",
+      "Candidate Signature",
+      "Resident / Domicile Certificate"
+    ];
 
-    const updatedJob = {
+    // 1. Locate existing job object to preserve any extra properties
+    let existing = null;
+    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
+      existing = VUO_JOB_ALERT.jobs.find(j => j.id === id);
+    }
+
+    const updatedJob = Object.assign({}, existing || {}, {
       id: id,
       title: title,
-      titleOdia: title,
+      titleOdia: existing?.titleOdia || title,
       organization: org,
       post: post,
       vacancies: vacancies,
@@ -3421,18 +3459,34 @@ const VUO_ADMIN = {
       status: status,
       applyUrl: applyUrl,
       notificationUrl: notifUrl,
-      officialUrl: applyUrl,
+      officialUrl: existing?.officialUrl || applyUrl,
       source: 'Admin Modified',
       documents: docs,
       featured: true,
       syncedAt: Date.now()
-    };
+    });
 
-    // Update in VUO_JOB_ALERT
-    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
-      const idx = VUO_JOB_ALERT.jobs.findIndex(j => j.id === id);
+    // 2. Clear any accidental deletion mark for this ID or URL
+    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.unmarkJobAsDeleted === 'function') {
+      VUO_JOB_ALERT.unmarkJobAsDeleted(id, applyUrl);
+    }
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      if (raw) {
+        let delList = JSON.parse(raw);
+        if (Array.isArray(delList)) {
+          delList = delList.filter(item => item !== id && item !== applyUrl);
+          localStorage.setItem('vuo_deleted_job_ids', JSON.stringify(delList));
+        }
+      }
+    } catch (e) {}
+
+    // 3. Update in VUO_JOB_ALERT.jobs
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (!Array.isArray(VUO_JOB_ALERT.jobs)) VUO_JOB_ALERT.jobs = [];
+      const idx = VUO_JOB_ALERT.jobs.findIndex(j => j.id === id || (j.applyUrl && j.applyUrl === applyUrl));
       if (idx !== -1) {
-        VUO_JOB_ALERT.jobs[idx] = Object.assign({}, VUO_JOB_ALERT.jobs[idx], updatedJob);
+        VUO_JOB_ALERT.jobs[idx] = updatedJob;
       } else {
         VUO_JOB_ALERT.jobs.unshift(updatedJob);
       }
@@ -3440,19 +3494,19 @@ const VUO_ADMIN = {
       if (typeof VUO_JOB_ALERT.renderJobs === 'function') VUO_JOB_ALERT.renderJobs();
     }
 
-    // Update in localStorage
+    // 4. Update in localStorage vuo_custom_job_alerts
     try {
       let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
-      const cIdx = custom.findIndex(j => j.id === id);
+      const cIdx = custom.findIndex(j => j.id === id || (j.applyUrl && j.applyUrl === applyUrl));
       if (cIdx !== -1) {
-        custom[cIdx] = Object.assign({}, custom[cIdx], updatedJob);
+        custom[cIdx] = updatedJob;
       } else {
         custom.unshift(updatedJob);
       }
       localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
     } catch (err) {}
 
-    // Send to backend
+    // 5. Send to backend server to update job_alerts.json
     try {
       fetch('/api/save-job-alert', {
         method: 'POST',
@@ -3461,10 +3515,17 @@ const VUO_ADMIN = {
       }).catch(() => {});
     } catch (err) {}
 
+    // 6. Sync to Firebase if available
+    if (typeof VUO_FIREBASE !== 'undefined' && typeof VUO_FIREBASE.saveDocument === 'function') {
+      try {
+        VUO_FIREBASE.saveDocument('job_alerts', id, updatedJob);
+      } catch (e) {}
+    }
+
     this.closeEditJobModal();
     this.renderJobAlertsAdmin();
     if (typeof showToast === 'function') {
-      showToast("✅ ଚାକିରୀ ତଥ୍ୟ ସଫଳତାର ସହିତ ଅପଡେଟ୍ ହେଲା (Job Updated)!", "success");
+      showToast("✅ ଚାକିରୀ ତଥ୍ୟ ସଫଳତାର ସହିତ ଅପଡେଟ୍ ହେଲା (Job Successfully Saved)!", "success");
     }
   },
 
