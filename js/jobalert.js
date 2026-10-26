@@ -343,6 +343,27 @@ const VUO_JOB_ALERT = {
       .replace(/'/g, '&#39;');
   },
 
+  getDeletedJobIds() {
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  },
+
+  isJobDeleted(job) {
+    if (!job) return false;
+    const deleted = this.getDeletedJobIds();
+    if (!deleted || deleted.size === 0) return false;
+    if (typeof job === 'string') return deleted.has(job);
+    const id = job.id || '';
+    const url = (job.applyUrl || job.sourceUrl || '').trim();
+    const title = (job.title || '').trim().toLowerCase();
+    return deleted.has(id) || (url && deleted.has(url)) || (title && deleted.has(title));
+  },
+
   init() {
     this.loadJobs();
     if (!this._initialized) {
@@ -355,16 +376,16 @@ const VUO_JOB_ALERT = {
   },
 
   loadJobs() {
-    let list = [...this.defaultJobs];
+    let list = this.defaultJobs.filter(dj => !this.isJobDeleted(dj));
     try {
       const localCustom = localStorage.getItem('vuo_custom_job_alerts');
       if (localCustom) {
         const parsed = JSON.parse(localCustom);
         if (Array.isArray(parsed)) {
-          // Prepend custom user-added jobs
+          // Prepend custom user-added jobs (excluding deleted ones)
           const existingIds = new Set(list.map(j => j.id));
           parsed.forEach(pj => {
-            if (!existingIds.has(pj.id)) {
+            if (!this.isJobDeleted(pj) && !existingIds.has(pj.id)) {
               list.unshift(pj);
               existingIds.add(pj.id);
             }
@@ -374,7 +395,7 @@ const VUO_JOB_ALERT = {
     } catch (e) {
       console.warn('[JobAlert] Error loading local custom jobs:', e);
     }
-    this.jobs = list;
+    this.jobs = list.filter(j => !this.isJobDeleted(j));
   },
 
   async fetchLiveServerJobs(force = false) {
@@ -387,36 +408,59 @@ const VUO_JOB_ALERT = {
     }
 
     try {
+      let rawJobs = [];
+      // 1. Try dynamic backend API endpoint first
       const endpoint = force ? '/api/sync-job-alerts' : '/api/job-alerts';
-      const res = await fetch(endpoint, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
-          const map = new Map();
-          // Keep server scraped jobs
-          data.jobs.forEach(j => map.set(j.id, j));
-          // Merge custom & default
-          this.defaultJobs.forEach(dj => {
-            if (!map.has(dj.id)) map.set(dj.id, dj);
-          });
-          // Local custom jobs
-          try {
-            const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
-            localCustom.forEach(lj => map.set(lj.id, lj));
-          } catch(e) {}
-
-          this.jobs = Array.from(map.values());
-          this.renderStats();
-          this.renderJobs();
-
-          if (force && typeof showToast === 'function') {
-            const addedMsg = data.newAdded ? ` (${data.newAdded} New Jobs Added!)` : '';
-            showToast(`✅ Successfully synced ${data.count} Live Govt Jobs!${addedMsg}`, 'success');
+      try {
+        const res = await fetch(endpoint, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
+            rawJobs = data.jobs;
           }
+        }
+      } catch (errApi) {}
+
+      // 2. If API was 404 or failed (e.g. static hosting on Render/GitHub Pages), fallback to static job_alerts.json
+      if (rawJobs.length === 0) {
+        try {
+          const resStatic = await fetch('/job_alerts.json', { cache: 'no-store' });
+          if (resStatic.ok) {
+            const dataStatic = await resStatic.json();
+            if (Array.isArray(dataStatic) && dataStatic.length > 0) {
+              rawJobs = dataStatic;
+            }
+          }
+        } catch (errStatic) {}
+      }
+
+      if (rawJobs.length > 0 || this.defaultJobs.length > 0) {
+        const map = new Map();
+        // Keep server / scraped jobs (strictly excluding deleted ones)
+        rawJobs.forEach(j => {
+          if (!this.isJobDeleted(j)) map.set(j.id, j);
+        });
+        // Merge custom & default (strictly excluding deleted ones)
+        this.defaultJobs.forEach(dj => {
+          if (!this.isJobDeleted(dj) && !map.has(dj.id)) map.set(dj.id, dj);
+        });
+        // Local custom jobs
+        try {
+          const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+          localCustom.forEach(lj => {
+            if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
+          });
+        } catch(e) {}
+
+        this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+        this.renderStats();
+        this.renderJobs();
+
+        if (force && typeof showToast === 'function') {
+          showToast(`✅ Successfully synced ${this.jobs.length} Live Govt Jobs!`, 'success');
         }
       }
     } catch (e) {
-      // Offline fallback: jobs already loaded from defaultJobs
       console.log('[JobAlert] Running in offline / static hosting mode:', e.message);
     } finally {
       this._isSyncing = false;
@@ -483,7 +527,8 @@ const VUO_JOB_ALERT = {
   },
 
   getAllJobs() {
-    return (this.jobs && this.jobs.length > 0) ? this.jobs : this.defaultJobs;
+    const all = (this.jobs && this.jobs.length > 0) ? this.jobs : this.defaultJobs;
+    return all.filter(j => !this.isJobDeleted(j));
   },
 
   setCategory(cat) {
@@ -541,6 +586,9 @@ const VUO_JOB_ALERT = {
     const emptyState = document.getElementById('jobAlertsEmpty');
     const countBadge = document.getElementById('jobAlertsCountBadge');
     if (!container) return;
+
+    // Strictly filter out any deleted jobs
+    this.jobs = (this.jobs || []).filter(j => !this.isJobDeleted(j));
 
     let filtered = this.jobs.filter(job => {
       // Category filter

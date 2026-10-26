@@ -889,14 +889,21 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
             if self.path.startswith('/api/delete-job-alert'):
                 try:
                     payload = json.loads(body.decode('utf-8'))
-                    del_id = payload.get('id')
-                    if del_id:
+                    del_id = payload.get('id', '')
+                    del_url = payload.get('applyUrl', '')
+                    del_title = (payload.get('title') or '').strip().lower()
+                    if del_id or del_url or del_title:
                         cache_file = os.path.join(DIRECTORY, "job_alerts.json")
                         jobs = []
                         if os.path.exists(cache_file):
                             with open(cache_file, 'r', encoding='utf-8') as f:
                                 jobs = json.load(f)
-                        jobs = [j for j in jobs if j.get('id') != del_id]
+                        jobs = [
+                            j for j in jobs
+                            if (not del_id or j.get('id') != del_id)
+                            and (not del_url or j.get('applyUrl') != del_url)
+                            and (not del_title or (j.get('title') or '').strip().lower() != del_title)
+                        ]
                         _jobs_cache["jobs"] = jobs
                         _jobs_cache["last_sync"] = time.time()
                         with open(cache_file, 'w', encoding='utf-8') as f:

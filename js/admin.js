@@ -3468,32 +3468,88 @@ const VUO_ADMIN = {
     }
   },
 
-  async deleteJobAlert(jobId) {
+    async deleteJobAlert(jobId) {
     if (!jobId) return;
-    if (!confirm("Are you sure you want to delete this job alert?")) return;
+    if (!confirm("Are you sure you want to delete this job alert? / ଆପଣ ନିଶ୍ଚିତ ଏହି ଚାକିରୀ ବିଜ୍ଞପ୍ତି ଡିଲିଟ୍ କରିବାକୁ ଚାହାଁନ୍ତି?")) return;
 
+    // 1. Locate target job object to obtain ID, URL and Title
+    let targetJob = null;
+    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
+      targetJob = VUO_JOB_ALERT.jobs.find(j => j.id === jobId);
+    }
+    if (!targetJob) {
+      try {
+        const custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+        targetJob = custom.find(j => j.id === jobId);
+      } catch (e) {}
+    }
+    if (!targetJob && typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.defaultJobs)) {
+      targetJob = VUO_JOB_ALERT.defaultJobs.find(j => j.id === jobId);
+    }
+
+    // 2. Permanently record deletion in vuo_deleted_job_ids (ID, URL, and normalized Title)
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      let delList = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(delList)) delList = [];
+      if (jobId && !delList.includes(jobId)) delList.push(jobId);
+      if (targetJob) {
+        if (targetJob.id && !delList.includes(targetJob.id)) delList.push(targetJob.id);
+        if (targetJob.applyUrl && !delList.includes(targetJob.applyUrl)) delList.push(targetJob.applyUrl);
+        if (targetJob.title && !delList.includes(targetJob.title.toLowerCase().trim())) {
+          delList.push(targetJob.title.toLowerCase().trim());
+        }
+      }
+      localStorage.setItem('vuo_deleted_job_ids', JSON.stringify(delList));
+    } catch (e) {}
+
+    // 3. Remove from custom jobs in localStorage
     try {
       let custom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
-      custom = custom.filter(j => j.id !== jobId);
+      custom = custom.filter(j => j.id !== jobId && (!targetJob || j.applyUrl !== targetJob.applyUrl));
       localStorage.setItem('vuo_custom_job_alerts', JSON.stringify(custom));
     } catch(e) {}
 
-    try {
-      await fetch('/api/delete-job-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: jobId })
-      });
-    } catch(e) {}
+    // 4. Remove from defaultJobs in memory
+    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.defaultJobs)) {
+      VUO_JOB_ALERT.defaultJobs = VUO_JOB_ALERT.defaultJobs.filter(j => j.id !== jobId && (!targetJob || j.applyUrl !== targetJob.applyUrl));
+    }
 
-    if (typeof VUO_JOB_ALERT !== 'undefined' && Array.isArray(VUO_JOB_ALERT.jobs)) {
-      VUO_JOB_ALERT.jobs = VUO_JOB_ALERT.jobs.filter(j => j.id !== jobId);
+    // 5. Remove from in-memory jobs and re-render dashboard & desk immediately
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (Array.isArray(VUO_JOB_ALERT.jobs)) {
+        VUO_JOB_ALERT.jobs = VUO_JOB_ALERT.jobs.filter(j => j.id !== jobId && (!targetJob || j.applyUrl !== targetJob.applyUrl));
+      }
       if (typeof VUO_JOB_ALERT.renderStats === 'function') VUO_JOB_ALERT.renderStats();
       if (typeof VUO_JOB_ALERT.renderJobs === 'function') VUO_JOB_ALERT.renderJobs();
     }
 
+    // 6. Delete from server backend if running
+    try {
+      await fetch('/api/delete-job-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: jobId,
+          applyUrl: targetJob ? targetJob.applyUrl : '',
+          title: targetJob ? targetJob.title : ''
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
+    // 7. Delete from Firebase Firestore if configured
+    if (typeof VUO_FIREBASE !== 'undefined' && typeof VUO_FIREBASE.deleteDocument === 'function') {
+      try {
+        VUO_FIREBASE.deleteDocument('job_alerts', jobId);
+      } catch (e) {}
+    }
+
+    // 8. Re-render admin job management table
     this.renderJobAlertsAdmin();
-    if (typeof showToast === 'function') showToast("Job alert deleted.", "info");
+
+    if (typeof showToast === 'function') {
+      showToast("✅ ଚାକିରୀ ବିଜ୍ଞପ୍ତି ସଫଳତାର ସହିତ ଡିଲିଟ୍ ହେଲା (Job alert permanently deleted)!", "success");
+    }
   },
 
   filterJobAlertsTable() {
