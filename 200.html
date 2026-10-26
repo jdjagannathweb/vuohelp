@@ -4331,20 +4331,55 @@ body {
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-          <label for="waFileInput" class="px-4 py-2.5 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 transform hover:scale-105 cursor-pointer select-none">
-            <i class="fa-solid fa-cloud-arrow-up text-white text-sm"></i>
-            <span>📁 Upload WhatsApp Photo</span>
-          </label>
-          <input type="file" id="waFileInput" accept="image/*" class="hidden" />
+          <!-- Mode Toggle: Single Doc vs Aadhaar Front & Back -->
+          <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-2xl border border-emerald-500/30">
+            <button type="button" id="waModeSingleBtn" onclick="VUO_WHATSAPP_RESIZER.setUploadMode('single')" class="px-3 py-1.5 text-xs font-black rounded-xl bg-emerald-500 text-slate-950 shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-file"></i>
+              <span>Single Document</span>
+            </button>
+            <button type="button" id="waModeDualBtn" onclick="VUO_WHATSAPP_RESIZER.setUploadMode('dual')" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-transparent text-slate-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-id-card"></i>
+              <span>🪪 Aadhaar Front &amp; Back (2 Images)</span>
+            </button>
+          </div>
 
-          <button type="button" onclick="VUO_WHATSAPP_RESIZER.resetCorners()" class="px-3.5 py-2.5 text-xs font-bold rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <!-- Single Mode Upload Button -->
+          <div id="waSingleUploadWrapper">
+            <label for="waFileInput" class="px-4 py-2 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 transform hover:scale-105 cursor-pointer select-none">
+              <i class="fa-solid fa-cloud-arrow-up text-white text-sm"></i>
+              <span>📁 Upload WhatsApp Photo</span>
+            </label>
+            <input type="file" id="waFileInput" accept="image/*" class="hidden" />
+          </div>
+
+          <!-- Dual Mode Upload Buttons (Front & Back) -->
+          <div id="waDualUploadWrapper" class="hidden flex items-center gap-2">
+            <label for="waFileInputFront" class="px-3.5 py-2 text-xs font-black rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>1️⃣ Front Side (ଆଗ)</span>
+            </label>
+            <input type="file" id="waFileInputFront" accept="image/*" class="hidden" />
+
+            <label for="waFileInputBack" class="px-3.5 py-2 text-xs font-black rounded-xl bg-teal-600 hover:bg-teal-500 text-white shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>2️⃣ Back Side (ପଛ)</span>
+            </label>
+            <input type="file" id="waFileInputBack" accept="image/*" class="hidden" />
+          </div>
+
+          <button type="button" onclick="VUO_WHATSAPP_RESIZER.resetCorners()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
             <i class="fa-solid fa-arrows-rotate text-emerald-400"></i>
-            <span>🔄 Reset Corners</span>
+            <span>Reset Pins</span>
           </button>
 
-          <button type="button" onclick="VUO_WHATSAPP_RESIZER.loadSampleWhatsAppDoc()" class="px-3.5 py-2.5 text-xs font-bold rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onclick="VUO_WHATSAPP_RESIZER.loadSampleWhatsAppDoc()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
-            <span>⚡ Try Sample Skewed Doc</span>
+            <span>Sample Doc</span>
+          </button>
+
+          <button type="button" onclick="VUO_WHATSAPP_RESIZER.loadSampleAadhaarDualDoc()" class="px-3 py-2 text-xs font-bold rounded-xl bg-emerald-950 hover:bg-slate-800 text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-id-card text-emerald-400"></i>
+            <span>Sample Aadhaar (2 Sides)</span>
           </button>
         </div>
       </div>
@@ -4387,6 +4422,18 @@ body {
                   <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('id_card')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="id_card">ID Card</button>
                   <button type="button" onclick="VUO_WHATSAPP_RESIZER.setAspectRatio('free')" class="wa-ratio-btn px-2 py-0.5 text-[10.5px] font-bold rounded-lg bg-slate-100 text-slate-700 transition" data-ratio="free">Free</button>
                 </div>
+              </div>
+
+              <!-- Dual Mode Side Switcher Tabs (Front vs Back) -->
+              <div id="waSideSwitchTabs" class="hidden flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                <button type="button" id="waSideEditFrontBtn" onclick="VUO_WHATSAPP_RESIZER.setActiveEditSide('front')" class="flex-1 py-1.5 text-xs font-black rounded-lg bg-emerald-600 text-white shadow-xs transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-id-card"></i>
+                  <span>1️⃣ Edit Front Side (ଆଗ ପଟ)</span>
+                </button>
+                <button type="button" id="waSideEditBackBtn" onclick="VUO_WHATSAPP_RESIZER.setActiveEditSide('back')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-transparent text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-id-badge"></i>
+                  <span>2️⃣ Edit Back Side (ପଛ ପଟ)</span>
+                </button>
               </div>
 
               <!-- Corner Pinning Canvas Container -->
@@ -4467,8 +4514,8 @@ body {
                 </button>
               </div>
 
-              <!-- Sliders Panel -->
-              <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
+              <!-- Sliders Panel with Paper Whiteness, Shadow Wash & Black Text Boost -->
+              <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3 text-xs">
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
@@ -4479,24 +4526,31 @@ body {
                   </div>
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Brightness (ଉଜ୍ଜ୍ୱଳତା):</span>
+                      <span>Brightness / Shadow Wash (ଉଜ୍ଜ୍ୱଳତା):</span>
                       <span id="waBrightnessSliderVal" class="text-emerald-700 font-mono">10</span>
                     </div>
-                    <input type="range" id="waBrightnessSlider" min="-50" max="50" value="10" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                    <input type="range" id="waBrightnessSlider" min="-50" max="60" value="10" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
                   </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-3 gap-2.5">
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Text Contrast (ଟେକ୍ସଟ୍ ଗାଢ଼):</span>
+                      <span>Black Text Boost (ଅକ୍ଷର କଳା):</span>
+                      <span id="waBlackBoostSliderVal" class="text-emerald-700 font-mono">60</span>
+                    </div>
+                    <input type="range" id="waBlackBoostSlider" min="0" max="100" value="60" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
+                      <span>Text Contrast (ଗାଢ଼):</span>
                       <span id="waContrastSliderVal" class="text-emerald-700 font-mono">35</span>
                     </div>
                     <input type="range" id="waContrastSlider" min="-50" max="50" value="35" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
                   </div>
                   <div>
                     <div class="flex justify-between font-bold text-slate-700 mb-0.5 text-[11px]">
-                      <span>Text Clarity/Sharpness (ଧାରୁଆ):</span>
+                      <span>Sharpness (ଧାରୁଆ):</span>
                       <span id="waSharpnessSliderVal" class="text-emerald-700 font-mono">40</span>
                     </div>
                     <input type="range" id="waSharpnessSlider" min="0" max="100" value="40" class="w-full accent-emerald-600 cursor-pointer h-1.5" />
@@ -7265,7 +7319,7 @@ body {
           <i class="fa-solid fa-cloud text-amber-600"></i> Cloud Sync &amp; Free Storage
         </button>
         <button type="button" onclick="VUO_ADMIN.switchTab('jobalerts')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="jobalerts">
-          <i class="fa-solid fa-briefcase text-amber-600"></i> Job Alerts &amp; 5 Sync Portals (<span id="adminTotalJobsCount">0</span>)
+          <i class="fa-solid fa-briefcase text-amber-600"></i> Sarkari Job Alerts &amp; Links (<span id="adminTotalJobsCount">0</span>)
         </button>
       </div>
 
@@ -8597,134 +8651,43 @@ body {
           </div>
         </div>
 
-        <!-- SECTION 1: 5 Configurable Website Sources for Auto-Sync -->
+        <!-- SECTION 1: Add Jobs by Direct Link(s) (Single or Bulk Link Ingestion) -->
         <div class="bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30 p-5 rounded-2xl border border-amber-200 space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-200/60">
             <div>
               <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-globe text-amber-600"></i>
-                <span>5 Auto-Sync Website Portals Configuration</span>
+                <i class="fa-solid fa-link text-amber-600"></i>
+                <span>Add Job by Direct Link(s) / ସରକାରୀ ଚାକିରୀ ଲିଙ୍କ ଯୋଡ଼ନ୍ତୁ (Bulk &amp; Single)</span>
               </h4>
               <p class="text-[11px] text-slate-600 mt-0.5">
-                Yahan 5 website links configure karein. Save &amp; Auto-sync karne par in sabhi links se latest recruitment table automatic scrape hokar Job Alert Desk me add ho jayegi.
+                Yahan recruitment articles ke direct link paste karein (1 link ya multiple links, har line me ek link). Link add hote hi job title, organization, vacancies, last date aur documents automatic extract hokar list me add ho jayegi.
               </p>
             </div>
-            <span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
-              5 Slots Configurable
+            <span class="text-[11px] font-bold text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-lg border border-amber-300">
+              ⚡ Multi-Link Auto Extraction
             </span>
           </div>
 
           <div class="space-y-3">
-            <!-- Source 1 -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <div class="md:col-span-1 flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">1</span>
-                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 1:</span>
-              </div>
-              <div class="md:col-span-3">
-                <input type="text" id="adminJobSource1Name" placeholder="Portal Name (e.g. Odisha Govt)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
-              </div>
-              <div class="md:col-span-6">
-                <input type="url" id="adminJobSource1Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
-              </div>
-              <div class="md:col-span-2 flex items-center justify-end gap-2">
-                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="adminJobSource1Active" checked class="w-4 h-4 text-amber-600 rounded" />
-                  <span>Active</span>
-                </label>
-              </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-xs">
+                Paste Recruitment Job Links (ପ୍ରତି ଲାଇନ୍ ରେ ଗୋଟିଏ ଚାକିରୀ ଲିଙ୍କ ପେଷ୍ଟ କରନ୍ତୁ):
+              </label>
+              <textarea id="adminJobBulkUrlsInput" rows="3" placeholder="https://www.freejobalert.com/articles/odisha-police-constable-recruitment-2026-3075546&#10;https://www.freejobalert.com/articles/..." class="w-full p-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-xs"></textarea>
             </div>
 
-            <!-- Source 2 -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <div class="md:col-span-1 flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">2</span>
-                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 2:</span>
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" id="adminAddJobLinksBtn" onclick="VUO_ADMIN.handleAddJobLinks()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
+                  <i class="fa-solid fa-bolt text-slate-950"></i>
+                  <span>⚡ Extract &amp; Add Jobs from Link(s)</span>
+                </button>
+                <button type="button" onclick="VUO_ADMIN.pasteSampleJobLink()" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-all">
+                  Paste Odisha Police Link Example
+                </button>
               </div>
-              <div class="md:col-span-3">
-                <input type="text" id="adminJobSource2Name" placeholder="Portal Name (e.g. Railway RRB)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
-              </div>
-              <div class="md:col-span-6">
-                <input type="url" id="adminJobSource2Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
-              </div>
-              <div class="md:col-span-2 flex items-center justify-end gap-2">
-                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="adminJobSource2Active" checked class="w-4 h-4 text-amber-600 rounded" />
-                  <span>Active</span>
-                </label>
-              </div>
+              <span class="text-[11px] text-slate-500 font-medium">FreeJobAlert, Govt Portals, OSSC, OSSSC, Police &amp; all direct links supported</span>
             </div>
-
-            <!-- Source 3 -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <div class="md:col-span-1 flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">3</span>
-                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 3:</span>
-              </div>
-              <div class="md:col-span-3">
-                <input type="text" id="adminJobSource3Name" placeholder="Portal Name (e.g. SSC & Central)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
-              </div>
-              <div class="md:col-span-6">
-                <input type="url" id="adminJobSource3Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
-              </div>
-              <div class="md:col-span-2 flex items-center justify-end gap-2">
-                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="adminJobSource3Active" checked class="w-4 h-4 text-amber-600 rounded" />
-                  <span>Active</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Source 4 -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <div class="md:col-span-1 flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">4</span>
-                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 4:</span>
-              </div>
-              <div class="md:col-span-3">
-                <input type="text" id="adminJobSource4Name" placeholder="Portal Name (e.g. Banking & IBPS)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
-              </div>
-              <div class="md:col-span-6">
-                <input type="url" id="adminJobSource4Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
-              </div>
-              <div class="md:col-span-2 flex items-center justify-end gap-2">
-                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="adminJobSource4Active" checked class="w-4 h-4 text-amber-600 rounded" />
-                  <span>Active</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Source 5 -->
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <div class="md:col-span-1 flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">5</span>
-                <span class="text-xs font-bold text-slate-700 md:hidden">Portal 5:</span>
-              </div>
-              <div class="md:col-span-3">
-                <input type="text" id="adminJobSource5Name" placeholder="Portal Name (e.g. Police & Defense)" class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-bold" />
-              </div>
-              <div class="md:col-span-6">
-                <input type="url" id="adminJobSource5Url" placeholder="https://..." class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 font-mono text-[11px]" />
-              </div>
-              <div class="md:col-span-2 flex items-center justify-end gap-2">
-                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                  <input type="checkbox" id="adminJobSource5Active" checked class="w-4 h-4 text-amber-600 rounded" />
-                  <span>Active</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Save Sources Button -->
-          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <button type="button" onclick="VUO_ADMIN.saveJobSources()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
-              <i class="fa-solid fa-floppy-disk text-slate-950"></i>
-              <span>Save 5 Website Portals &amp; Run Auto-Sync</span>
-            </button>
-            <button type="button" onclick="VUO_ADMIN.resetDefaultJobSources()" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-all">
-              Reset 5 Default Portals
-            </button>
           </div>
         </div>
 
@@ -8845,6 +8808,114 @@ body {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Edit Job Modal (Sarkari Job Alert Details Modifier) -->
+        <div id="adminEditJobModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4 my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900">Edit Job Alert / ଚାକିରୀ ତଥ୍ୟ ସଂଶୋଧନ କରନ୍ତୁ</h3>
+                  <p class="text-[11px] text-slate-500">Update recruitment details, vacancies, last date, and links</p>
+                </div>
+              </div>
+              <button type="button" onclick="VUO_ADMIN.closeEditJobModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form id="adminEditJobForm" onsubmit="VUO_ADMIN.saveEditedJob(event)" class="space-y-3 text-xs">
+              <input type="hidden" id="adminEditJobId" />
+              
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div class="sm:col-span-8">
+                  <label class="block font-bold text-slate-700 mb-1">Job Title *</label>
+                  <input type="text" id="adminEditJobTitle" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:bg-white focus:ring-2 focus:ring-amber-500" />
+                </div>
+                <div class="sm:col-span-4">
+                  <label class="block font-bold text-slate-700 mb-1">Category *</label>
+                  <select id="adminEditJobCategory" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:bg-white">
+                    <option value="Odisha Govt">Odisha Govt</option>
+                    <option value="Central Govt">Central Govt</option>
+                    <option value="Railway">Railway</option>
+                    <option value="Banking">Banking</option>
+                    <option value="Defense & Police">Defense & Police</option>
+                    <option value="10th & 12th Pass">10th & 12th Pass</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Organization / Board</label>
+                  <input type="text" id="adminEditJobOrg" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Post Name</label>
+                  <input type="text" id="adminEditJobPost" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Total Vacancies</label>
+                  <input type="text" id="adminEditJobVacancies" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white font-bold" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Salary / Pay Scale</label>
+                  <input type="text" id="adminEditJobSalary" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white font-bold text-emerald-700" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Last Date (End Date) *</label>
+                  <input type="text" id="adminEditJobLastDate" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white font-bold text-rose-700" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Qualification</label>
+                  <input type="text" id="adminEditJobQual" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Status</label>
+                  <select id="adminEditJobStatus" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold focus:bg-white">
+                    <option value="Active">Active</option>
+                    <option value="Expired">Expired</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Apply URL *</label>
+                  <input type="url" id="adminEditJobApplyUrl" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] focus:bg-white" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Notification URL</label>
+                  <input type="url" id="adminEditJobNotifUrl" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] focus:bg-white" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Documents Checklist (One per line)</label>
+                <textarea id="adminEditJobDocs" rows="3" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"></textarea>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="VUO_ADMIN.closeEditJobModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-md cursor-pointer flex items-center gap-1.5">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
