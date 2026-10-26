@@ -3159,7 +3159,7 @@ const VUO_ADMIN = {
     if (typeof showToast === 'function') showToast("✅ All job listings refreshed!", "success");
   },
 
-  async   async handleAddJobLinks() {
+  async handleAddJobLinks() {
     const input = document.getElementById('adminJobBulkUrlsInput');
     const raw = input ? input.value.trim() : '';
     if (!raw) {
@@ -3167,9 +3167,8 @@ const VUO_ADMIN = {
       return;
     }
 
-    const lines = raw.split(/[
+    const lines = raw.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean);
 
-,]+/).map(s => s.trim()).filter(Boolean);
     const validUrls = lines.filter(s => s.includes('.') && !s.startsWith('#'));
 
     if (validUrls.length === 0) {
