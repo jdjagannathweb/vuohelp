@@ -6706,7 +6706,7 @@ body {
           <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
           <span>📢 LIVE GOVERNMENT JOB ALERTS &amp; SARKARI RECRUITMENT</span>
           <span class="text-amber-400">|</span>
-          <span class="text-amber-700 font-extrabold text-[11px]">Live Auto-Sync Desk</span>
+          <span class="text-amber-700 font-extrabold text-[11px]">Live Sarkari Recruitment Desk</span>
         </div>
 
         <h1 class="text-2xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight">
@@ -6720,7 +6720,7 @@ body {
         <div class="flex flex-wrap items-center justify-center gap-2.5 pt-2">
           <button id="jobAlertSyncBtn" onclick="VUO_JOB_ALERT.fetchLiveServerJobs(true)" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer">
             <i class="fa-solid fa-arrows-rotate text-slate-950"></i>
-            <span id="jobAlertSyncBtnText">Auto-Sync Latest Jobs</span>
+            <span id="jobAlertSyncBtnText">⚡ Refresh Latest Jobs</span>
           </button>
         </div>
       </div>
@@ -8627,23 +8627,23 @@ body {
       <!-- 12. Job Alerts & 5 Auto-Sync Portals Pane -->
       <div id="admin_pane_jobalerts" class="admin-tab-pane hidden mt-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-8">
         
-        <!-- Header with Live Sync Status & Actions -->
+        <!-- Header with Live Status & Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold mb-1">
-              <i class="fa-solid fa-briefcase"></i> Sarkari Job Alert Control &amp; Auto-Sync
+              <i class="fa-solid fa-briefcase"></i> Sarkari Job Alerts Management &amp; Link Extraction
             </div>
             <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
-              <span>Government Job Alerts &amp; 5 Auto-Sync Portals</span>
+              <span>Government Job Alerts (Link Auto-Extraction &amp; Database)</span>
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">
-              Configure 5 recruitment website portals for automatic auto-sync, add custom job notifications with salary &amp; document checklists, and manage active listings.
+              Recruitment link se automatically Job Title, Category, Vacancies, Salary, Qualification, Dates aur Required Documents checklist auto-fill karein aur active listings ko edit/delete karein.
             </p>
           </div>
           <div class="flex items-center gap-2">
-            <button type="button" id="adminJobAlertsSyncAllBtn" onclick="VUO_ADMIN.syncAllJobSourcesNow()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
+            <button type="button" onclick="VUO_ADMIN.refreshJobsTable()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all">
               <i class="fa-solid fa-arrows-rotate text-slate-950"></i>
-              <span id="adminJobAlertsSyncAllBtnText">⚡ Sync All 5 Sources Now</span>
+              <span>⚡ Refresh Job Listings</span>
             </button>
             <a href="#jobalert" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm">
               <i class="fa-solid fa-arrow-up-right-from-square text-amber-400"></i> View Public Page
@@ -8691,16 +8691,53 @@ body {
           </div>
         </div>
 
-        <!-- SECTION 2: Add New Job Alert Form (Moved to Admin Portal) -->
+        <!-- SECTION 2: Add New Job Alert Form (Auto-Fill from Link or Manual) -->
         <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
           <div class="pb-3 border-b border-slate-200">
             <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
               <i class="fa-solid fa-plus-circle text-emerald-600"></i>
-              <span>+ Add New Government Job Alert Manually</span>
+              <span>+ Add Government Job Alert (Auto-Fill from Link / ସରକାରୀ ଚାକିରୀ ଯୋଡନ୍ତୁ)</span>
             </h4>
             <p class="text-[11px] text-slate-600 mt-0.5">
-              Custom job alert create karein jisme salary, apply last date, direct apply link aur document checklist customer ke liye ready rahegi.
+              Neeche link paste karke 1-click me saari details auto-fill karein ya manually details enter karke publish karein.
             </p>
+          </div>
+
+          <!-- ⚡ AUTO-FILL ALL 9 FIELDS FROM RECRUITMENT LINK ⚡ -->
+          <div class="p-4 bg-gradient-to-r from-amber-100/90 via-orange-50 to-amber-50 rounded-2xl border-2 border-dashed border-amber-400 space-y-2.5 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <label class="block font-black text-slate-900 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-600 text-sm"></i>
+                <span>🔗 Paste Recruitment Link to Auto-Fill All Details (ଲିଙ୍କ ପେଷ୍ଟ କରି ସମସ୍ତ ତଥ୍ୟ ଅଟୋ-ଫିଲ୍ କରନ୍ତୁ):</span>
+              </label>
+              <span class="text-[10.5px] font-extrabold text-amber-900 bg-amber-200/90 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-amber-700"></i> Auto-Fills All 9 Fields
+              </span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-stretch gap-2">
+              <input type="url" id="adminAutoFillJobUrl" placeholder="Paste recruitment link, e.g. https://www.freejobalert.com/articles/odisha-police-constable-recruitment-2026-3075546" class="flex-1 p-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-xs" />
+              <button type="button" onclick="VUO_ADMIN.autoFillJobFormFromLink()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all whitespace-nowrap">
+                <i class="fa-solid fa-bolt"></i>
+                <span>⚡ Auto-Fill All Details</span>
+              </button>
+              <button type="button" onclick="VUO_ADMIN.pasteSampleJobLinkToAutoFill()" class="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-all whitespace-nowrap">
+                Sample Odisha Police
+              </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-[10.5px] text-slate-600 font-medium pt-0.5">
+              <span class="font-bold text-slate-800">Auto-Fills:</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Job Title</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Category</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Total Vacancies</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Salary Scale</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Qualification</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Start Date</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Last Date</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Apply Online URL</span>
+              <span class="px-1.5 py-0.5 bg-white rounded border border-slate-200">✅ Documents Checklist</span>
+            </div>
           </div>
 
           <form id="adminAddJobAlertForm" onsubmit="VUO_ADMIN.handleAdminAddJob(event)" class="space-y-3.5 text-xs">

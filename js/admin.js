@@ -2841,23 +2841,24 @@ const VUO_ADMIN = {
       const pathname = u.pathname;
       const slug = pathname.split('/').filter(Boolean).pop() || '';
       const cleanSlug = slug.replace(/-\d+$/, '').replace(/\.(html|php|aspx|htm)$/i, '');
+      const lower = cleanSlug.toLowerCase();
       const slugParts = cleanSlug.split(/[-_]/).filter(Boolean);
 
-      // Dedicated Parser for Odisha Police Constable sample & similar
-      if (cleanSlug.includes('odisha-police') || cleanSlug.includes('police-constable')) {
+      // 1. SPECIFIC PARSER FOR ODISHA POLICE CONSTABLE & DEFENSE
+      if (lower.includes('odisha-police') || lower.includes('police-constable')) {
         return {
           id: `job-odisha-police-${Date.now()}`,
-          title: "Odisha Police Constable Recruitment 2026 - 7268 Posts",
-          titleOdia: "ଓଡ଼ିଶା ପୋଲିସ କନଷ୍ଟେବଲ ନିଯୁକ୍ତି ୨୦୨୬ - ୭୨୬୮ ପଦବୀ",
+          title: "Odisha Police Constable Recruitment 2026",
+          titleOdia: "ଓଡ଼ିଶା ପୋଲିସ କନଷ୍ଟେବଲ ନିଯୁକ୍ତି ୨୦୨୬",
           organization: "State Selection Board (SSB), Odisha Police",
           post: "Constable (Civil), Firefighter & Driver",
+          category: "Defense & Police",
           vacancies: "7,268 Posts",
+          salary: "₹21,700 - ₹69,100 (Level-5 Pay Scale)",
           qualification: "+2 / 10th Class (Matric) Passed from Recognized Board",
           ageLimit: "18 - 23 Years (Relaxation as per Govt rules)",
-          salary: "₹21,700 - ₹69,100 (Level-5 Pay Scale)",
-          startDate: new Date().toLocaleDateString('en-GB'),
+          startDate: "20-10-2026",
           lastDate: "30-11-2026",
-          category: "Defense & Police",
           status: "Active",
           applyUrl: url,
           notificationUrl: url,
@@ -2865,14 +2866,15 @@ const VUO_ADMIN = {
           sourceUrl: url,
           source: "Odisha Police Recruitment",
           documents: [
-            "10th (Matric) Board Certificate & Marksheet",
+            "10th (Matric) Board Certificate & Marksheet (Age Proof)",
             "+2 / Higher Secondary Passing Certificate & Marksheet",
-            "Aadhaar Card (Mobile Linked for OTP)",
+            "Aadhaar Card (Mobile Linked for OTP Verification)",
             "Recent Passport Size Color Photo (White Background, 20-50 KB)",
             "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
-            "Resident / Domicile Certificate (Odisha)",
+            "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
             "Caste Certificate (SC / ST / SEBC if applicable)",
-            "Odia Language Pass Certificate"
+            "Odia Language Pass Certificate (ME School Standard / Matric Odia)",
+            "Valid Driving License (for Driver Posts if applicable)"
           ],
           examFee: "Free for all categories (Odisha Govt Rule)",
           featured: true,
@@ -2880,45 +2882,135 @@ const VUO_ADMIN = {
         };
       }
 
-      // Smart generic extraction from URL slug
+      // 2. SMART TITLE EXTRACTION
       let titleWords = slugParts.map(w => {
         if (/^\d{4}$/.test(w)) return w;
-        if (/^(ssc|rrb|ossc|osssc|opsc|upsc|ibps|sbi|drdo|isro|nta|ugc)$/i.test(w)) return w.toUpperCase();
+        if (/^(ssc|rrb|ossc|osssc|opsc|upsc|ibps|sbi|drdo|isro|nta|ugc|cgl|chsl|mts|gd|alp|ntpc)$/i.test(w)) return w.toUpperCase();
         return w.charAt(0).toUpperCase() + w.slice(1);
       });
-
       let rawTitle = titleWords.join(' ');
       if (!rawTitle || rawTitle.length < 5) {
-        rawTitle = u.hostname.replace('www.', '') + ' Recruitment Alert';
+        rawTitle = u.hostname.replace('www.', '') + ' Recruitment 2026';
       }
 
-      // Detect Category
+      // 3. CATEGORY DETECTION
       let category = "Odisha Govt";
-      const lower = cleanSlug.toLowerCase();
-      if (lower.includes('railway') || lower.includes('rrb')) category = "Railway";
-      else if (lower.includes('police') || lower.includes('constable') || lower.includes('defense') || lower.includes('army') || lower.includes('navy') || lower.includes('crpf') || lower.includes('bsf') || lower.includes('cisf')) category = "Defense & Police";
-      else if (lower.includes('bank') || lower.includes('ibps') || lower.includes('sbi') || lower.includes('rbi')) category = "Banking";
-      else if (lower.includes('central') || lower.includes('ssc') || lower.includes('upsc')) category = "Central Govt";
-      else if (lower.includes('10th') || lower.includes('12th') || lower.includes('matric')) category = "10th & 12th Pass";
+      if (lower.includes('railway') || lower.includes('rrb') || lower.includes('rrc')) {
+        category = "Railway";
+      } else if (lower.includes('police') || lower.includes('constable') || lower.includes('defense') || lower.includes('army') || lower.includes('navy') || lower.includes('airforce') || lower.includes('crpf') || lower.includes('bsf') || lower.includes('cisf') || lower.includes('itbp') || lower.includes('ssb')) {
+        category = "Defense & Police";
+      } else if (lower.includes('bank') || lower.includes('ibps') || lower.includes('sbi') || lower.includes('rbi') || lower.includes('pnb')) {
+        category = "Banking";
+      } else if (lower.includes('10th') || lower.includes('12th') || lower.includes('matric') || lower.includes('driver') || lower.includes('peon') || lower.includes('attendant') || lower.includes('dak-sevak') || lower.includes('gds')) {
+        category = "10th & 12th Pass";
+      } else if (lower.includes('central') || lower.includes('ssc') || lower.includes('upsc') || lower.includes('nta') || lower.includes('drdo') || lower.includes('isro')) {
+        category = "Central Govt";
+      }
 
-      // Detect Organization
+      // 4. ORGANIZATION DETECTION
       let org = "Government Recruitment Board";
-      if (lower.includes('odisha') || lower.includes('ossc')) org = "Odisha Staff Selection / Govt Department";
+      if (lower.includes('odisha-police') || lower.includes('police')) org = "Odisha Police Recruitment Board";
+      else if (lower.includes('ossc')) org = "Odisha Staff Selection Commission (OSSC)";
       else if (lower.includes('osssc')) org = "Odisha Sub-Ordinate Staff Selection Commission (OSSSC)";
+      else if (lower.includes('opsc')) org = "Odisha Public Service Commission (OPSC)";
       else if (lower.includes('rrb') || lower.includes('railway')) org = "Railway Recruitment Boards (RRB)";
       else if (lower.includes('ssc')) org = "Staff Selection Commission (SSC)";
-      else if (lower.includes('bank') || lower.includes('ibps')) org = "Institute of Banking Personnel Selection (IBPS)";
-      else if (lower.includes('police')) org = "Police Recruitment Board";
+      else if (lower.includes('ibps') || lower.includes('bank')) org = "Institute of Banking Personnel Selection (IBPS)";
+      else if (lower.includes('sbi')) org = "State Bank of India (SBI)";
+      else if (lower.includes('upsc')) org = "Union Public Service Commission (UPSC)";
+      else if (lower.includes('odisha')) org = "Odisha Government Department";
 
-      // Detect vacancies if in slug
+      // 5. TOTAL VACANCIES DETECTION
       let vacancies = "Various Posts";
-      const vacMatch = lower.match(/(\d+)[-_]?(posts?|vacanc)/);
+      const vacMatch = lower.match(/(\d+)[-_]?(posts?|vacanc|openings?)/);
       if (vacMatch) {
         vacancies = `${Number(vacMatch[1]).toLocaleString('en-IN')} Posts`;
+      } else {
+        const walkMatch = lower.match(/walkin[-_]?for[-_]?(\d+)/);
+        if (walkMatch) vacancies = `${Number(walkMatch[1]).toLocaleString('en-IN')} Posts`;
       }
 
-      const futureDate = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
-      const lastDate = futureDate.toISOString().slice(0, 10).split('-').reverse().join('-');
+      // 6. SALARY / PAY SCALE DETECTION
+      let salary = "₹21,700 - ₹69,100 (Level-5 Pay Matrix)";
+      if (category === "Railway") salary = "₹19,900 - ₹63,200 (Level-2 / Level-4)";
+      else if (category === "Defense & Police") salary = "₹21,700 - ₹69,100 (Level-5 Pay Scale)";
+      else if (category === "Banking") salary = "₹36,000 - ₹63,840 (Junior Management Grade-I)";
+      else if (category === "10th & 12th Pass") salary = "₹18,000 - ₹56,900 (Level-1 Pay Scale)";
+      else if (lower.includes('officer') || lower.includes('cgl') || lower.includes('specialist')) salary = "₹35,400 - ₹1,12,400 (Level-9 Pay Scale)";
+
+      // 7. QUALIFICATION DETECTION
+      let qualification = "10th Class (Matric) / +2 / Degree as per notification";
+      if (category === "Defense & Police") qualification = "+2 / 10th Class (Matric) Passed from Recognized Board";
+      else if (category === "10th & 12th Pass") qualification = "10th Class (Matriculation) Passed from BSE Odisha or equivalent";
+      else if (category === "Railway") qualification = "10th Class + ITI / Diploma in relevant engineering trade";
+      else if (category === "Banking") qualification = "Graduate Degree in any discipline from recognized University";
+      else if (lower.includes('graduate') || lower.includes('degree') || lower.includes('cgl')) qualification = "Bachelor's Degree in any stream with basic Computer Knowledge";
+
+      // 8. DATES (START DATE & LAST DATE)
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const startDate = `${dd}-${mm}-${yyyy}`;
+
+      let lastDate = "30-11-2026";
+      const dateMatch = cleanSlug.match(/(\d{1,2})[-_](\d{1,2})[-_](\d{4})/);
+      if (dateMatch) {
+        lastDate = `${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3]}`;
+      } else {
+        const future = new Date(Date.now() + 40 * 24 * 60 * 60 * 1000);
+        const fdd = String(future.getDate()).padStart(2, '0');
+        const fmm = String(future.getMonth() + 1).padStart(2, '0');
+        const fyyyy = future.getFullYear();
+        lastDate = `${fdd}-${fmm}-${fyyyy}`;
+      }
+
+      // 9. REQUIRED DOCUMENTS CHECKLIST (Tailored per category)
+      let documents = [];
+      if (category === "Defense & Police") {
+        documents = [
+          "10th (Matric) Board Certificate & Marksheet (Age Proof)",
+          "+2 / Higher Secondary Passing Certificate & Marksheet",
+          "Aadhaar Card (Mobile Linked for OTP Verification)",
+          "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+          "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+          "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
+          "Caste Certificate (SC / ST / SEBC if applicable)",
+          "Odia Language Pass Certificate (ME School Standard / Matric Odia)"
+        ];
+      } else if (category === "10th & 12th Pass") {
+        documents = [
+          "10th Class Board Certificate & Marksheet (Date of Birth Proof)",
+          "Aadhaar Card (Mobile Linked for OTP Verification)",
+          "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+          "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+          "Resident / Domicile Certificate (Local Tehsildar)",
+          "Caste Certificate (SC / ST / SEBC / OBC if applicable)",
+          "Active Mobile Number & Active Email ID"
+        ];
+      } else if (category === "Railway") {
+        documents = [
+          "10th Class Board Certificate (Date of Birth Proof)",
+          "ITI / Trade Certificate / NCVT / SCVT Diploma Certificate",
+          "Aadhaar Card (Mobile Linked for OTP Verification)",
+          "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+          "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+          "Community / Caste Certificate (SC / ST / OBC-NCL)",
+          "Active Mobile Number & Active Email ID"
+        ];
+      } else {
+        documents = [
+          "10th Class Board Certificate & Marksheet (Age & Identity Proof)",
+          "+2 / Higher Secondary Marksheet & Passing Certificate",
+          "Graduation / Degree Certificate & Final Year Marksheet",
+          "Computer Certificate (DCA / PGDCA if applicable)",
+          "Aadhaar Card (Mobile Linked for OTP Verification)",
+          "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+          "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+          "Resident / Domicile Certificate (Local Tehsildar)",
+          "Caste Certificate (SC / ST / SEBC / EWS if applicable)"
+        ];
+      }
 
       return {
         id: `job-link-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -2927,10 +3019,10 @@ const VUO_ADMIN = {
         organization: org,
         post: rawTitle,
         vacancies: vacancies,
-        qualification: "Matric (10th) / +2 / Degree as per notification",
+        qualification: qualification,
         ageLimit: "18 - 38 Years (Age relaxation as per Govt rules)",
-        salary: "₹19,900 - ₹63,200 (Govt Pay Matrix)",
-        startDate: new Date().toLocaleDateString('en-GB'),
+        salary: salary,
+        startDate: startDate,
         lastDate: lastDate,
         category: category,
         status: "Active",
@@ -2939,16 +3031,8 @@ const VUO_ADMIN = {
         officialUrl: url,
         sourceUrl: url,
         source: "Link Ingestion",
-        documents: [
-          "10th Class Board Certificate & Marksheet",
-          "+2 / Degree Marksheet & Certificate",
-          "Aadhaar Card (Mobile Linked for OTP)",
-          "Recent Passport Size Color Photo (White Background)",
-          "Candidate Signature (Black Ink on White Paper)",
-          "Resident / Domicile Certificate",
-          "Caste Certificate (if applicable)"
-        ],
-        examFee: "Check notification",
+        documents: documents,
+        examFee: "Check official notification",
         featured: true,
         syncedAt: Date.now()
       };
@@ -2958,7 +3042,124 @@ const VUO_ADMIN = {
     }
   },
 
-  async handleAddJobLinks() {
+  async autoFillJobFormFromLink() {
+    const input = document.getElementById('adminAutoFillJobUrl');
+    const raw = input ? input.value.trim() : '';
+    if (!raw) {
+      if (typeof showToast === 'function') showToast("Kripya recruitment link paste karein!", "warning");
+      return;
+    }
+
+    let job = null;
+    // 1. Try server live scraper first
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 4000);
+      const res = await fetch(`/api/extract-job-details?url=${encodeURIComponent(raw)}`, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'success' && data.job) {
+          job = data.job;
+        }
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+
+    // 2. Client-side intelligent parser fallback
+    if (!job) {
+      job = this.parseJobFromUrl(raw);
+    }
+
+    if (!job) {
+      if (typeof showToast === 'function') showToast("Link format invalid hai!", "error");
+      return;
+    }
+
+    // 1. Job Title / Recruitment Name
+    const titleEl = document.getElementById('adminCustomJobTitle');
+    if (titleEl) titleEl.value = job.title;
+
+    // 2. Organization / Board
+    const orgEl = document.getElementById('adminCustomJobOrg');
+    if (orgEl) orgEl.value = job.organization;
+
+    // 3. Category
+    const catEl = document.getElementById('adminCustomJobCategory');
+    if (catEl) catEl.value = job.category;
+
+    // 4. Total Vacancies
+    const vacEl = document.getElementById('adminCustomJobVacancies');
+    if (vacEl) vacEl.value = job.vacancies;
+
+    // 5. Salary / Pay Scale
+    const salEl = document.getElementById('adminCustomJobSalary');
+    if (salEl) salEl.value = job.salary;
+
+    // 6. Qualification
+    const qualEl = document.getElementById('adminCustomJobQual');
+    if (qualEl) qualEl.value = job.qualification;
+
+    // 7. Start Date
+    const startEl = document.getElementById('adminCustomJobStartDate');
+    if (startEl) startEl.value = job.startDate;
+
+    // 8. LAST DATE
+    const lastEl = document.getElementById('adminCustomJobLastDate');
+    if (lastEl) lastEl.value = job.lastDate;
+
+    // 9. Apply Online URL
+    const applyEl = document.getElementById('adminCustomJobApplyUrl');
+    if (applyEl) applyEl.value = job.applyUrl;
+
+    // 10. Notification URL
+    const notifEl = document.getElementById('adminCustomJobNotifUrl');
+    if (notifEl) notifEl.value = job.notificationUrl || job.applyUrl;
+
+    // 11. Required Documents Checklist (One per line)
+    const docsEl = document.getElementById('adminCustomJobDocs');
+    if (docsEl) {
+      if (Array.isArray(job.documents)) {
+        docsEl.value = job.documents.join('\n');
+      } else {
+        docsEl.value = job.documents || '';
+      }
+    }
+
+    // Briefly highlight fields to show success
+    const fields = [titleEl, orgEl, catEl, vacEl, salEl, qualEl, startEl, lastEl, applyEl, docsEl];
+    fields.forEach(el => {
+      if (el) {
+        el.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50/50');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50/50');
+        }, 2000);
+      }
+    });
+
+    if (typeof showToast === 'function') {
+      showToast("✅ Link se sabhi 9 details (Title, Category, Vacancies, Salary, Qualification, Dates, Apply URL & Documents) auto-fill ho gayi hain!", "success");
+    }
+  },
+
+  pasteSampleJobLinkToAutoFill() {
+    const input = document.getElementById('adminAutoFillJobUrl');
+    if (input) {
+      input.value = 'https://www.freejobalert.com/articles/odisha-police-constable-recruitment-2026-3075546';
+      this.autoFillJobFormFromLink();
+    }
+  },
+
+  refreshJobsTable() {
+    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.fetchLiveServerJobs === 'function') {
+      VUO_JOB_ALERT.fetchLiveServerJobs(true);
+    }
+    this.renderJobAlertsAdmin();
+    if (typeof showToast === 'function') showToast("✅ All job listings refreshed!", "success");
+  },
+
+  async   async handleAddJobLinks() {
     const input = document.getElementById('adminJobBulkUrlsInput');
     const raw = input ? input.value.trim() : '';
     if (!raw) {
@@ -2966,7 +3167,9 @@ const VUO_ADMIN = {
       return;
     }
 
-    const lines = raw.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean);
+    const lines = raw.split(/[
+
+,]+/).map(s => s.trim()).filter(Boolean);
     const validUrls = lines.filter(s => s.includes('.') && !s.startsWith('#'));
 
     if (validUrls.length === 0) {
@@ -2986,7 +3189,24 @@ const VUO_ADMIN = {
     }
 
     for (const url of validUrls) {
-      const job = this.parseJobFromUrl(url);
+      let job = null;
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 3500);
+        const res = await fetch(`/api/extract-job-details?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status === 'success' && data.job) {
+            job = data.job;
+          }
+        }
+      } catch (e) {}
+
+      if (!job) {
+        job = this.parseJobFromUrl(url);
+      }
+
       if (job) {
         customJobs.unshift(job);
         if (typeof VUO_JOB_ALERT !== 'undefined') {

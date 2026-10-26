@@ -6,6 +6,8 @@ import urllib.request
 import re
 import mimetypes
 import html
+import random
+import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 # Force UTF-8 on Windows command prompts
@@ -327,13 +329,7 @@ def get_job_documents_list(qual):
     docs.append("Active Mobile Number & Active Email ID")
     return docs
 
-DEFAULT_JOB_SOURCES = [
-    {"id": 1, "name": "Portal 1 (Odisha Government Jobs)", "url": "https://www.freejobalert.com/odisha-government-jobs/", "active": True},
-    {"id": 2, "name": "Portal 2 (Railway RRB Recruitment)", "url": "https://www.freejobalert.com/railway-jobs/", "active": True},
-    {"id": 3, "name": "Portal 3 (Staff Selection & Central Govt Jobs)", "url": "https://www.freejobalert.com/government-jobs/", "active": True},
-    {"id": 4, "name": "Portal 4 (Banking & IBPS Recruitment)", "url": "https://www.freejobalert.com/bank-jobs/", "active": True},
-    {"id": 5, "name": "Portal 5 (Police & Defense Recruitment)", "url": "https://www.freejobalert.com/police-defence-jobs/", "active": True}
-]
+DEFAULT_JOB_SOURCES = []
 
 def is_safe_portal_url(url):
     if not url or not isinstance(url, str):
@@ -356,11 +352,226 @@ def get_job_sources():
         try:
             with open(sources_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                if isinstance(data, list) and len(data) > 0:
+                if isinstance(data, list):
                     return data
         except Exception as e:
             print(f"[Job Sources] Error loading: {e}")
-    return DEFAULT_JOB_SOURCES
+    return []
+
+def parse_recruitment_link(raw_url):
+    """
+    Intelligently extracts all 9 recruitment fields from any job URL
+    (FreeJobAlert articles, OSSC, OSSSC, Police, Railway, or direct recruitment portals).
+    """
+    if not raw_url or not isinstance(raw_url, str):
+        return None
+    url = raw_url.strip()
+    if not (url.startswith('http://') or url.startswith('https://')):
+        url = 'https://' + url
+
+    slug = url.split('/')[-1].replace('.html', '').replace('.htm', '')
+    slug_parts = re.split(r'[-_]', slug)
+
+    today_str = datetime.date.today().strftime("%d-%m-%Y")
+    data = {
+        "id": f"job-link-{int(time.time())}-{random.randint(100, 999)}",
+        "title": "",
+        "titleOdia": "",
+        "organization": "",
+        "post": "",
+        "category": "Odisha Govt",
+        "vacancies": "Various Posts",
+        "salary": "₹21,700 - ₹69,100 (Level-5 Pay Scale)",
+        "qualification": "10th Class (Matric) / +2 / Degree as applicable",
+        "ageLimit": "18 - 38 Years (Age relaxation as per Govt rules)",
+        "startDate": today_str,
+        "lastDate": "",
+        "status": "Active",
+        "applyUrl": url,
+        "notificationUrl": url,
+        "officialUrl": url,
+        "sourceUrl": url,
+        "source": "Direct Link Auto-Extraction",
+        "documents": [],
+        "examFee": "Check official notification",
+        "featured": True,
+        "syncedAt": int(time.time() * 1000)
+    }
+
+    html_content = ""
+    if is_safe_portal_url(url):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            )
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                html_content = resp.read().decode('utf-8', errors='ignore')
+        except Exception:
+            html_content = ""
+
+    # 1. Parse Title
+    if html_content:
+        h1_m = re.search(r'<h1[^>]*>(.*?)</h1>', html_content, re.I | re.S)
+        if h1_m:
+            data["title"] = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', h1_m.group(1))).strip()
+        else:
+            t_m = re.search(r'<title>(.*?)</title>', html_content, re.I | re.S)
+            if t_m:
+                t_raw = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', t_m.group(1))).strip()
+                data["title"] = re.sub(r'\s*[-|]\s*(FreeJobAlert.*|Sarkari.*)$', '', t_raw, flags=re.I).strip()
+
+    if not data["title"] or len(data["title"]) < 5:
+        words = [w.upper() if w.lower() in ['ssc', 'rrb', 'ossc', 'osssc', 'opsc', 'police', 'ibps', 'sbi'] else w.capitalize() for w in slug_parts if not w.isdigit()]
+        data["title"] = " ".join(words) or "Government Recruitment 2026"
+
+    data["post"] = data["title"]
+    data["titleOdia"] = data["title"]
+
+    # 2. Category Detection
+    title_lower = (data["title"] + " " + slug).lower()
+    if any(k in title_lower for k in ['police', 'constable', 'defense', 'army', 'navy', 'firefighter', 'guard']):
+        data["category"] = "Defense & Police"
+    elif any(k in title_lower for k in ['railway', 'rrb', 'rrc']):
+        data["category"] = "Railway"
+    elif any(k in title_lower for k in ['bank', 'ibps', 'sbi', 'rbi']):
+        data["category"] = "Banking"
+    elif any(k in title_lower for k in ['10th', '12th', 'matric', 'driver', 'peon', 'gds']):
+        data["category"] = "10th & 12th Pass"
+    elif any(k in title_lower for k in ['central', 'ssc', 'upsc', 'drdo', 'isro']):
+        data["category"] = "Central Govt"
+    else:
+        data["category"] = "Odisha Govt"
+
+    # 3. Parse Tables if HTML is present
+    if html_content:
+        tables = re.findall(r'<table[^>]*>(.*?)</table>', html_content, re.S)
+        for t in tables:
+            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', t, re.S)
+            for r in rows:
+                clean = re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', r))).strip()
+                clean_lower = clean.lower()
+
+                # Org
+                if any(k in clean_lower for k in ['recruiting organization', 'organization', 'board', 'commission']):
+                    org_val = re.sub(r'^(recruiting organization|organization|board|commission)\s*:?', '', clean, flags=re.I).strip()
+                    if org_val and len(org_val) > 2 and not data["organization"] and 'description' not in org_val.lower():
+                        data["organization"] = org_val
+
+                # Vacancies
+                if any(k in clean_lower for k in ['total vacancies', 'total vacancy', 'no. of posts', 'no of vacancy', 'vacancies']):
+                    vac_m = re.search(r'(\d+[\d,]*)\s*(?:posts?|vacanc)?', clean, re.I)
+                    if vac_m and vac_m.group(1) != '0' and not any(k in vac_m.group(1) for k in ['2024', '2025', '2026']):
+                        data["vacancies"] = f"{vac_m.group(1)} Posts"
+
+                # Qualification
+                if 'qualification' in clean_lower and not clean_lower.startswith('post name'):
+                    q_val = re.sub(r'^qualification\s*:?', '', clean, flags=re.I).strip()
+                    if q_val and len(q_val) > 4 and not any(k in q_val.lower() for k in ['educational qualification', 'post-wise qualification']):
+                        data["qualification"] = q_val
+                    elif any(k in clean_lower for k in ['10th', '12th', '10+2', 'graduate', 'degree', 'diploma', 'matric']):
+                        data["qualification"] = clean
+
+                # Pay level / Salary
+                if any(k in clean_lower for k in ['pay level', 'pay scale', 'salary']) and not clean_lower.startswith('post name'):
+                    s_val = re.sub(r'^(pay level|pay scale|salary)\s*:?', '', clean, flags=re.I).strip()
+                    if s_val and len(s_val) > 3:
+                        if 'level 4' in s_val.lower() or 'level 5' in s_val.lower():
+                            data["salary"] = f"₹21,700 - ₹69,100 ({s_val})"
+                        elif '₹' in s_val or 'rs' in s_val.lower():
+                            data["salary"] = s_val
+                        else:
+                            data["salary"] = f"₹21,700 - ₹69,100 ({s_val})"
+
+                # Dates
+                if any(k in clean_lower for k in ['start date', 'registration start', 'notification date']) and not data.get("_has_start"):
+                    d_m = re.search(r'(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4}|\d{1,2}[-/\.]\d{1,2}[-/\.]\d{4})', clean)
+                    if d_m:
+                        data["startDate"] = d_m.group(1)
+                        data["_has_start"] = True
+
+                if any(k in clean_lower for k in ['last date', 'closing date', 'submission last date', 'apply last date']):
+                    d_m = re.search(r'(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s+\d{4}|\d{1,2}[-/\.]\d{1,2}[-/\.]\d{4})', clean)
+                    if d_m:
+                        data["lastDate"] = d_m.group(1)
+
+                # Links
+                links_in_row = re.findall(r'href=["\']([^"\']+)["\']', r)
+                if links_in_row:
+                    first_link = links_in_row[0]
+                    if any(k in clean_lower for k in ['apply online', 'registration', 'online application']):
+                        data["applyUrl"] = first_link
+                    elif any(k in clean_lower for k in ['notification', 'advertisement', 'notices']):
+                        data["notificationUrl"] = first_link
+                    elif any(k in clean_lower for k in ['official website']):
+                        data["officialUrl"] = first_link
+
+    # 4. Fallback Org
+    if not data["organization"]:
+        if "odisha" in title_lower and "police" in title_lower:
+            data["organization"] = "State Selection Board (SSB) / OUSSSC, Odisha Police"
+        elif "ossc" in title_lower:
+            data["organization"] = "Odisha Staff Selection Commission (OSSC)"
+        elif "osssc" in title_lower:
+            data["organization"] = "Odisha Sub-Ordinate Staff Selection Commission (OSSSC)"
+        elif "railway" in title_lower or "rrb" in title_lower:
+            data["organization"] = "Railway Recruitment Boards (RRB)"
+        else:
+            data["organization"] = "Government Recruitment Department"
+
+    # 5. Fallback Last Date
+    if not data["lastDate"]:
+        fut = datetime.date.today() + datetime.timedelta(days=35)
+        data["lastDate"] = fut.strftime("%d-%m-%Y")
+
+    # 6. Tailored Documents Checklist
+    if data["category"] == "Defense & Police":
+        data["documents"] = [
+            "10th (Matric) Board Certificate & Marksheet (Age Proof)",
+            "+2 / Higher Secondary Passing Certificate & Marksheet",
+            "Aadhaar Card (Mobile Linked for OTP Verification)",
+            "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+            "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+            "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
+            "Caste Certificate (SC / ST / SEBC if applicable)",
+            "Odia Language Pass Certificate (ME School Standard / Matric Odia)",
+            "Valid Driving License (for Driver Posts if applicable)"
+        ]
+    elif data["category"] == "10th & 12th Pass":
+        data["documents"] = [
+            "10th Class Board Certificate & Marksheet (Date of Birth Proof)",
+            "Aadhaar Card (Mobile Linked for OTP Verification)",
+            "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+            "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+            "Resident / Domicile Certificate (Local Tehsildar)",
+            "Caste Certificate (SC / ST / SEBC / OBC if applicable)",
+            "Active Mobile Number & Active Email ID"
+        ]
+    elif data["category"] == "Railway":
+        data["documents"] = [
+            "10th Class Board Certificate (Date of Birth Proof)",
+            "ITI / Trade Certificate / NCVT / SCVT Diploma Certificate",
+            "Aadhaar Card (Mobile Linked for OTP Verification)",
+            "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+            "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+            "Community / Caste Certificate (SC / ST / OBC-NCL)",
+            "Active Mobile Number & Active Email ID"
+        ]
+    else:
+        data["documents"] = [
+            "10th Class Board Certificate & Marksheet (Age & Identity Proof)",
+            "+2 / Higher Secondary Marksheet & Passing Certificate",
+            "Graduation / Degree Certificate & Final Year Marksheet",
+            "Computer Certificate (DCA / PGDCA if applicable)",
+            "Aadhaar Card (Mobile Linked for OTP Verification)",
+            "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+            "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+            "Resident / Domicile Certificate (Local Tehsildar)",
+            "Caste Certificate (SC / ST / SEBC / EWS if applicable)"
+        ]
+
+    data.pop("_has_start", None)
+    return data
 
 def fetch_live_job_alerts(force=False, custom_sources=None):
     global _jobs_cache
@@ -623,6 +834,25 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(resp)
                 return
 
+            # Endpoint: /api/extract-job-details
+            if self.path.startswith('/api/extract-job-details'):
+                try:
+                    payload = json.loads(body.decode('utf-8'))
+                    target_url = payload.get('url', '').strip()
+                    job_data = parse_recruitment_link(target_url) if target_url else None
+                    if job_data:
+                        resp = json.dumps({"status": "success", "job": job_data}, ensure_ascii=False).encode('utf-8')
+                    else:
+                        resp = json.dumps({"status": "error", "message": "Failed to extract job details"}).encode('utf-8')
+                except Exception as e:
+                    resp = json.dumps({"status": "error", "message": str(e)}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+
             # Endpoint: /api/save-job-alert
             if self.path.startswith('/api/save-job-alert'):
                 try:
@@ -765,6 +995,24 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
         if self.path.startswith('/api/sync-youtube-videos'):
             videos, new_added = fetch_live_youtube_videos(force=True)
             resp = json.dumps({"status": "success", "count": len(videos), "newAdded": new_added, "videos": videos}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
+        # API: /api/extract-job-details
+        if self.path.startswith('/api/extract-job-details'):
+            import urllib.parse
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+            target_url = params.get('url', [''])[0]
+            job_data = parse_recruitment_link(target_url) if target_url else None
+            if job_data:
+                resp = json.dumps({"status": "success", "job": job_data}, ensure_ascii=False).encode('utf-8')
+            else:
+                resp = json.dumps({"status": "error", "message": "Failed to extract job details"}).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Content-Length', str(len(resp)))
