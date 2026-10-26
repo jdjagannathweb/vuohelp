@@ -574,22 +574,29 @@ def parse_recruitment_link(raw_url):
     return data
 
 def fetch_live_job_alerts(force=False, custom_sources=None):
+    """
+    Returns only admin-uploaded / curated jobs from job_alerts.json.
+    External portal auto-scraping has been permanently removed so only admin-added jobs remain.
+    """
     global _jobs_cache
     now = time.time()
     cache_file = os.path.join(DIRECTORY, "job_alerts.json")
 
-    # Load from disk if in-memory cache is empty
-    if not _jobs_cache["jobs"] and os.path.exists(cache_file):
-        try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
-                _jobs_cache["jobs"] = json.load(f)
-                _jobs_cache["last_sync"] = os.path.getmtime(cache_file)
-        except Exception as e:
-            print(f"[Jobs Cache] Error loading: {e}")
+    # Always reload from disk if forced or cache is empty or older than 60 seconds
+    if force or not _jobs_cache["jobs"] or (now - _jobs_cache["last_sync"] > 60):
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    _jobs_cache["jobs"] = json.load(f)
+                    _jobs_cache["last_sync"] = os.path.getmtime(cache_file)
+            except Exception as e:
+                print(f"[Jobs Cache] Error loading: {e}")
+                _jobs_cache["jobs"] = []
+        else:
+            _jobs_cache["jobs"] = []
+        _jobs_cache["last_sync"] = now
 
-    # Return cached if within 30 minutes and not forced
-    if not force and _jobs_cache["jobs"] and (now - _jobs_cache["last_sync"] < 1800):
-        return _jobs_cache["jobs"], 0
+    return _jobs_cache["jobs"], 0
 
     sources = custom_sources if (custom_sources and isinstance(custom_sources, list)) else get_job_sources()
     scraped_jobs = []
