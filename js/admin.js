@@ -3266,8 +3266,7 @@ const VUO_ADMIN = {
 
     let docs = [];
     if (docsRaw) {
-      docs = docsRaw.split('
-').map(s => s.trim()).filter(Boolean);
+      docs = docsRaw.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
     } else {
       docs = [
         "10th Class Board Certificate & Marksheet",
@@ -3357,8 +3356,13 @@ const VUO_ADMIN = {
   openEditJobModal(jobId) {
     if (!jobId) return;
     let allJobs = [];
-    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function') {
-      allJobs = VUO_JOB_ALERT.getAllJobs();
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (typeof VUO_JOB_ALERT.loadJobs === 'function' && (!VUO_JOB_ALERT.jobs || VUO_JOB_ALERT.jobs.length === 0)) {
+        try { VUO_JOB_ALERT.loadJobs(); } catch(e) {}
+      }
+      if (typeof VUO_JOB_ALERT.getAllJobs === 'function') {
+        allJobs = VUO_JOB_ALERT.getAllJobs();
+      }
     }
     const job = allJobs.find(j => j.id === jobId);
     if (!job) {
@@ -3428,8 +3432,7 @@ const VUO_ADMIN = {
       return;
     }
 
-    const docs = docsRaw ? docsRaw.split('
-').map(s => s.trim()).filter(Boolean) : [
+    const docs = docsRaw ? docsRaw.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean) : [
       "10th Class Board Certificate & Marksheet",
       "+2 / Degree Marksheet & Passing Certificate",
       "Aadhaar Card (Mobile Linked for OTP)",
@@ -3625,8 +3628,18 @@ const VUO_ADMIN = {
     const tableCountBadge = document.getElementById('adminActiveJobsTableCount');
 
     let allJobs = [];
-    if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.getAllJobs === 'function') {
-      allJobs = VUO_JOB_ALERT.getAllJobs();
+    if (typeof VUO_JOB_ALERT !== 'undefined') {
+      if (typeof VUO_JOB_ALERT.loadJobs === 'function' && (!VUO_JOB_ALERT.jobs || VUO_JOB_ALERT.jobs.length === 0)) {
+        try { VUO_JOB_ALERT.loadJobs(); } catch(e) {}
+      }
+      if (typeof VUO_JOB_ALERT.fetchLiveServerJobs === 'function' && (!VUO_JOB_ALERT.jobs || VUO_JOB_ALERT.jobs.length === 0)) {
+        VUO_JOB_ALERT.fetchLiveServerJobs(false).then(() => {
+          this.renderJobAlertsAdmin(filterQuery);
+        }).catch(() => {});
+      }
+      if (typeof VUO_JOB_ALERT.getAllJobs === 'function') {
+        allJobs = VUO_JOB_ALERT.getAllJobs();
+      }
     }
 
     const totalCount = allJobs.length;

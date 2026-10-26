@@ -1429,6 +1429,13 @@ const VUO_APP = {
         }
       }
     } else if (viewName === 'admin') {
+      // Ensure job alerts data is ready when admin panel loads
+      if (typeof VUO_JOB_ALERT !== 'undefined') {
+        try {
+          if (typeof VUO_JOB_ALERT.loadJobs === 'function') VUO_JOB_ALERT.loadJobs();
+          if (typeof VUO_JOB_ALERT.fetchLiveServerJobs === 'function') VUO_JOB_ALERT.fetchLiveServerJobs(false);
+        } catch(e) {}
+      }
       if (VUO_AUTH.isAdmin()) {
         if (typeof VUO_ADMIN !== 'undefined') {
           VUO_ADMIN.init();

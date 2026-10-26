@@ -154,6 +154,11 @@ const VUO_JOB_ALERT = {
         this.renderStats();
         this.renderJobs();
 
+        // Also notify admin job alerts table if admin panel is open
+        if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+          try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+        }
+
         if (force && typeof showToast === 'function') {
           showToast(`✅ Successfully synced ${this.jobs.length} Live Govt Jobs!`, 'success');
         }
