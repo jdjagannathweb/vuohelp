@@ -410,7 +410,7 @@ const VUO_RESUMEMAKER = {
               <!-- Header Bar -->
               <div class="flex justify-between items-start pb-4 border-b-2 border-sky-600 gap-4">
                 <div class="flex-1">
-                  <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">${name.toUpperCase()}</h1>
+                  <div class="text-2xl font-black text-slate-900 tracking-tight leading-tight">${name.toUpperCase()}</div>
                   <p class="text-xs font-bold text-sky-700 uppercase mt-0.5 tracking-wide">${jobTitle}</p>
                   <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-600 mt-2">
                     <span>📱 ${phone}</span>
@@ -534,7 +534,7 @@ const VUO_RESUMEMAKER = {
               <!-- Header Bar -->
               <div class="flex justify-between items-start pb-4 border-b-2 border-sky-600 gap-4">
                 <div class="flex-1">
-                  <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">${name.toUpperCase()}</h1>
+                  <div class="text-2xl font-black text-slate-900 tracking-tight leading-tight">${name.toUpperCase()}</div>
                   <p class="text-xs font-bold text-sky-700 uppercase mt-0.5 tracking-wide">${jobTitle}</p>
                   <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-600 mt-2">
                     <span>📱 ${phone}</span>
@@ -699,7 +699,7 @@ const VUO_RESUMEMAKER = {
               <!-- Executive Header -->
               <div class="border-b-4 border-slate-900 pb-3 flex justify-between items-end gap-4">
                 <div class="flex-1">
-                  <h1 class="text-3xl font-black tracking-wider text-slate-950 leading-tight">${name.toUpperCase()}</h1>
+                  <div class="text-3xl font-black tracking-wider text-slate-950 leading-tight">${name.toUpperCase()}</div>
                   <p class="text-xs font-semibold tracking-widest text-emerald-700 uppercase mt-1">${jobTitle}</p>
                   <div class="flex flex-wrap gap-4 text-[11px] text-slate-600 mt-2">
                     <span>📱 ${phone}</span>
@@ -818,7 +818,7 @@ const VUO_RESUMEMAKER = {
             <div class="resume-page-content flex-1">
               <div class="border-b-4 border-slate-900 pb-4 flex justify-between items-end gap-4">
                 <div class="flex-1">
-                  <h1 class="text-3xl font-black tracking-wider text-slate-950 leading-tight">${name.toUpperCase()}</h1>
+                  <div class="text-3xl font-black tracking-wider text-slate-950 leading-tight">${name.toUpperCase()}</div>
                   <p class="text-xs font-semibold tracking-widest text-emerald-700 uppercase mt-1">${jobTitle}</p>
                   <div class="flex flex-wrap gap-4 text-[11px] text-slate-600 mt-2">
                     <span>📱 ${phone}</span>
@@ -983,7 +983,7 @@ const VUO_RESUMEMAKER = {
                   <span class="text-lg font-bold font-heading">॥ श्री गणेशाय नमः ॥</span>
                   <span class="text-xl font-bold">卐</span>
                 </div>
-                <h1 class="text-2xl font-bold text-amber-950 tracking-wide uppercase mt-0.5">MARRIAGE BIO-DATA</h1>
+                <div class="text-2xl font-bold text-amber-950 tracking-wide uppercase mt-0.5">MARRIAGE BIO-DATA</div>
                 <p class="text-[11px] text-amber-800 italic">May divine blessings bring happiness &amp; auspicious prosperity</p>
               </div>
 
@@ -1085,7 +1085,7 @@ const VUO_RESUMEMAKER = {
                   <span class="text-xl font-bold font-heading">॥ श्री गणेशाय नमः ॥</span>
                   <span class="text-2xl font-bold">卐</span>
                 </div>
-                <h1 class="text-2xl font-bold text-amber-950 tracking-wide uppercase mt-1">MARRIAGE BIO-DATA</h1>
+                <div class="text-2xl font-bold text-amber-950 tracking-wide uppercase mt-1">MARRIAGE BIO-DATA</div>
                 <p class="text-xs text-amber-800 italic">May divine blessings bring happiness &amp; auspicious prosperity</p>
               </div>
 
@@ -1222,7 +1222,7 @@ const VUO_RESUMEMAKER = {
             <div class="resume-page-content flex-1">
               <div class="text-center border-b-2 border-rose-900/40 pb-2.5 mb-3 resume-section" style="break-inside: avoid; page-break-inside: avoid;">
                 <p class="text-lg font-bold text-rose-950 font-heading">॥ ॐ ଵିଘ୍ନେଶ୍ଵରାୟ ନମଃ ॥</p>
-                <h1 class="text-2xl font-black text-rose-900 tracking-wider uppercase mt-0.5">MARRIAGE BIO-DATA</h1>
+                <div class="text-2xl font-black text-rose-900 tracking-wider uppercase mt-0.5">MARRIAGE BIO-DATA</div>
               </div>
 
               <div class="flex justify-between items-start gap-4 mb-3">
@@ -1312,7 +1312,7 @@ const VUO_RESUMEMAKER = {
             <div class="resume-page-content flex-1">
               <div class="text-center border-b-2 border-rose-900/40 pb-3 mb-4 resume-section" style="break-inside: avoid; page-break-inside: avoid;">
                 <p class="text-xl font-bold text-rose-950 font-heading">॥ ॐ ଵିଘ୍ନେଶ୍ଵରାୟ ନମଃ ॥</p>
-                <h1 class="text-2xl font-black text-rose-900 tracking-wider uppercase mt-1">MARRIAGE BIO-DATA</h1>
+                <div class="text-2xl font-black text-rose-900 tracking-wider uppercase mt-1">MARRIAGE BIO-DATA</div>
               </div>
 
               <div class="flex justify-between items-start gap-4 mb-4">
@@ -1442,7 +1442,7 @@ const VUO_RESUMEMAKER = {
             </div>
             <div class="resume-page-content flex-1">
               <div class="text-center border-b pb-3 mb-3 resume-section" style="break-inside: avoid; page-break-inside: avoid;">
-                <h1 class="text-xl font-bold tracking-wide uppercase">CURRICULUM VITAE</h1>
+                <div class="text-xl font-bold tracking-wide uppercase">CURRICULUM VITAE</div>
                 <h2 class="text-lg font-bold text-slate-800 mt-0.5">${name}</h2>
                 <p class="text-[11px] text-slate-600 mt-1">${address} | Mob:&nbsp;${phone} | Email:&nbsp;${email}</p>
               </div>
@@ -1545,7 +1545,7 @@ const VUO_RESUMEMAKER = {
             </div>
             <div class="resume-page-content flex-1">
               <div class="text-center border-b pb-4 mb-4 resume-section" style="break-inside: avoid; page-break-inside: avoid;">
-                <h1 class="text-2xl font-bold tracking-wide uppercase">CURRICULUM VITAE</h1>
+                <div class="text-2xl font-bold tracking-wide uppercase">CURRICULUM VITAE</div>
                 <h2 class="text-xl font-bold text-slate-800 mt-1">${name}</h2>
                 <p class="text-xs text-slate-600 mt-1.5">${address} | Mob:&nbsp;${phone} | Email:&nbsp;${email}</p>
               </div>
