@@ -48,10 +48,14 @@ const VUO_DB = {
       }
       // Always trigger direct cloud members fetch in background to guarantee zero missing members
       this.fetchCloudMembersDirectly();
+      this.fetchCloudJobAlertsDirectly();
+      this.syncLocalCustomJobsToCloud();
     } catch (e) {
       console.warn("Firebase initialization warning (falling back to local storage):", e);
       this.isInitialized = false;
       this.fetchCloudMembersDirectly();
+      this.fetchCloudJobAlertsDirectly();
+      this.syncLocalCustomJobsToCloud();
     }
   },
 
@@ -293,6 +297,7 @@ const VUO_DB = {
         const delRaw = localStorage.getItem('vuo_deleted_members');
         if (delRaw) deletedList = JSON.parse(delRaw);
       } catch (_) {}
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
       let customMap = {};
       try { customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}'); } catch (_) {}
 
@@ -302,6 +307,18 @@ const VUO_DB = {
         if (curRaw) curUser = JSON.parse(curRaw);
       } catch (_) {}
       const curMob = curUser ? (curUser.mobile || '').replace(/\D/g, '').slice(-10) : '';
+
+      const membersMap = new Map();
+      let localMembers = [];
+      try { localMembers = JSON.parse(localStorage.getItem('vuo_members') || '[]'); } catch (_) {}
+      if (Array.isArray(localMembers)) {
+        localMembers.forEach(m => {
+          if (m) {
+            const k = (m.mobile || m.id || m.memberNo || '').trim();
+            if (k) membersMap.set(k, m);
+          }
+        });
+      }
 
       if (!snapshot.empty) {
         snapshot.forEach(doc => {
@@ -378,6 +395,46 @@ const VUO_DB = {
         }
       }
     }, (err) => console.warn("Gate users listener error:", err));
+
+    // 11. Government Job Alerts Realtime Sync (across all devices & public users)
+    this.db.collection('vuo_job_alerts').onSnapshot((snapshot) => {
+      let deletedList = [];
+      try {
+        const delRaw = localStorage.getItem('vuo_deleted_job_ids');
+        if (delRaw) deletedList = JSON.parse(delRaw);
+      } catch (_) {}
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
+      if (!snapshot.empty) {
+        const cloudJobs = [];
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d && (d.title || d.post)) {
+            const jId = (d.id || doc.id || '').toLowerCase().trim();
+            const applyUrl = (d.applyUrl || '').trim();
+            if (deletedSet.has(jId) || (applyUrl && deletedSet.has(applyUrl.toLowerCase()))) {
+              return;
+            }
+            if (!d.id) d.id = doc.id;
+            cloudJobs.push(d);
+          }
+        });
+        localStorage.setItem('vuo_cloud_job_alerts', JSON.stringify(cloudJobs));
+        console.log(`☁️ Real-time: Synced ${cloudJobs.length} Job Alerts from Cloud Firestore!`);
+
+        if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.syncFromCloud === 'function') {
+          VUO_JOB_ALERT.syncFromCloud(cloudJobs);
+        } else if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.loadJobs === 'function') {
+          VUO_JOB_ALERT.loadJobs();
+          if (typeof VUO_JOB_ALERT.renderStats === 'function') VUO_JOB_ALERT.renderStats();
+          if (typeof VUO_JOB_ALERT.renderJobs === 'function') VUO_JOB_ALERT.renderJobs();
+        }
+
+        if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+          try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+        }
+      }
+    }, (err) => console.warn("Job alerts listener error:", err));
   },
 
   // ---------------- CLOUD CRUD HELPERS ---------------- //
@@ -743,6 +800,133 @@ const VUO_DB = {
     return { success: sdkSuccess || restSuccess };
   },
 
+  // ---------------- SARKARI JOB ALERTS CLOUD MANAGEMENT ---------------- //
+  async cloudSaveJobAlert(jobObj) {
+    if (!jobObj) return { success: false, error: "Empty job object" };
+    jobObj.syncedAt = jobObj.syncedAt || Date.now();
+    const docId = (jobObj.id || ('job-' + Date.now())).replace(/[\/\s#?]+/g, '-');
+    jobObj.id = docId;
+
+    let sdkSuccess = false;
+    // 1. Firebase SDK
+    if (this.isInitialized && this.db) {
+      try {
+        await this.db.collection('vuo_job_alerts').doc(docId).set(jobObj, { merge: true });
+        console.log("☁️ Job Alert saved to Firebase Cloud (SDK):", docId);
+        sdkSuccess = true;
+      } catch (e) {
+        console.warn("Could not save job alert via SDK:", e);
+      }
+    }
+
+    // 2. Direct REST Fallback
+    const restSuccess = await this.directRestSaveDoc('vuo_job_alerts', docId, jobObj);
+    if (restSuccess) {
+      console.log("☁️ Job Alert saved to Firebase Cloud (REST):", docId);
+    }
+
+    return { success: sdkSuccess || restSuccess };
+  },
+
+  async cloudDeleteJobAlert(jobId) {
+    if (!jobId) return;
+    const cleanId = String(jobId).replace(/[\/\s#?]+/g, '-');
+    if (this.isInitialized && this.db) {
+      try {
+        await this.db.collection('vuo_job_alerts').doc(cleanId).delete();
+        console.log("☁️ Job Alert deleted from Firebase Cloud (SDK):", cleanId);
+      } catch (e) {
+        console.warn("Could not delete job alert via SDK:", e);
+      }
+    }
+    await this.directRestDeleteDoc('vuo_job_alerts', cleanId);
+  },
+
+  async fetchCloudJobAlertsDirectly() {
+    const apiKey = (this.defaultConfig && this.defaultConfig.apiKey) || "AIzaSyDDwNdYJOHGZYdK6jq9algXKfg-hCdWHaI";
+    const proj = (this.defaultConfig && this.defaultConfig.projectId) || "vuo-csc-help";
+    const jobsUrl = `https://firestore.googleapis.com/v1/projects/${proj}/databases/(default)/documents/vuo_job_alerts?key=${apiKey}`;
+
+    let deletedList = [];
+    try {
+      const delRaw = localStorage.getItem('vuo_deleted_job_ids');
+      if (delRaw) deletedList = JSON.parse(delRaw);
+    } catch (_) {}
+    const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
+    try {
+      const res = await fetch(jobsUrl, { cache: 'no-cache' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.documents && Array.isArray(data.documents)) {
+          const cloudJobs = [];
+          data.documents.forEach(doc => {
+            const parsed = this.parseFirestoreFields(doc.fields);
+            if (parsed && (parsed.title || parsed.post)) {
+              const docId = doc.name.split('/').pop();
+              parsed.id = parsed.id || docId;
+              const jId = (parsed.id || '').toLowerCase().trim();
+              const applyUrl = (parsed.applyUrl || '').trim();
+              if (!deletedSet.has(jId) && (!applyUrl || !deletedSet.has(applyUrl.toLowerCase()))) {
+                cloudJobs.push(parsed);
+              }
+            }
+          });
+          localStorage.setItem('vuo_cloud_job_alerts', JSON.stringify(cloudJobs));
+          console.log(`✅ Direct REST: Loaded ${cloudJobs.length} Job Alerts from Cloud Firestore.`);
+
+          if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.syncFromCloud === 'function') {
+            VUO_JOB_ALERT.syncFromCloud(cloudJobs);
+          } else if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.loadJobs === 'function') {
+            VUO_JOB_ALERT.loadJobs();
+            if (typeof VUO_JOB_ALERT.renderStats === 'function') VUO_JOB_ALERT.renderStats();
+            if (typeof VUO_JOB_ALERT.renderJobs === 'function') VUO_JOB_ALERT.renderJobs();
+          }
+
+          if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+            try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+          }
+          return { success: true, count: cloudJobs.length, jobs: cloudJobs };
+        }
+      }
+    } catch (e) {
+      console.warn("Direct Cloud Job Alerts fetch warning:", e);
+    }
+    return { success: false, count: 0, jobs: [] };
+  },
+
+  async syncLocalCustomJobsToCloud() {
+    try {
+      const localRaw = localStorage.getItem('vuo_custom_job_alerts');
+      if (!localRaw) return;
+      const localJobs = JSON.parse(localRaw);
+      if (!Array.isArray(localJobs) || localJobs.length === 0) return;
+
+      let deletedList = [];
+      try {
+        const delRaw = localStorage.getItem('vuo_deleted_job_ids');
+        if (delRaw) deletedList = JSON.parse(delRaw);
+      } catch (_) {}
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
+      let uploaded = 0;
+      for (const job of localJobs) {
+        if (!job || (!job.title && !job.post)) continue;
+        const jId = (job.id || '').toLowerCase().trim();
+        const applyUrl = (job.applyUrl || '').trim();
+        if (deletedSet.has(jId) || (applyUrl && deletedSet.has(applyUrl.toLowerCase()))) continue;
+
+        await this.cloudSaveJobAlert(job);
+        uploaded++;
+      }
+      if (uploaded > 0) {
+        console.log(`☁️ Successfully pushed ${uploaded} local custom jobs to Firebase Cloud!`);
+      }
+    } catch (e) {
+      console.warn("Could not sync local custom jobs to cloud:", e);
+    }
+  },
+
   // VLE Activity & Visits Cloud Persistence
   async cloudSaveVleActivity(actObj) {
     if (this.isInitialized && this.db) {
@@ -799,6 +983,22 @@ const VUO_DB = {
       else if (valObj.booleanValue !== undefined) res[key] = valObj.booleanValue;
       else if (valObj.doubleValue !== undefined) res[key] = Number(valObj.doubleValue);
       else if (valObj.timestampValue !== undefined) res[key] = valObj.timestampValue;
+      else if (valObj.arrayValue !== undefined) {
+        const vals = (valObj.arrayValue && Array.isArray(valObj.arrayValue.values)) ? valObj.arrayValue.values : [];
+        res[key] = vals.map(v => {
+          if (v && v.stringValue !== undefined) {
+            try {
+              if ((v.stringValue.startsWith('{') && v.stringValue.endsWith('}')) || (v.stringValue.startsWith('[') && v.stringValue.endsWith(']'))) {
+                return JSON.parse(v.stringValue);
+              }
+            } catch (_) {}
+            return v.stringValue;
+          }
+          if (v && v.integerValue !== undefined) return Number(v.integerValue);
+          if (v && v.booleanValue !== undefined) return v.booleanValue;
+          return v;
+        });
+      }
     }
     return res;
   },

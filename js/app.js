@@ -1,3 +1,76 @@
+
+window.vuoSubmitAdminLogin = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const passInput = document.getElementById('adminPasswordInput') || document.getElementById('adminPinInput');
+  const pass = passInput ? passInput.value : '';
+  const res = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.adminLogin) ? VUO_AUTH.adminLogin(pass) : { success: false, message: "Authentication system not loaded." };
+  if (res.success) {
+    const modal = document.getElementById('adminLoginModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    if (passInput) passInput.value = '';
+    if (typeof showToast === 'function') {
+      showToast("👑 Admin access unlocked successfully!", "success");
+    }
+
+    // Ensure hash reflects #admin
+    window.location.hash = '#admin';
+
+    // Force immediate route switch to admin view without waiting or needing a second click
+    if (typeof VUO_APP !== 'undefined' && VUO_APP.handleRoute) {
+      VUO_APP.handleRoute('admin');
+    } else {
+      document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+      const adminView = document.getElementById('view_admin');
+      if (adminView) adminView.classList.remove('hidden');
+    }
+
+    if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.init === 'function') {
+      VUO_ADMIN.init();
+    }
+    if (typeof window.vuoRenderAdminFormsTable === 'function') {
+      setTimeout(window.vuoRenderAdminFormsTable, 50);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return true;
+  } else {
+    if (typeof showToast === 'function') {
+      showToast(res.message || "Invalid Admin Password. Access Denied!", "error");
+    } else {
+      alert(res.message || "Invalid Admin Password. Access Denied!");
+    }
+    if (passInput) {
+      passInput.value = '';
+      passInput.focus();
+    }
+    return false;
+  }
+};
+
+window.vuoOpenAdminLogin = function() {
+  if (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.isAdmin()) {
+    window.location.hash = '#admin';
+    if (typeof VUO_APP !== 'undefined') VUO_APP.handleRoute('admin');
+    if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.init === 'function') VUO_ADMIN.init();
+  } else {
+    const modal = document.getElementById('adminLoginModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      const input = document.getElementById('adminPasswordInput') || document.getElementById('adminPinInput');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 150);
+      }
+    }
+  }
+};
+
 /**
  * VUO CSC HELP - Core Application Router, Global Search & View Controller
  */
@@ -32,6 +105,136 @@ function showToast(message, type = 'info') {
   }, 3500);
 }
 
+// Universal Reliable Print Engine (Zero Popup Block, Image Pre-Load & Native Print Dialog)
+window.VUO_PRINT = {
+  printHtml(title, bodyContent, customStyles = '') {
+    try {
+      let iframe = document.getElementById('vuo_print_iframe');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'vuo_print_iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        iframe.style.zIndex = '-9999';
+        iframe.style.opacity = '0';
+        document.body.appendChild(iframe);
+      }
+
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${title || 'Print'}</title>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+          <style>
+            @page { margin: 0; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: system-ui, -apple-system, sans-serif; }
+            .no-print { display: none !important; }
+            ${customStyles}
+          </style>
+        </head>
+        <body>
+          ${bodyContent}
+        </body>
+        </html>
+      `);
+      doc.close();
+
+      const triggerPrint = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          fallbackPopup();
+        }
+      };
+
+      const imgs = doc.getElementsByTagName('img');
+      if (imgs.length > 0) {
+        let loaded = 0;
+        let finished = false;
+        const onDone = () => {
+          if (finished) return;
+          loaded++;
+          if (loaded >= imgs.length) {
+            finished = true;
+            setTimeout(triggerPrint, 250);
+          }
+        };
+        for (let i = 0; i < imgs.length; i++) {
+          if (imgs[i].complete) {
+            loaded++;
+          } else {
+            imgs[i].onload = onDone;
+            imgs[i].onerror = onDone;
+          }
+        }
+        if (loaded >= imgs.length) {
+          finished = true;
+          setTimeout(triggerPrint, 250);
+        } else {
+          // Safety timeout
+          setTimeout(() => {
+            if (!finished) {
+              finished = true;
+              triggerPrint();
+            }
+          }, 1500);
+        }
+      } else {
+        setTimeout(triggerPrint, 250);
+      }
+      return true;
+    } catch (err) {
+      return fallbackPopup();
+    }
+
+    function fallbackPopup() {
+      const pWin = window.open('', '_blank');
+      if (!pWin) {
+        if (typeof showToast === 'function') showToast("Please allow popups to print this document.", "warning");
+        return false;
+      }
+      pWin.document.open();
+      pWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${title || 'Print'}</title>
+          <style>
+            @page { margin: 0; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            .no-print { display: none !important; }
+            ${customStyles}
+          </style>
+        </head>
+        <body>
+          ${bodyContent}
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); window.close(); }, 350);
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      pWin.document.close();
+      return true;
+    }
+  }
+};
+
+
 // Global Announcements Ticker Renderer
 function renderAnnouncementsTicker() {
   const track = document.getElementById('newsTickerTrack');
@@ -44,7 +247,8 @@ function renderAnnouncementsTicker() {
   }
 
   const itemsHtml = anns.map(a => {
-    const text = currentLanguage === 'or' && a.textOdia ? a.textOdia : a.text;
+    const curLang = (typeof currentLanguage !== 'undefined') ? currentLanguage : (localStorage.getItem('vuo_lang') || 'en');
+    const text = curLang === 'or' && a.textOdia ? a.textOdia : a.text;
     return `
       <span class="inline-flex items-center gap-2 px-6 text-xs font-medium text-slate-100">
         ${a.urgent ? '<span class="bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded text-[10px]">NEW</span>' : '•'}
@@ -55,6 +259,108 @@ function renderAnnouncementsTicker() {
 
   // Duplicate for seamless loop
   track.innerHTML = itemsHtml + itemsHtml;
+}
+
+// Global Live Home News & Scheme Alerts Board Renderer
+function renderHomeNewsBoard() {
+  const container = document.getElementById('homeLiveNewsGrid');
+  if (!container) return;
+
+  let items = JSON.parse(localStorage.getItem('vuo_live_news_items') || 'null');
+  if (!items || items.length === 0) {
+    items = [
+      {
+        id: 'news-1',
+        title: 'Odisha Police Constable & Sepoy Recruitment 2026',
+        titleOdia: 'ଓଡ଼ିଶା ପୋଲିସ କନଷ୍ଟେବଲ ଓ ସିପାହୀ ନିଯୁକ୍ତି ଆବେଦନ ଆରମ୍ଭ',
+        category: 'job',
+        badge: 'HOT JOB',
+        badgeColor: 'from-amber-500 to-orange-500 text-slate-950',
+        desc: 'Apply online for 1,360+ Constable & Sepoy posts. Photo (20-50KB) & Sign (10-20KB) resizing tools ready.',
+        date: 'Today',
+        link: '#jobalert',
+        linkText: 'Apply & Details'
+      },
+      {
+        id: 'news-2',
+        title: 'Subhadra Yojana Phase 3 DBT List & Aadhaar Link Update',
+        titleOdia: 'ସୁଭଦ୍ରା ଯୋଜନା ତୃତୀୟ କିସ୍ତି ଟଙ୍କା ଡିବିଟି ପ୍ରକ୍ରିୟା ଜାରି',
+        category: 'scheme',
+        badge: 'ODISHA SCHEME',
+        badgeColor: 'from-emerald-500 to-teal-500 text-white',
+        desc: 'Check Aadhaar Bank NPCI linking status and resolve rejected applications directly at your CSC Kendra.',
+        date: 'Active Now',
+        link: 'https://subhadra.odisha.gov.in/',
+        linkText: 'Check DBT Status'
+      },
+      {
+        id: 'news-3',
+        title: 'PM Surya Ghar Muft Bijli Yojana - Free Solar Rooftop',
+        titleOdia: 'ପ୍ରଧାନମନ୍ତ୍ରୀ ସୂର୍ଯ୍ୟ ଘର ମାଗଣା ବିଜୁଳି ଯୋଜନା ପଞ୍ଜୀକରଣ',
+        category: 'csc_service',
+        badge: 'NEW SERVICE',
+        badgeColor: 'from-sky-500 to-indigo-500 text-white',
+        desc: 'Get up to ₹78,000 Govt subsidy for rooftop solar installation. Apply consumer forms via CSC Digital Seva.',
+        date: '300 Units Free',
+        link: 'https://pmsuryaghar.gov.in/',
+        linkText: 'Apply Solar Roof'
+      },
+      {
+        id: 'news-4',
+        title: 'OSSC / OSSSC Combined Recruitment Exam Alert',
+        titleOdia: 'ଓଡ଼ିଶା ଷ୍ଟାଫ୍ ସିଲେକ୍ସନ କମିଶନ ନୂତନ ବିଜ୍ଞପ୍ତି',
+        category: 'job',
+        badge: 'LAST DATE',
+        badgeColor: 'from-rose-500 to-red-600 text-white',
+        desc: 'Final days remaining for OSSSC online registration. Keep certificates & scanned signatures ready.',
+        date: 'Apply Soon',
+        link: '#jobalert',
+        linkText: 'View Job Details'
+      }
+    ];
+    localStorage.setItem('vuo_live_news_items', JSON.stringify(items));
+  }
+
+  const isOdia = (typeof currentLanguage !== 'undefined' && currentLanguage === 'or');
+
+  container.innerHTML = items.map(item => {
+    const title = isOdia && item.titleOdia ? item.titleOdia : item.title;
+    const isExternal = item.link && item.link.startsWith('http');
+    const badgeColor = item.badgeColor || 'from-amber-500 to-orange-500 text-slate-950';
+
+    return `
+      <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r ${badgeColor} shadow-2xs">
+              ${item.badge || 'UPDATE'}
+            </span>
+            <span class="text-[11px] font-bold text-slate-400">
+              <i class="fa-regular fa-clock mr-1"></i>${item.date || 'Latest'}
+            </span>
+          </div>
+
+          <h4 class="text-sm sm:text-base font-black text-slate-900 group-hover:text-sky-700 transition-colors leading-snug">
+            ${title}
+          </h4>
+
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+            ${item.desc || ''}
+          </p>
+        </div>
+
+        <div class="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            ${item.category === 'job' ? '💼 Job Alert' : item.category === 'scheme' ? '🏛️ Scheme' : '⚡ CSC Service'}
+          </span>
+          <a href="${item.link || '#jobalert'}" ${isExternal ? 'target="_blank" rel="noopener"' : ''} class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-sky-600 text-white text-xs font-bold transition-all shadow-xs">
+            <span>${item.linkText || 'View Details'}</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </a>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // Global Search System
@@ -188,7 +494,8 @@ const VUO_SEARCH = {
     }
 
     resultsContainer.innerHTML = filtered.map(item => {
-      const displayName = currentLanguage === 'or' && item.nameOdia ? item.nameOdia : item.name;
+      const curLang2 = (typeof currentLanguage !== 'undefined') ? currentLanguage : (localStorage.getItem('vuo_lang') || 'en');
+      const displayName = curLang2 === 'or' && item.nameOdia ? item.nameOdia : item.name;
       const isExternal = !!item.url;
       const targetAction = isExternal ? 
         `href="${item.url}" onclick="if (typeof VUO_LINKS !== 'undefined' && VUO_LINKS.openPortalLink) { VUO_SEARCH.close(); return VUO_LINKS.openPortalLink(event, '${item.url}', '${(displayName || '').replace(/'/g, "\\'")}'); }"` : 
@@ -682,7 +989,7 @@ function initWelcomePopup() {
   const tryDisplayPopup = () => {
     if (isSuppressed || isClosedThisSession) return;
     const pop = JSON.parse(localStorage.getItem('vuo_popup') || '{}');
-    if (pop.enabled !== false) {
+    if (pop && pop.enabled === true) {
       setTimeout(() => {
         if (sessionStorage.getItem('vuo_popup_closed') !== '1') {
           openWelcomePopup();
@@ -795,6 +1102,9 @@ const VUO_APP = {
     if (typeof renderAnnouncementsTicker === 'function') {
       renderAnnouncementsTicker();
     }
+    if (typeof renderHomeNewsBoard === 'function') {
+      renderHomeNewsBoard();
+    }
     if (typeof VUO_AUTH !== 'undefined') {
       VUO_AUTH.updateAuthUI();
     }
@@ -814,6 +1124,9 @@ const VUO_APP = {
     window.addEventListener('languageChanged', () => {
       if (typeof renderAnnouncementsTicker === 'function') {
         renderAnnouncementsTicker();
+      }
+      if (typeof renderHomeNewsBoard === 'function') {
+        renderHomeNewsBoard();
       }
     });
   },
@@ -856,12 +1169,14 @@ const VUO_APP = {
 
     if (mobileMenuBtn && mobileDrawer) {
       mobileMenuBtn.addEventListener('click', () => {
+        mobileDrawer.style.display = 'flex';
         mobileDrawer.classList.remove('hidden');
       });
     }
 
     if (closeMobileDrawer && mobileDrawer) {
       closeMobileDrawer.addEventListener('click', () => {
+        mobileDrawer.style.display = 'none';
         mobileDrawer.classList.add('hidden');
       });
     }
@@ -1025,56 +1340,12 @@ const VUO_APP = {
     // Admin Login Form
     const adminLoginForm = document.getElementById('adminLoginForm');
     if (adminLoginForm) {
-      const handleAdminLoginSubmit = (e) => {
+      adminLoginForm.onsubmit = function(e) {
         if (e) {
-          e.preventDefault();
-          e.stopPropagation();
+          try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
         }
-        const passInput = document.getElementById('adminPasswordInput') || document.getElementById('adminPinInput');
-        const pass = passInput ? passInput.value : '';
-        const res = VUO_AUTH.adminLogin(pass);
-        if (res.success) {
-          const modal = document.getElementById('adminLoginModal');
-          if (modal) {
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
-          }
-          if (passInput) passInput.value = '';
-          showToast("Admin access unlocked successfully!", "success");
-
-          // Ensure hash reflects #admin
-          window.location.hash = '#admin';
-
-          // Force immediate route switch to admin view without waiting or needing a second click
-          VUO_APP.handleRoute('admin');
-
-          if (typeof VUO_ADMIN !== 'undefined') {
-            VUO_ADMIN.init();
-          }
-          if (typeof window.vuoRenderAdminFormsTable === 'function') {
-            setTimeout(window.vuoRenderAdminFormsTable, 50);
-          }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          showToast(res.message || "Invalid Admin Password. Access Denied!", "error");
-          if (passInput) {
-            passInput.value = '';
-            passInput.focus();
-          }
-        }
+        return window.vuoSubmitAdminLogin(e);
       };
-
-      adminLoginForm.addEventListener('submit', handleAdminLoginSubmit);
-
-      const passInput = document.getElementById('adminPasswordInput');
-      if (passInput) {
-        passInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAdminLoginSubmit(e);
-          }
-        });
-      }
     }
 
     // Contact Form Submission
@@ -1188,7 +1459,11 @@ const VUO_APP = {
     });
   },
 
+  _isRouting: false,
   handleRoute(forceView) {
+    if (this._isRouting) return;
+    this._isRouting = true;
+    try {
     const rawHash = forceView ? `#${forceView}` : (window.location.hash || '#home');
     const cleanHash = rawHash.replace('#', '').trim() || 'home';
     
@@ -1264,58 +1539,34 @@ const VUO_APP = {
       }
     });
 
-    // Strict Authentication Guard for All Tools & Services
-    const publicRoutes = ['home', 'contact', 'admin'];
-    const currentUser = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
-
-    if (!publicRoutes.includes(viewName) && !currentUser) {
-      // Revert hash to #home
-      window.location.hash = '#home';
-
-      // Hide all views and show Home view
-      document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
-      const homeView = document.getElementById('view_home');
-      if (homeView) homeView.classList.remove('hidden');
-
-      // Update active nav link to Home
-      document.querySelectorAll('.nav-link').forEach(link => {
-        const linkHref = link.getAttribute('href') || '';
-        if (linkHref === '#home') {
-          link.classList.add('active');
-        } else {
-          link.classList.remove('active');
+    // Safe View Routing & Admin Protection (Non-blocking, zero-loop)
+    if (viewName === 'admin') {
+      const isAdmin = (typeof VUO_AUTH !== 'undefined' && typeof VUO_AUTH.isAdmin === 'function') ? VUO_AUTH.isAdmin() : (sessionStorage.getItem('vuo_admin_auth') === 'true' || localStorage.getItem('vuo_admin_auth') === 'true');
+      if (!isAdmin) {
+        // Show Home behind modal and open admin login cleanly
+        const homeView = document.getElementById('view_home');
+        if (homeView) homeView.classList.remove('hidden');
+        const adminModal = document.getElementById('adminLoginModal');
+        if (adminModal) {
+          adminModal.classList.remove('hidden');
+          adminModal.style.display = 'flex';
+          const passInput = document.getElementById('adminPasswordInput') || document.getElementById('adminPinInput');
+          if (passInput) {
+            passInput.value = '';
+            setTimeout(() => passInput.focus(), 100);
+          }
         }
-      });
-
-      if (typeof showToast === 'function') {
-        showToast("⚠️ Kripya pehle VLE Login karein! Sabhi tools, services, videos aur forms keval registered VLEs ke liye uplabdh hain.", "warning");
-      }
-
-      if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
-        VUO_AUTH_MODAL.openLogin({
-          item: `CSC Tools & Services (${cleanHash.toUpperCase()})`
-        }, () => {
-          window.location.hash = `#${cleanHash}`;
-          VUO_APP.handleRoute(cleanHash);
-        });
-      }
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    // Show target view (With strict admin guard)
-    if (viewName === 'admin' && !VUO_AUTH.isAdmin()) {
-      const homeView = document.getElementById('view_home');
-      if (homeView) homeView.classList.remove('hidden');
-      const adminModal = document.getElementById('adminLoginModal');
-      if (adminModal) {
-        adminModal.classList.remove('hidden');
-        adminModal.style.display = 'flex';
-        const passInput = document.getElementById('adminPasswordInput') || document.getElementById('adminPinInput');
-        if (passInput) passInput.focus();
+      } else {
+        const adminView = document.getElementById('view_admin');
+        if (adminView) {
+          adminView.classList.remove('hidden');
+          if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.init === 'function') {
+            VUO_ADMIN.init();
+          }
+        }
       }
     } else {
+      // Standard public tool view activation
       const targetView = document.getElementById(`view_${viewName}`);
       if (targetView) {
         targetView.classList.remove('hidden');
@@ -1332,6 +1583,9 @@ const VUO_APP = {
     if (viewName === 'whatsappresizer') {
       if (typeof VUO_WHATSAPP_RESIZER !== 'undefined') {
         VUO_WHATSAPP_RESIZER.init();
+        if (subTab === 'jobsuite' || subTab === 'job' || subTab === 'exam') {
+          VUO_WHATSAPP_RESIZER.setUploadMode('jobsuite');
+        }
       }
     } else if (viewName === 'passphoto') {
       VUO_PASSPHOTO.init();
@@ -1443,13 +1697,14 @@ const VUO_APP = {
             VUO_ADMIN.switchTab(subTab);
           }
         }
-        if (typeof window.vuoRenderAdminFormsTable === 'function') {
-          setTimeout(window.vuoRenderAdminFormsTable, 50);
-        }
+// Handled on-demand by VUO_ADMIN
       }
     }
 
     applyTranslations();
+    } finally {
+      this._isRouting = false;
+    }
   }
 };
 
@@ -1458,8 +1713,12 @@ if (typeof window !== 'undefined') {
   window.VUO_APP = VUO_APP;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    VUO_APP.init();
+  });
+} else {
   VUO_APP.init();
-});
+}
 
 window.filterDashboardTools = function(cat, btn) { VUO_APP.filterDashboardTools(cat, btn); };

@@ -20,7 +20,7 @@
 const VUO_PVCPRINT = {
   bgEnabled: false,         // Default false (Direct Print / Clean White scan mode)
   bgTone: 45,               // percentage (15% = Ultra Light & clear, 45% = balanced crystal clear, 100% = Deep Dark)
-  printLayout: 'epson_tray', // 'epson_tray', 'a4_single', 'a4_multi'
+  printLayout: 'a4_single', // 'epson_tray', 'a4_single', 'a4_multi'
   sourceType: null,         // 'pdf' or 'image'
   pdfDoc: null,
   pdfRawBuffer: null,       // Immutable master ArrayBuffer to prevent PDF.js worker detachment

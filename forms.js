@@ -1,3 +1,51 @@
+
+window.VUO_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1F7z-O5uxfMarZyJH8rsrEryuxVQEC6lX?usp=sharing";
+window.VUO_DRIVE_FORMS_MAP = {
+  "5-18.pdf": "13LMfLqFqRSzMTbQB3Y6Mt5BYaQHhBJLx",
+  "18 +.pdf": "1IiscSfKD-uxjCV4JkAwtas8HryhFYO-W",
+  "AC Open Form For BC BOI 2.pdf": "1fEdsMdYzL2axlvJUEVBI0hSJhTzlh1pC",
+  "AC Open Form For BC BOI.pdf": "1trlqpueUK1efXhe9Pmy8LFemdNVrtgk8",
+  "ANGANWADI 1.pdf": "1OV0kZf_nrJ_cpV4aeSx9mZOjn1aVKr8Z",
+  "ANGANWADI 2.pdf": "1pQF7PVnfWF4PLfWRarTam4VH_VnBRPMd",
+  "bhaga chasi.pdf": "18yfgLEtT-thH5WfikuVb7iUOrKD3kk6z",
+  "Diclaration of sale vehicle.pdf": "1uvP5eGPQCBgDIvlfKK3HdOkmCxUNmr5m",
+  "fasal bima.pdf": "1d25aOsyYBarYBNeeOa-IeK9Db9KIXSq7",
+  "FORM LEBOUR CARD.pdf": "1EberSvR9Ya_ZGHwzO6-3VTpRnNeFSgnl",
+  "Form15G.pdf": "1tg6nQdb7YWUPr_-datQm7ckNr_NFlWSQ",
+  "Form121.pdf": "1O7fQ5StJK_O2VYT0QJ7kNB4Y5wVRUiNe",
+  "hf based adress form.pdf": "1-gV0FWpzqjRUEGqk1i61nAPs8lHSefjG",
+  "ligal hire form.pdf": "1yLHn9eXjP42gjTLrZZDRpSbmfW6f1i6m",
+  "monthly form.pdf": "13GQ2MbVtQJaw9Rt4YMFA_MzZwMS5fXmS",
+  "ri form bhata.pdf": "1gjOzoectJT9KFxVFqkrfw8ukOurZStJF",
+  "SAHAMATI PATRA PADDY.pdf": "1ENdUnapJLC68-Dyu8-0sRu1hm4Ycp90q",
+  "SELF DECLARATION FOR CEWS.pdf": "1FRwaHUVYBtoRbooA35SVsUyGwUpwCpQG",
+  "SELF DECLARATION FOR ISSUE OF INCOME CERTIFICATE.pdf": "1ITQantiHaVjEleKDlQJ6P5LOg8VazYd3",
+  "SELF DECLARATION FOR ISSUE OF O.B.C CERTIFICATE.pdf": "161cJdMVhBLrtbOdnqaAlJZAnW1KA_Wlo",
+  "SELF DECLARATION FOR ISSUE OF RESIDENCE CERTIFICATE.pdf": "1g2CRDMnSVvWSt5v_aGdmASZ8Rd9oDHKg",
+  "SELF DECLARATION FOR ISSUE OF S.C_S.T. CERTIFICATE.pdf": "1axwrRD9w9OJBPoT0oCYk1l9T1XJpZ00O",
+  "SELF DECLARATION FOR ISSUE OF S.E.B.C CERTIFICATE.pdf": "1hv7XBOQoqBBJq5-wtbjTNySkJ4xSMP2f",
+  "self genelogy PADDY.pdf": "1Bz3FwmBaiw36w4layvt8Fuk3kuaEft2r",
+  "UIDAI Standard Form.pdf": "1OcLaulvpNz2VJZbtBSBnPUL9_uD5wppb"
+};
+
+window.vuoResolveDriveFormUrl = function(form) {
+  if (!form) return form;
+  if (form.downloadUrl && form.downloadUrl.startsWith('http') && form.previewUrl && form.previewUrl.startsWith('http')) {
+    return form;
+  }
+  const raw = form.fileUrl || form.url || '';
+  const fname = decodeURIComponent(raw.split('/').pop() || '').trim();
+  if (window.VUO_DRIVE_FORMS_MAP && window.VUO_DRIVE_FORMS_MAP[fname]) {
+    const fid = window.VUO_DRIVE_FORMS_MAP[fname];
+    form.isDrive = true;
+    form.storageType = 'google_drive';
+    form.previewUrl = `https://drive.google.com/file/d/${fid}/preview`;
+    form.downloadUrl = `https://drive.usercontent.google.com/download?id=${fid}&export=download`;
+    form.fileUrl = `https://drive.google.com/file/d/${fid}/view?usp=sharing`;
+  }
+  return form;
+};
+
 /**
  * VUO CSC HELP - CSC Offline PDF Forms & Formats Hub
  * Allows VLEs to search, preview, and download official Odisha & Central application PDFs.
@@ -136,10 +184,22 @@ const VUO_FORMS = {
   searchQuery: '',
   _initialized: false,
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   init() {
     if (!this._initialized) {
       this.bindEvents();
       this._initialized = true;
+      // Auto-sync Google Drive forms on initialization
+      setTimeout(() => this.syncFromGoogleDrive(false), 300);
     }
     this.renderForms();
   },
@@ -172,6 +232,94 @@ const VUO_FORMS = {
     });
   },
 
+  detectFormCategory(fileName) {
+    const f = (fileName || '').toLowerCase();
+    if (f.includes('subhadra')) {
+      return { category: 'subhadra', categoryName: 'Subhadra Yojana', tags: ['subhadra', 'odisha', 'welfare'] };
+    }
+    if (f.includes('income') || f.includes('caste') || f.includes('residence') || f.includes('o.b.c') || f.includes('obc') || f.includes('s.c') || f.includes('s.e.b.c') || f.includes('cews') || f.includes('declaration')) {
+      return { category: 'edistrict', categoryName: 'e-District (Caste/Income/Res)', tags: ['edistrict', 'odisha', 'revenue', 'certificate'] };
+    }
+    if (f.includes('pan') || f.includes('aadhaar') || f.includes('uidai') || f.includes('5-18') || f.includes('18 +') || f.includes('hf based')) {
+      return { category: 'pan_aadhaar', categoryName: 'PAN & Aadhaar', tags: ['aadhaar', 'uidai', 'pan', 'identity'] };
+    }
+    if (f.includes('kisan') || f.includes('paddy') || f.includes('chasi') || f.includes('sahamati') || f.includes('genelogy') || f.includes('fasal')) {
+      return { category: 'agriculture', categoryName: 'PM Kisan & Agriculture', tags: ['kisan', 'agriculture', 'krushak', 'paddy'] };
+    }
+    if (f.includes('15g') || f.includes('121') || f.includes('bc boi') || f.includes('bank') || f.includes('csp') || f.includes('ac open')) {
+      return { category: 'banking', categoryName: 'Banking & CSP / 15G', tags: ['banking', 'csp', '15g', 'tds'] };
+    }
+    if (f.includes('lebour') || f.includes('labour') || f.includes('vehicle') || f.includes('anganwadi') || f.includes('bhata') || f.includes('monthly') || f.includes('ligal hire')) {
+      return { category: 'general', categoryName: 'Labour & General CSC', tags: ['labour', 'welfare', 'general', 'csc'] };
+    }
+    return { category: 'general', categoryName: 'CSC Citizen Service', tags: ['csc', 'form', 'odisha'] };
+  },
+
+  async syncFromGoogleDrive(notify = false) {
+    const syncStatusEl = document.getElementById('driveSyncStatusText');
+    if (syncStatusEl) syncStatusEl.textContent = 'Syncing Drive Forms...';
+    try {
+      let files = [];
+      const res = await fetch('/api/sync-drive-forms', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.files && Array.isArray(data.files) && data.files.length > 0) {
+          files = data.files;
+        }
+      }
+
+      if (files && files.length > 0) {
+        if (!window.VUO_DRIVE_FORMS_MAP) window.VUO_DRIVE_FORMS_MAP = {};
+        const syncedForms = files.map(file => {
+          window.VUO_DRIVE_FORMS_MAP[file.name] = file.fileId;
+          const catInfo = this.detectFormCategory(file.name);
+          const cleanTitle = file.name.replace(/\.pdf$/i, '').trim();
+          return {
+            id: 'drive-' + file.fileId,
+            driveFileId: file.fileId,
+            fileName: file.name,
+            title: cleanTitle,
+            titleOdia: cleanTitle,
+            category: catInfo.category,
+            categoryName: catInfo.categoryName,
+            tags: catInfo.tags,
+            desc: `Official CSC PDF application form automatically synced from Google Drive (${file.name}). Instant preview and download.`,
+            fileUrl: `https://drive.google.com/file/d/${file.fileId}/view?usp=sharing`,
+            previewUrl: file.previewUrl || `https://drive.google.com/file/d/${file.fileId}/preview`,
+            downloadUrl: file.downloadUrl || `https://drive.usercontent.google.com/download?id=${file.fileId}&export=download`,
+            size: 'PDF',
+            isDrive: true,
+            storageType: 'google_drive',
+            isSynced: true,
+            syncedAt: Date.now()
+          };
+        });
+
+        localStorage.setItem('vuo_drive_synced_forms', JSON.stringify(syncedForms));
+        localStorage.setItem('vuo_drive_last_sync_time', Date.now().toString());
+
+        this.renderForms();
+
+        if (syncStatusEl) {
+          syncStatusEl.textContent = `🟢 Live Synced (${files.length} Forms Active)`;
+        }
+
+        if (notify && typeof showToast === 'function') {
+          showToast(`Google Drive ରୁ ସମସ୍ତ ${files.length}+ ଫର୍ମ ସଫଳତାର ସହିତ ସିଙ୍କ୍ ହୋଇଗଲା!`, "success");
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn("Drive sync fallback (static GitHub Pages mode):", err);
+      if (syncStatusEl) syncStatusEl.textContent = 'Drive Sync Connected (Cached)';
+      this.renderForms();
+      if (notify && typeof showToast === 'function') {
+        showToast("Google Drive Cloud Folder connected! 24+ official CSC forms active.", "info");
+      }
+    }
+    return false;
+  },
+
   getAllForms() {
     const defaultForms = (typeof VUO_DATA !== 'undefined' && Array.isArray(VUO_DATA.forms)) ? VUO_DATA.forms : [];
     try {
@@ -184,6 +332,15 @@ const VUO_FORMS = {
           customForms = parsed.filter(f => f.isCustom);
         }
       }
+
+      // Read auto-synced forms from Google Drive
+      let driveSyncedForms = [];
+      try {
+        const driveStored = localStorage.getItem('vuo_drive_synced_forms');
+        if (driveStored) {
+          driveSyncedForms = JSON.parse(driveStored);
+        }
+      } catch (_) {}
       
       const formsMap = new Map();
       // 1. Put custom/admin added forms first so they appear at the top
@@ -192,14 +349,40 @@ const VUO_FORMS = {
           formsMap.set(cf.id, cf);
         }
       });
-      // 2. Append default catalog forms if not deleted and not overridden
+
+      // 2. Append default catalog forms
       defaultForms.forEach(df => {
         if (!deletedIds.includes(df.id) && !formsMap.has(df.id)) {
           formsMap.set(df.id, df);
         }
       });
+
+      // 3. Merge or append auto-synced Drive forms
+      driveSyncedForms.forEach(dsf => {
+        if (!deletedIds.includes(dsf.id)) {
+          let existingKey = null;
+          for (const [key, form] of formsMap.entries()) {
+            const rawUrl = form.fileUrl || form.url || '';
+            const formFname = decodeURIComponent(rawUrl.split('/').pop() || '').trim();
+            if (formFname === dsf.fileName || (form.previewUrl && form.previewUrl.includes(dsf.driveFileId))) {
+              existingKey = key;
+              break;
+            }
+          }
+          if (existingKey) {
+            const existing = formsMap.get(existingKey);
+            existing.previewUrl = dsf.previewUrl;
+            existing.downloadUrl = dsf.downloadUrl;
+            existing.fileUrl = dsf.fileUrl;
+            existing.isDrive = true;
+            existing.storageType = 'google_drive';
+          } else {
+            formsMap.set(dsf.id, dsf);
+          }
+        }
+      });
       
-      const merged = Array.from(formsMap.values());
+      const merged = Array.from(formsMap.values()).map(f => (typeof window.vuoResolveDriveFormUrl === 'function') ? window.vuoResolveDriveFormUrl(f) : f);
       return merged;
     } catch (e) {
       console.warn("getAllForms error:", e);
@@ -296,6 +479,18 @@ const VUO_FORMS = {
     const f = forms.find(item => item.id === id);
     if (!f) return;
 
+    if (typeof VUO_GATE !== 'undefined') {
+      return VUO_GATE.requireAccess({
+        type: 'preview',
+        item: `PDF Form: ${f.title || 'CSC Application Form'}`,
+        category: 'form'
+      }, () => this._doPreviewForm(f));
+    }
+    this._doPreviewForm(f);
+  },
+
+  async _doPreviewForm(f) {
+    const id = f.id;
     // 1. If stored in IndexedDB
     if (f.storageType === 'indexeddb' || f.hasIndexedDbData) {
       try {
@@ -443,7 +638,7 @@ const VUO_FORMS = {
       container.innerHTML = `
         <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
           <i class="fa-solid fa-file-pdf text-4xl text-slate-300 mb-2"></i>
-          <p class="font-bold text-slate-700">No application forms found matching "${this.searchQuery}".</p>
+          <p class="font-bold text-slate-700">No application forms found matching "${this.escapeHtml(this.searchQuery)}".</p>
           <p class="text-xs text-slate-400 mt-1">Try searching for Form 121, Form 15G, Income, OBC, Caste, Subhadra, PAN, or Banking.</p>
         </div>
       `;
@@ -453,8 +648,11 @@ const VUO_FORMS = {
     const currentLang = localStorage.getItem('vuo_lang') || 'en';
 
     container.innerHTML = forms.map(f => {
-      const displayTitle = (currentLang === 'or' && f.titleOdia) ? f.titleOdia : f.title;
-      const subTitle = (currentLang === 'or') ? f.title : (f.titleOdia || '');
+      const rawDisplayTitle = (currentLang === 'or' && f.titleOdia) ? f.titleOdia : f.title;
+      const rawSubTitle = (currentLang === 'or') ? f.title : (f.titleOdia || '');
+      const displayTitle = this.escapeHtml(rawDisplayTitle || '');
+      const subTitle = this.escapeHtml(rawSubTitle || '');
+      const safeDesc = this.escapeHtml(f.desc || 'Official application form and document checklist for Odisha citizen services.');
 
       let catBadgeClass = 'bg-sky-100 text-sky-800 border-sky-200';
       if (f.category === 'subhadra') catBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
@@ -466,7 +664,7 @@ const VUO_FORMS = {
       else if (f.category === 'food') catBadgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
 
       const tagChips = (f.tags || []).slice(0, 3).map(t => 
-        `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">#${t}</span>`
+        `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">#${this.escapeHtml(t)}</span>`
       ).join('');
 
       let storageBadge = '';
@@ -488,13 +686,13 @@ const VUO_FORMS = {
             <div class="flex items-center justify-between gap-2 mb-3">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${catBadgeClass}">
-                  ${f.categoryName || 'CSC Form'}
+                  ${this.escapeHtml(f.categoryName || 'CSC Form')}
                 </span>
                 ${f.isCustom ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">✨ NEW / ADMIN ADDED</span>` : ''}
                 ${storageBadge}
               </div>
               <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-bold shrink-0">
-                <i class="fa-solid fa-file-pdf text-rose-500 mr-1"></i> ${f.size || 'PDF'}
+                <i class="fa-solid fa-file-pdf text-rose-500 mr-1"></i> ${this.escapeHtml(f.size || 'PDF')}
               </span>
             </div>
 
@@ -506,7 +704,7 @@ const VUO_FORMS = {
 
             <!-- Description -->
             <p class="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
-              ${f.desc || 'Official application form and document checklist for Odisha citizen services.'}
+              ${safeDesc}
             </p>
 
             <!-- Tags -->

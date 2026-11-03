@@ -1,8 +1,8 @@
 {
-    "enabled":  true,
+    "enabled":  false,
     "badgeText":  "📢 OFFICIAL NOTIFICATION",
     "title":  "Mega VLE Notice - All Odisha 2026",
-    "headline":  "Subhadra Yojana \u0026 AI Passphoto Live",
+    "headline":  "Subhadra Yojana & AI Passphoto Live",
     "message":  "Welcome notice published and synchronized successfully across all computers.",
     "buttonText":  "Explore AI Studio",
     "buttonLink":  "#passphoto",

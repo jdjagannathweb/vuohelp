@@ -29,6 +29,10 @@ const VUO_PDFTOOLS = {
       });
     });
 
+    this.initGovtCertPdfSuite();
+    this.initPdfCompressor();
+    this.initPdfIncreaser();
+
     // 1. Image to PDF Upload
     const imgToPdfInput = document.getElementById('imgToPdfInput');
     if (imgToPdfInput) {
@@ -678,9 +682,11 @@ const VUO_PDFTOOLS = {
       this.editorTotalPages = this.editorPdfDoc.numPages;
       this.editorCurrentPage = 1;
       this.editorPageRotation = 0;
+      this.editorScale = 1.0;
       this.editorAnnotations = [];
 
       this.updateEditorPageNav();
+      this.updateZoomDisplay();
       await this.renderEditorPage();
 
       const workspace = document.getElementById('pdfEditorWorkspace');
@@ -688,11 +694,21 @@ const VUO_PDFTOOLS = {
       const placeholder = document.getElementById('pdfEditorPlaceholder');
       if (placeholder) placeholder.classList.add('hidden');
 
-      // Bind canvas click if not already bound
+      // Scroll viewport container to top-left so preview is 100% visible from top
+      const viewportEl = document.getElementById('pdfEditorViewport');
+      if (viewportEl) {
+        viewportEl.scrollTop = 0;
+        viewportEl.scrollLeft = 0;
+      }
+
+      // Bind canvas click & drag listeners if not already bound
       const canvas = document.getElementById('pdfEditorCanvas');
       if (canvas && !canvas._hasEditorListener) {
         canvas._hasEditorListener = true;
         canvas.addEventListener('click', (e) => this.handleEditorCanvasClick(e));
+        canvas.addEventListener('mousedown', (e) => this.handleEditorCanvasMouseDown(e));
+        window.addEventListener('mousemove', (e) => this.handleEditorCanvasMouseMove(e));
+        window.addEventListener('mouseup', (e) => this.handleEditorCanvasMouseUp(e));
       }
 
       // Initialize signature pad
@@ -708,6 +724,53 @@ const VUO_PDFTOOLS = {
     }
   },
 
+  editorScale: 1.0,
+  _lastPageRawW: 595,
+  _lastPageRawH: 842,
+
+  setEditorZoom(scale) {
+    this.editorScale = Math.max(0.4, Math.min(2.5, Math.round(scale * 100) / 100));
+    this.updateZoomDisplay();
+    this.renderEditorPage();
+  },
+
+  zoomEditor(delta) {
+    const cur = this.editorScale || 1.0;
+    this.setEditorZoom(cur + delta);
+  },
+
+  fitEditorToPage() {
+    if (!this.editorPdfDoc) return;
+    const container = document.getElementById('pdfEditorViewport');
+    if (!container || !this._lastPageRawW || !this._lastPageRawH) return;
+    const availW = container.clientWidth - 48;
+    const availH = container.clientHeight - 80;
+    if (availW > 0 && availH > 0) {
+      const scaleW = availW / this._lastPageRawW;
+      const scaleH = availH / this._lastPageRawH;
+      const targetScale = Math.min(scaleW, scaleH);
+      this.setEditorZoom(targetScale);
+    }
+  },
+
+  fitEditorToWidth() {
+    if (!this.editorPdfDoc) return;
+    const container = document.getElementById('pdfEditorViewport');
+    if (!container || !this._lastPageRawW) return;
+    const availW = container.clientWidth - 48;
+    if (availW > 0) {
+      const targetScale = availW / this._lastPageRawW;
+      this.setEditorZoom(targetScale);
+    }
+  },
+
+  updateZoomDisplay() {
+    const badge = document.getElementById('pdfEditorZoomBadge');
+    if (badge) {
+      badge.textContent = `${Math.round((this.editorScale || 1.0) * 100)}%`;
+    }
+  },
+
   async renderEditorPage() {
     if (!this.editorPdfDoc) return;
     const canvas = document.getElementById('pdfEditorCanvas');
@@ -715,8 +778,13 @@ const VUO_PDFTOOLS = {
     const ctx = canvas.getContext('2d');
 
     const page = await this.editorPdfDoc.getPage(this.editorCurrentPage);
-    // Render at scale 1.35 for sharp reading
-    const viewport = page.getViewport({ scale: 1.35, rotation: this.editorPageRotation });
+    const rawViewport = page.getViewport({ scale: 1.0, rotation: this.editorPageRotation });
+    this._lastPageRawW = rawViewport.width;
+    this._lastPageRawH = rawViewport.height;
+
+    const scale = this.editorScale || 1.0;
+    const viewport = page.getViewport({ scale: scale, rotation: this.editorPageRotation });
+    this.editorViewport = viewport;
     canvas.width = viewport.width;
     canvas.height = viewport.height;
 
@@ -922,7 +990,7 @@ const VUO_PDFTOOLS = {
     input.style.height = `${Math.max(fontPt * 1.5, 28)}px`;
 
     const updateStyle = () => {
-      let fontFam = 'Inter, Arial, sans-serif';
+      let fontFam = "'Noto Sans Odia', 'Inter', 'Poppins', Arial, sans-serif";
       if (fontCategory === 'serif') fontFam = '"Times New Roman", Times, Georgia, serif';
       else if (fontCategory === 'monospace') fontFam = '"Courier New", Courier, monospace';
       input.style.fontFamily = fontFam;
@@ -1078,7 +1146,7 @@ const VUO_PDFTOOLS = {
     input.style.height = `${Math.max(height, 28)}px`;
 
     const updateStyle = () => {
-      let fontFam = 'Inter, Arial, sans-serif';
+      let fontFam = "'Noto Sans Odia', 'Inter', 'Poppins', Arial, sans-serif";
       if (fontCategory === 'serif') fontFam = '"Times New Roman", Times, Georgia, serif';
       else if (fontCategory === 'monospace') fontFam = '"Courier New", Courier, monospace';
       input.style.fontFamily = fontFam;
@@ -1341,7 +1409,7 @@ const VUO_PDFTOOLS = {
     input.style.height = `${Math.max(height + 4, 26)}px`;
 
     const updateInputStyle = () => {
-      let fontFam = 'Inter, Arial, sans-serif';
+      let fontFam = "'Noto Sans Odia', 'Inter', 'Poppins', Arial, sans-serif";
       if (fontCategory === 'serif') fontFam = '"Times New Roman", Times, Georgia, serif';
       else if (fontCategory === 'monospace') fontFam = '"Courier New", Courier, monospace';
 
@@ -1502,8 +1570,8 @@ const VUO_PDFTOOLS = {
       // 2. Render replacement text with exact font family, weight, style, size and color
       const weight = ann.isBold ? '700' : '400';
       const style = ann.isItalic ? 'italic' : 'normal';
-      let fontFam = 'Inter, Arial, sans-serif';
-      if (ann.fontFamily === 'serif') fontFam = '"Times New Roman", Times, Georgia, serif';
+      let fontFam = "'Noto Sans Odia', 'Inter', 'Poppins', Arial, sans-serif";
+      if (ann.fontFamily === 'serif') fontFam = "'Noto Sans Odia', 'Times New Roman', Times, Georgia, serif";
       else if (ann.fontFamily === 'monospace') fontFam = '"Courier New", Courier, monospace';
 
       const scale = this.editorViewport?.scale || 1.35;
@@ -1555,8 +1623,8 @@ const VUO_PDFTOOLS = {
 
       const weight = ann.isBold ? '700' : '500';
       const style = ann.isItalic ? 'italic' : 'normal';
-      let fontFam = 'Inter, Arial, sans-serif';
-      if (ann.fontFamily === 'serif') fontFam = '"Times New Roman", Times, Georgia, serif';
+      let fontFam = "'Noto Sans Odia', 'Inter', 'Poppins', Arial, sans-serif";
+      if (ann.fontFamily === 'serif') fontFam = "'Noto Sans Odia', 'Times New Roman', Times, Georgia, serif";
       else if (ann.fontFamily === 'monospace') fontFam = '"Courier New", Courier, monospace';
 
       const scale = this.editorViewport?.scale || 1.35;
@@ -1577,14 +1645,19 @@ const VUO_PDFTOOLS = {
       };
       sigImg.src = ann.dataUrl;
     } else if (ann.type === 'redact') {
-      const rw = (ann.relW || 0.25) * canvasW;
-      const rh = (ann.relH || 0.04) * canvasH;
       ctx.save();
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x - rw / 2, y - rh / 2, rw, rh);
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x - rw / 2, y - rh / 2, rw, rh);
+      if (ann.isBox) {
+        const bx = ann.relX * canvasW;
+        const by = ann.relY * canvasH;
+        const bw = (ann.relW || 0.1) * canvasW;
+        const bh = (ann.relH || 0.03) * canvasH;
+        ctx.fillRect(bx, by, bw, bh);
+      } else {
+        const rw = (ann.relW || 0.25) * canvasW;
+        const rh = (ann.relH || 0.04) * canvasH;
+        ctx.fillRect(x - rw / 2, y - rh / 2, rw, rh);
+      }
       ctx.restore();
     } else if (ann.type === 'highlight') {
       const hw = (ann.relW || 0.3) * canvasW;
@@ -1664,13 +1737,18 @@ const VUO_PDFTOOLS = {
       this.renderEditorPage();
       showToast('Signature placed on PDF!', 'success');
     } else if (tool === 'redact') {
+      if (this._justDraggedEraser) {
+        this._justDraggedEraser = false;
+        return;
+      }
       this.editorAnnotations.push({
         page: this.editorCurrentPage,
         type: 'redact',
-        relX: relX,
-        relY: relY,
-        relW: 0.25,
-        relH: 0.04
+        isBox: true,
+        relX: Math.max(0, relX - 0.08),
+        relY: Math.max(0, relY - 0.015),
+        relW: 0.16,
+        relH: 0.03
       });
       this.renderEditorPage();
       showToast('Whiteout redact box placed!', 'info');
@@ -1724,6 +1802,14 @@ const VUO_PDFTOOLS = {
       } else {
         tip.classList.add('hidden');
       }
+    }
+
+    const canvas = document.getElementById('pdfEditorCanvas');
+    if (canvas) {
+      if (tool === 'redact') canvas.style.cursor = 'crosshair';
+      else if (tool === 'text') canvas.style.cursor = 'text';
+      else if (tool === 'stamp' || tool === 'signature') canvas.style.cursor = 'copy';
+      else canvas.style.cursor = 'default';
     }
 
     const hint = document.getElementById('pdfEditorCanvasHint');
@@ -2378,13 +2464,43 @@ const VUO_PDFTOOLS = {
             textRgb = { r: 13, g: 153, b: 51 };
           }
 
-          page.drawText(ann.text || '', {
-            x: pdfX,
-            y: pdfY,
-            size: ann.fontSize || 12,
-            font: chosenFont,
-            color: PDFLib.rgb(textRgb.r / 255, textRgb.g / 255, textRgb.b / 255)
-          });
+          const isNonAscii = /[^ -]/.test(ann.text || '');
+          if (!isNonAscii) {
+            page.drawText(ann.text || '', {
+              x: pdfX,
+              y: pdfY,
+              size: ann.fontSize || 12,
+              font: chosenFont,
+              color: PDFLib.rgb(textRgb.r / 255, textRgb.g / 255, textRgb.b / 255)
+            });
+          } else {
+            // For Odia/Indic text, render text patch onto offscreen canvas and embed image
+            try {
+              const patchCanvas = document.createElement('canvas');
+              const patchCtx = patchCanvas.getContext('2d');
+              const fontSize = Math.max(14, (ann.fontSize || 12) * 2);
+              patchCtx.font = `bold ${fontSize}px 'Noto Sans Odia', 'Inter', Arial, sans-serif`;
+              const metrics = patchCtx.measureText(ann.text || '');
+              patchCanvas.width = Math.ceil(metrics.width + 20);
+              patchCanvas.height = Math.ceil(fontSize * 1.6);
+              patchCtx.font = `bold ${fontSize}px 'Noto Sans Odia', 'Inter', Arial, sans-serif`;
+              patchCtx.fillStyle = ann.color || '#0f172a';
+              patchCtx.textBaseline = 'top';
+              patchCtx.fillText(ann.text || '', 5, 2);
+              const patchImgData = patchCanvas.toDataURL('image/png');
+              const patchImg = await pdfDoc.embedPng(patchImgData);
+              const drawW = patchCanvas.width / 2;
+              const drawH = patchCanvas.height / 2;
+              page.drawImage(patchImg, {
+                x: pdfX,
+                y: pdfY - drawH / 2,
+                width: drawW,
+                height: drawH
+              });
+            } catch (pErr) {
+              console.warn("Patch embed error:", pErr);
+            }
+          }
         } else if (ann.type === 'signature' && ann.dataUrl) {
           const sigImage = await pdfDoc.embedPng(ann.dataUrl);
           const sigW = 110;
@@ -2396,16 +2512,31 @@ const VUO_PDFTOOLS = {
             height: sigH
           });
         } else if (ann.type === 'redact') {
-          const rw = (ann.relW || 0.25) * width;
-          const rh = (ann.relH || 0.04) * height;
-          page.drawRectangle({
-            x: pdfX - rw / 2,
-            y: pdfY - rh / 2,
-            width: rw,
-            height: rh,
-            color: PDFLib.rgb(1, 1, 1),
-            opacity: 1.0
-          });
+          if (ann.isBox) {
+            const rx = ann.relX * width;
+            const ry = (1 - ann.relY - (ann.relH || 0.03)) * height;
+            const rw = (ann.relW || 0.1) * width;
+            const rh = (ann.relH || 0.03) * height;
+            page.drawRectangle({
+              x: Math.max(0, rx),
+              y: Math.max(0, ry),
+              width: rw,
+              height: rh,
+              color: PDFLib.rgb(1, 1, 1),
+              opacity: 1.0
+            });
+          } else {
+            const rw = (ann.relW || 0.25) * width;
+            const rh = (ann.relH || 0.04) * height;
+            page.drawRectangle({
+              x: pdfX - rw / 2,
+              y: pdfY - rh / 2,
+              width: rw,
+              height: rh,
+              color: PDFLib.rgb(1, 1, 1),
+              opacity: 1.0
+            });
+          }
         } else if (ann.type === 'highlight') {
           const hw = (ann.relW || 0.3) * width;
           const hh = (ann.relH || 0.035) * height;
@@ -2471,7 +2602,726 @@ const VUO_PDFTOOLS = {
         showToast("2 Sample Document Scans Loaded! Click 'Generate Combined PDF'", "success");
       }, 'image/jpeg', 0.9);
     }, 'image/jpeg', 0.9);
+  },
+
+  // ---------------- DRAG-TO-WHITEOUT / ERASER HANDLERS ----------------
+  isDraggingEraser: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  _eraserStartClientX: 0,
+  _eraserStartClientY: 0,
+  _justDraggedEraser: false,
+
+  handleEditorCanvasMouseDown(e) {
+    if (this.activeEditorTool !== 'redact' || !this.editorPdfDoc) return;
+    e.preventDefault();
+    const canvas = document.getElementById('pdfEditorCanvas');
+    const overlay = document.getElementById('pdfEraserOverlay');
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    this.isDraggingEraser = true;
+    this._justDraggedEraser = false;
+    this._eraserStartClientX = e.clientX;
+    this._eraserStartClientY = e.clientY;
+    this.dragStartX = (e.clientX - rect.left) * scaleX;
+    this.dragStartY = (e.clientY - rect.top) * scaleY;
+
+    if (overlay) {
+      overlay.style.left = (e.clientX - rect.left) + 'px';
+      overlay.style.top = (e.clientY - rect.top) + 'px';
+      overlay.style.width = '0px';
+      overlay.style.height = '0px';
+      overlay.classList.remove('hidden');
+    }
+  },
+
+  handleEditorCanvasMouseMove(e) {
+    if (!this.isDraggingEraser || this.activeEditorTool !== 'redact') return;
+    e.preventDefault();
+    const canvas = document.getElementById('pdfEditorCanvas');
+    const overlay = document.getElementById('pdfEraserOverlay');
+    if (!canvas || !overlay) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const curClientX = Math.max(rect.left, Math.min(rect.right, e.clientX));
+    const curClientY = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
+
+    const leftPx = Math.min(this._eraserStartClientX - rect.left, curClientX - rect.left);
+    const topPx = Math.min(this._eraserStartClientY - rect.top, curClientY - rect.top);
+    const widthPx = Math.abs(curClientX - this._eraserStartClientX);
+    const heightPx = Math.abs(curClientY - this._eraserStartClientY);
+
+    // Update overlay box style directly: ZERO PDF re-renders, 60fps smooth, ZERO shaking!
+    overlay.style.left = leftPx + 'px';
+    overlay.style.top = topPx + 'px';
+    overlay.style.width = widthPx + 'px';
+    overlay.style.height = heightPx + 'px';
+  },
+
+  handleEditorCanvasMouseUp(e) {
+    if (!this.isDraggingEraser || this.activeEditorTool !== 'redact') return;
+    this.isDraggingEraser = false;
+
+    const overlay = document.getElementById('pdfEraserOverlay');
+    if (overlay) overlay.classList.add('hidden');
+
+    const canvas = document.getElementById('pdfEditorCanvas');
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const curClientX = Math.max(rect.left, Math.min(rect.right, e.clientX));
+    const curClientY = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const endX = (curClientX - rect.left) * scaleX;
+    const endY = (curClientY - rect.top) * scaleY;
+
+    const w = Math.abs(endX - this.dragStartX);
+    const h = Math.abs(endY - this.dragStartY);
+
+    if (w > 8 && h > 6) {
+      this._justDraggedEraser = true;
+      const rx = Math.min(this.dragStartX, endX);
+      const ry = Math.min(this.dragStartY, endY);
+
+      this.editorAnnotations.push({
+        page: this.editorCurrentPage,
+        type: 'redact',
+        isBox: true,
+        relX: rx / canvas.width,
+        relY: ry / canvas.height,
+        relW: w / canvas.width,
+        relH: h / canvas.height
+      });
+
+      this.renderEditorPage();
+      if (typeof showToast === 'function') showToast("Selected area whited out cleanly!", "info");
+    }
+  },
+
+  // ---------------- 1. GOVT JOB CERTIFICATE PDF STUDIO ----------------
+  govtCertState: {
+    minKb: 100,
+    maxKb: 300,
+    presetName: 'OSSC / OSSSC / OPSC',
+    currentFile: null,
+    resultBytes: null
+  },
+
+  initGovtCertPdfSuite() {
+    document.querySelectorAll('.pdf-cert-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const min = e.currentTarget.getAttribute('data-min');
+        const max = e.currentTarget.getAttribute('data-max');
+        const name = e.currentTarget.getAttribute('data-name');
+        this.setGovtCertPreset(min, max, name);
+      });
+    });
+
+    ['pdfCertCustomMin', 'pdfCertCustomMax'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          this.updateGovtCertBadge();
+          if (this.govtCertState.currentFile) {
+            this.processGovtCertPdf(this.govtCertState.currentFile);
+          }
+        });
+      }
+    });
+
+    const fileInput = document.getElementById('pdfCertFileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.processGovtCertPdf(e.target.files[0]);
+        }
+      });
+    }
+
+    const dropZone = document.getElementById('pdfCertDropZone');
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('border-amber-500', 'bg-amber-50/40');
+        });
+      });
+      ['dragleave', 'drop'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-amber-500', 'bg-amber-50/40');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this.processGovtCertPdf(e.dataTransfer.files[0]);
+        }
+      });
+    }
+  },
+
+  setGovtCertPreset(min, max, name) {
+    this.govtCertState.presetName = name;
+    document.querySelectorAll('.pdf-cert-preset-btn').forEach(btn => {
+      if (btn.getAttribute('data-name') === name) {
+        btn.className = 'pdf-cert-preset-btn px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-600 text-white shadow-sm flex items-center gap-1.5 cursor-pointer';
+      } else {
+        btn.className = 'pdf-cert-preset-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition flex items-center gap-1.5 cursor-pointer';
+      }
+    });
+
+    const customBox = document.getElementById('pdfCertCustomBox');
+    if (customBox) {
+      if (min === 'custom') customBox.classList.remove('hidden');
+      else customBox.classList.add('hidden');
+    }
+
+    if (min !== 'custom') {
+      this.govtCertState.minKb = parseInt(min, 10);
+      this.govtCertState.maxKb = parseInt(max, 10);
+    }
+    this.updateGovtCertBadge();
+
+    if (this.govtCertState.currentFile) {
+      this.processGovtCertPdf(this.govtCertState.currentFile);
+    }
+  },
+
+  updateGovtCertBadge() {
+    const customBox = document.getElementById('pdfCertCustomBox');
+    let min = this.govtCertState.minKb;
+    let max = this.govtCertState.maxKb;
+
+    if (customBox && !customBox.classList.contains('hidden')) {
+      min = parseInt(document.getElementById('pdfCertCustomMin')?.value || '100', 10);
+      max = parseInt(document.getElementById('pdfCertCustomMax')?.value || '300', 10);
+      this.govtCertState.minKb = min;
+      this.govtCertState.maxKb = max;
+    }
+
+    const badge = document.getElementById('pdfCertTargetBadge');
+    if (badge) {
+      badge.innerHTML = `<i class="fa-solid fa-bullseye"></i><span>Target: ${min} KB – ${max} KB</span>`;
+    }
+  },
+
+  async processGovtCertPdf(file) {
+    if (!file || file.type !== 'application/pdf') {
+      if (typeof showToast === 'function') showToast("Please select a valid PDF file.", "warning");
+      return;
+    }
+    this.govtCertState.currentFile = file;
+
+    const statusBadge = document.getElementById('pdfCertStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = "Assessing & Matching...";
+      statusBadge.className = "px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs inline-flex items-center";
+    }
+
+    const rawBuf = await file.arrayBuffer();
+    const origBytes = new Uint8Array(rawBuf);
+    const origKb = Math.round((origBytes.byteLength / 1024) * 10) / 10;
+    const { minKb, maxKb } = this.govtCertState;
+
+    let finalBytes = origBytes;
+
+    if (origKb > maxKb) {
+      // PDF is too big -> Compress
+      if (typeof showToast === 'function') showToast(`Compressing PDF to fall below ${maxKb} KB...`, "info");
+      const res = await this.compressPdfToTargetKb(origBytes, maxKb - 5);
+      finalBytes = res.bytes;
+    } else if (origKb < minKb) {
+      // PDF is too small -> Boost
+      if (typeof showToast === 'function') showToast(`Boosting PDF to exceed portal minimum ${minKb} KB...`, "info");
+      const res = await this.boostPdfSize(origBytes, minKb + 5);
+      finalBytes = res.bytes;
+    }
+
+    this.govtCertState.resultBytes = finalBytes;
+    const finalKb = Math.round((finalBytes.byteLength / 1024) * 10) / 10;
+
+    // Update UI
+    const resultBox = document.getElementById('pdfCertResultBox');
+    if (resultBox) resultBox.classList.remove('hidden');
+
+    const origEl = document.getElementById('pdfCertOrigSize');
+    if (origEl) origEl.textContent = `${origKb} KB`;
+
+    const targetEl = document.getElementById('pdfCertTargetRange');
+    if (targetEl) targetEl.textContent = `${minKb} - ${maxKb} KB`;
+
+    const finalEl = document.getElementById('pdfCertFinalSize');
+    if (finalEl) finalEl.textContent = `${finalKb} KB`;
+
+    if (statusBadge) {
+      const inRange = finalKb >= minKb && finalKb <= maxKb;
+      statusBadge.innerHTML = inRange
+        ? `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Portal Match Verified (${minKb}-${maxKb} KB)`
+        : `Ready: ${finalKb} KB`;
+      statusBadge.className = inRange
+        ? "px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs inline-flex items-center"
+        : "px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs inline-flex items-center";
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Certificate PDF ready: ${finalKb} KB (${minKb}-${maxKb} KB target)`, "success");
+    }
+  },
+
+  downloadGovtCertPdf() {
+    const bytes = this.govtCertState.resultBytes;
+    if (!bytes) {
+      if (typeof showToast === 'function') showToast("Please upload and process a Certificate PDF first.", "warning");
+      return;
+    }
+    const kb = Math.round((bytes.byteLength / 1024) * 10) / 10;
+    const name = (this.govtCertState.currentFile?.name || 'Certificate.pdf').replace(/\.pdf$/i, '');
+    const filename = `${name}_PortalReady_${kb}KB.pdf`;
+
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (typeof showToast === 'function') showToast(`Downloaded: ${filename}`, "success");
+  },
+
+  // ---------------- 2. PDF COMPRESSOR ----------------
+  compressPdfState: {
+    targetMaxKb: 100,
+    currentFile: null,
+    resultBytes: null
+  },
+
+  initPdfCompressor() {
+    document.querySelectorAll('.pdf-compress-target-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const maxVal = e.currentTarget.getAttribute('data-max');
+        this.setPdfCompressTarget(maxVal);
+      });
+    });
+
+    const customInput = document.getElementById('pdfCompressCustomInput');
+    if (customInput) {
+      customInput.addEventListener('input', () => {
+        const val = parseInt(customInput.value || '150', 10);
+        this.compressPdfState.targetMaxKb = val;
+        if (this.compressPdfState.currentFile) {
+          this.compressPdfFile(this.compressPdfState.currentFile);
+        }
+      });
+    }
+
+    const fileInput = document.getElementById('pdfCompressFileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.compressPdfFile(e.target.files[0]);
+        }
+      });
+    }
+
+    const dropZone = document.getElementById('pdfCompressDropZone');
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('border-sky-500', 'bg-sky-50/40');
+        });
+      });
+      ['dragleave', 'drop'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-sky-500', 'bg-sky-50/40');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this.compressPdfFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+  },
+
+  setPdfCompressTarget(maxVal) {
+    const customBox = document.getElementById('pdfCompressCustomBox');
+    if (maxVal === 'custom') {
+      if (customBox) customBox.classList.remove('hidden');
+      const val = parseInt(document.getElementById('pdfCompressCustomInput')?.value || '150', 10);
+      this.compressPdfState.targetMaxKb = val;
+    } else {
+      if (customBox) customBox.classList.add('hidden');
+      this.compressPdfState.targetMaxKb = parseInt(maxVal, 10);
+    }
+
+    document.querySelectorAll('.pdf-compress-target-btn').forEach(btn => {
+      if (btn.getAttribute('data-max') === maxVal) {
+        btn.className = 'pdf-compress-target-btn px-4 py-2 rounded-xl text-xs font-black bg-sky-500 text-white shadow cursor-pointer';
+      } else {
+        btn.className = 'pdf-compress-target-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-800 hover:bg-slate-100 transition cursor-pointer';
+      }
+    });
+
+    if (this.compressPdfState.currentFile) {
+      this.compressPdfFile(this.compressPdfState.currentFile);
+    }
+  },
+
+  async compressPdfFile(file) {
+    if (!file || file.type !== 'application/pdf') {
+      if (typeof showToast === 'function') showToast("Please select a valid PDF file.", "warning");
+      return;
+    }
+    this.compressPdfState.currentFile = file;
+
+    const badge = document.getElementById('pdfCompressSavingsBadge');
+    if (badge) {
+      badge.textContent = "Compressing pages...";
+      badge.className = "px-3 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-300 font-bold text-xs inline-flex items-center";
+    }
+
+    if (typeof showToast === 'function') showToast(`Compressing PDF to &lt; ${this.compressPdfState.targetMaxKb} KB...`, "info");
+
+    const rawBuf = await file.arrayBuffer();
+    const origBytes = new Uint8Array(rawBuf);
+
+    const res = await this.compressPdfToTargetKb(origBytes, this.compressPdfState.targetMaxKb, (p, total) => {
+      if (badge) badge.textContent = `Processing page ${p} of ${total}...`;
+    });
+
+    this.compressPdfState.resultBytes = res.bytes;
+
+    const resultBox = document.getElementById('pdfCompressResultBox');
+    if (resultBox) resultBox.classList.remove('hidden');
+
+    const origEl = document.getElementById('pdfCompressOrigSize');
+    if (origEl) origEl.textContent = `${Math.round(res.originalKb * 10) / 10} KB`;
+
+    const finalEl = document.getElementById('pdfCompressFinalSize');
+    if (finalEl) finalEl.textContent = `${Math.round(res.compressedKb * 10) / 10} KB`;
+
+    if (badge) {
+      badge.innerHTML = `<i class="fa-solid fa-bolt text-emerald-600 mr-1.5"></i> ${res.savingsPct}% Reduced`;
+      badge.className = "px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs inline-flex items-center";
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`PDF compressed to ${Math.round(res.compressedKb * 10) / 10} KB (${res.savingsPct}% saved)!`, "success");
+    }
+  },
+
+  downloadCompressedPdf() {
+    const bytes = this.compressPdfState.resultBytes;
+    if (!bytes) {
+      if (typeof showToast === 'function') showToast("Please upload and compress a PDF first.", "warning");
+      return;
+    }
+    const kb = Math.round((bytes.byteLength / 1024) * 10) / 10;
+    const name = (this.compressPdfState.currentFile?.name || 'Document.pdf').replace(/\.pdf$/i, '');
+    const filename = `${name}_Compressed_${kb}KB.pdf`;
+
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (typeof showToast === 'function') showToast(`Downloaded: ${filename}`, "success");
+  },
+
+  // ---------------- 3. PDF SIZE INCREASER / BOOSTER ----------------
+  increasePdfState: {
+    targetMinKb: 100,
+    currentFile: null,
+    resultBytes: null
+  },
+
+  initPdfIncreaser() {
+    document.querySelectorAll('.pdf-increase-target-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const minVal = e.currentTarget.getAttribute('data-min');
+        this.setPdfIncreaseTarget(minVal);
+      });
+    });
+
+    const customInput = document.getElementById('pdfIncreaseCustomInput');
+    if (customInput) {
+      customInput.addEventListener('input', () => {
+        const val = parseInt(customInput.value || '120', 10);
+        this.increasePdfState.targetMinKb = val;
+        if (this.increasePdfState.currentFile) {
+          this.boostPdfFile(this.increasePdfState.currentFile);
+        }
+      });
+    }
+
+    const fileInput = document.getElementById('pdfIncreaseFileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.boostPdfFile(e.target.files[0]);
+        }
+      });
+    }
+
+    const dropZone = document.getElementById('pdfIncreaseDropZone');
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('border-emerald-500', 'bg-emerald-50/40');
+        });
+      });
+      ['dragleave', 'drop'].forEach(n => {
+        dropZone.addEventListener(n, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this.boostPdfFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+  },
+
+  setPdfIncreaseTarget(minVal) {
+    const customBox = document.getElementById('pdfIncreaseCustomBox');
+    if (minVal === 'custom') {
+      if (customBox) customBox.classList.remove('hidden');
+      const val = parseInt(document.getElementById('pdfIncreaseCustomInput')?.value || '120', 10);
+      this.increasePdfState.targetMinKb = val;
+    } else {
+      if (customBox) customBox.classList.add('hidden');
+      this.increasePdfState.targetMinKb = parseInt(minVal, 10);
+    }
+
+    document.querySelectorAll('.pdf-increase-target-btn').forEach(btn => {
+      if (btn.getAttribute('data-min') === minVal) {
+        btn.className = 'pdf-increase-target-btn px-4 py-2 rounded-xl text-xs font-black bg-emerald-500 text-slate-950 shadow cursor-pointer';
+      } else {
+        btn.className = 'pdf-increase-target-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-800 hover:bg-slate-100 transition cursor-pointer';
+      }
+    });
+
+    if (this.increasePdfState.currentFile) {
+      this.boostPdfFile(this.increasePdfState.currentFile);
+    }
+  },
+
+  async boostPdfFile(file) {
+    if (!file || file.type !== 'application/pdf') {
+      if (typeof showToast === 'function') showToast("Please select a valid PDF file.", "warning");
+      return;
+    }
+    this.increasePdfState.currentFile = file;
+
+    if (typeof showToast === 'function') showToast(`Boosting PDF size to meet min ${this.increasePdfState.targetMinKb} KB...`, "info");
+
+    const rawBuf = await file.arrayBuffer();
+    const origBytes = new Uint8Array(rawBuf);
+
+    const res = await this.boostPdfSize(origBytes, this.increasePdfState.targetMinKb);
+
+    this.increasePdfState.resultBytes = res.bytes;
+
+    const resultBox = document.getElementById('pdfIncreaseResultBox');
+    if (resultBox) resultBox.classList.remove('hidden');
+
+    const origEl = document.getElementById('pdfIncreaseOrigSize');
+    if (origEl) origEl.textContent = `${Math.round(res.originalKb * 10) / 10} KB`;
+
+    const finalEl = document.getElementById('pdfIncreaseFinalSize');
+    if (finalEl) finalEl.textContent = `${Math.round(res.boostedKb * 10) / 10} KB`;
+
+    if (typeof showToast === 'function') {
+      showToast(`PDF boosted from ${Math.round(res.originalKb * 10) / 10} KB to ${Math.round(res.boostedKb * 10) / 10} KB!`, "success");
+    }
+  },
+
+  downloadBoostedPdf() {
+    const bytes = this.increasePdfState.resultBytes;
+    if (!bytes) {
+      if (typeof showToast === 'function') showToast("Please upload and boost a PDF first.", "warning");
+      return;
+    }
+    const kb = Math.round((bytes.byteLength / 1024) * 10) / 10;
+    const name = (this.increasePdfState.currentFile?.name || 'Document.pdf').replace(/\.pdf$/i, '');
+    const filename = `${name}_Boosted_${kb}KB.pdf`;
+
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (typeof showToast === 'function') showToast(`Downloaded: ${filename}`, "success");
+  },
+
+  // ---------------- HELPER ENGINE: PDF COMPRESS & BOOST ----------------
+  async compressPdfToTargetKb(pdfBytes, targetMaxKb, onProgress) {
+    const targetBytes = targetMaxKb * 1024;
+    if (pdfBytes.byteLength <= targetBytes) {
+      return {
+        bytes: pdfBytes,
+        originalKb: pdfBytes.byteLength / 1024,
+        compressedKb: pdfBytes.byteLength / 1024,
+        savingsPct: 0
+      };
+    }
+
+    if (typeof pdfjsLib === 'undefined' || typeof window.jspdf === 'undefined') {
+      throw new Error("PDF compression libraries not loaded");
+    }
+
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice(0) });
+    const pdfDoc = await loadingTask.promise;
+    const numPages = pdfDoc.numPages;
+
+    const perPageBudget = Math.max(10, Math.floor((targetBytes - 4096) / numPages));
+
+    let scale = 1.25;
+    let quality = 0.65;
+    if (perPageBudget < 40 * 1024) {
+      scale = 1.0;
+      quality = 0.48;
+    } else if (perPageBudget < 80 * 1024) {
+      scale = 1.15;
+      quality = 0.58;
+    } else {
+      scale = 1.35;
+      quality = 0.72;
+    }
+
+    const { jsPDF } = window.jspdf;
+    let newPdf = null;
+
+    for (let p = 1; p <= numPages; p++) {
+      if (typeof onProgress === 'function') onProgress(p, numPages);
+      const page = await pdfDoc.getPage(p);
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const imgData = canvas.toDataURL('image/jpeg', quality);
+
+      const orientation = viewport.width > viewport.height ? 'landscape' : 'portrait';
+      const ptW = viewport.width * 72 / (96 * scale);
+      const ptH = viewport.height * 72 / (96 * scale);
+
+      if (p === 1) {
+        newPdf = new jsPDF({ orientation, unit: 'pt', format: [ptW, ptH] });
+        newPdf.addImage(imgData, 'JPEG', 0, 0, ptW, ptH, undefined, 'FAST');
+      } else {
+        newPdf.addPage([ptW, ptH], orientation);
+        newPdf.addImage(imgData, 'JPEG', 0, 0, ptW, ptH, undefined, 'FAST');
+      }
+    }
+
+    let compressedArr = newPdf.output('arraybuffer');
+
+    // Second pass if still slightly exceeding budget
+    if (compressedArr.byteLength > targetBytes && quality > 0.35) {
+      quality = Math.max(0.30, quality * (targetBytes / compressedArr.byteLength) * 0.92);
+      for (let p = 1; p <= numPages; p++) {
+        const page = await pdfDoc.getPage(p);
+        const viewport = page.getViewport({ scale: scale * 0.9 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const imgData = canvas.toDataURL('image/jpeg', quality);
+        const orientation = viewport.width > viewport.height ? 'landscape' : 'portrait';
+        const ptW = viewport.width * 72 / (96 * scale * 0.9);
+        const ptH = viewport.height * 72 / (96 * scale * 0.9);
+
+        if (p === 1) {
+          newPdf = new jsPDF({ orientation, unit: 'pt', format: [ptW, ptH] });
+          newPdf.addImage(imgData, 'JPEG', 0, 0, ptW, ptH, undefined, 'FAST');
+        } else {
+          newPdf.addPage([ptW, ptH], orientation);
+          newPdf.addImage(imgData, 'JPEG', 0, 0, ptW, ptH, undefined, 'FAST');
+        }
+      }
+      compressedArr = newPdf.output('arraybuffer');
+    }
+
+    const originalKb = pdfBytes.byteLength / 1024;
+    const compressedKb = compressedArr.byteLength / 1024;
+    const savingsPct = Math.max(0, ((originalKb - compressedKb) / originalKb) * 100);
+
+    return {
+      bytes: new Uint8Array(compressedArr),
+      originalKb,
+      compressedKb,
+      savingsPct: Math.round(savingsPct * 10) / 10
+    };
+  },
+
+  async boostPdfSize(pdfBytes, targetMinKb) {
+    const targetBytes = targetMinKb * 1024;
+    if (pdfBytes.byteLength >= targetBytes) {
+      return {
+        bytes: pdfBytes,
+        originalKb: pdfBytes.byteLength / 1024,
+        boostedKb: pdfBytes.byteLength / 1024,
+        alreadyValid: true
+      };
+    }
+
+    if (!window.PDFLib) {
+      throw new Error("PDFLib not loaded");
+    }
+
+    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes.slice(0));
+    const diff = targetBytes - pdfBytes.byteLength;
+
+    const padLen = Math.max(diff + 512, 1024);
+    const padData = new Uint8Array(padLen);
+    for (let i = 0; i < padLen; i++) {
+      padData[i] = ((i * 37) ^ (i >> 3)) & 0xFF;
+    }
+
+    await pdfDoc.attach(padData, 'csc_portal_verification.dat', {
+      mimeType: 'application/octet-stream',
+      description: 'Government Portal Size Compliance Record'
+    });
+
+    const boostedBytes = await pdfDoc.save();
+    return {
+      bytes: boostedBytes,
+      originalKb: pdfBytes.byteLength / 1024,
+      boostedKb: boostedBytes.byteLength / 1024,
+      alreadyValid: false
+    };
   }
 };
+
 
 window.VUO_PDFTOOLS = VUO_PDFTOOLS;

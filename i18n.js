@@ -6,7 +6,7 @@ const VUO_I18N = {
   en: {
     // Brand
     brand_name: "VLE HELP DESK",
-    brand_org: "VLE HELP DESK",
+    brand_org: "VLE UNION ODISHA (V.U.O.)",
     tagline: "Your Digital Partner for CSC Services",
     brand_banner_tag: "All Essential CSC Tools & Resources — One Platform for Every VLE.",
 
@@ -97,9 +97,9 @@ const VUO_I18N = {
   or: {
     // Brand
     brand_name: "VLE HELP DESK",
-    brand_org: "VLE HELP DESK",
+    brand_org: "VLE UNION ODISHA (V.U.O.)",
     tagline: "CSC ସେବା ପାଇଁ ଆପଣଙ୍କ ଡିଜିଟାଲ୍ ସାଥୀ",
-    brand_banner_tag: "ସମସ୍ତ CSC ସେବା ଓ ଡିଜିଟାଲ୍ ଟୁଲ୍ — VLE HELP DESK",
+    brand_banner_tag: "ସମସ୍ତ CSC ସେବା ଓ ଡିଜିଟାଲ୍ ଟୁଲ୍ — VLE UNION ODISHA (V.U.O.)",
 
     // Nav
     nav_home: "ମୂଳ ପୃଷ୍ଠା",
@@ -187,6 +187,7 @@ const VUO_I18N = {
 };
 
 let currentLanguage = localStorage.getItem('vuo_lang') || 'en';
+if (typeof window !== 'undefined') { window.currentLanguage = currentLanguage; }
 
 function setLanguage(lang) {
   if (lang !== 'en' && lang !== 'or') lang = 'en';

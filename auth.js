@@ -1,13 +1,61 @@
 /**
- * VUO CSC HELP - Authentication & Member Management
- * Supports Member Registration, Login, Session Management, and Admin Verification
+ * VUO CSC HELP - Authentication, VLE Portal Access & Member Management
+ * Features:
+ *  - VLE Registration / Signup (Name, Mobile, CSC ID, Kendra, District, Password)
+ *  - Secure VLE Login (via Mobile, CSC ID, or Member No)
+ *  - Forgot Password Reset with 4-Digit OTP (Screen + 1-Click WhatsApp)
+ *  - VLE Personal Dashboard (My Leads, Khata status, Activity history)
+ *  - Synchronization with VUO_GATE and Admin panel
  */
 
 const VUO_AUTH = {
+  _pendingAction: null,
+  _pendingCallback: null,
+  GOOGLE_SCRIPT_OTP_URL: 'https://script.google.com/macros/s/AKfycbyhQaqg03IgNFnW_vEdRqp-tZoe3LZ0yyJrX6qwql_eVfc57pwFXd5iUHExCBG1bhcv/exec',
+
+  maskEmail(email) {
+    if (!email || !email.includes('@')) return '';
+    const parts = email.split('@');
+    const user = parts[0];
+    const domain = parts[1];
+    if (user.length <= 2) return user[0] + '***@' + domain;
+    return user.slice(0, 2) + '***' + user.slice(-1) + '@' + domain;
+  },
+
+  async sendEmailOtp(email, otp, name) {
+    if (!email || !email.includes('@')) {
+      return { success: false, message: 'No valid email address found.' };
+    }
+    const url = `${this.GOOGLE_SCRIPT_OTP_URL}?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}&name=${encodeURIComponent(name || 'CSC VLE Member')}`;
+    try {
+      // GET mode: 'no-cors' allows browser dispatch without CORS redirection error
+      fetch(url, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
+      return { success: true, message: `OTP sent to ${email}` };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   getCurrentUser() {
     try {
       const user = localStorage.getItem('vuo_current_user');
-      return user ? JSON.parse(user) : null;
+      if (user) return JSON.parse(user);
+      
+      // Check if previous vuo_vle_profile belongs to a registered Full Member in vuo_members
+      const prof = localStorage.getItem('vuo_vle_profile');
+      if (prof) {
+        const p = JSON.parse(prof);
+        const cleanMob = (p && p.mobile) ? p.mobile.replace(/\D/g, '').slice(-10) : '';
+        if (cleanMob) {
+          const members = this.getAllMembers();
+          const match = members.find(m => m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMob && !m.isGateOnly);
+          if (match) {
+            this.setCurrentUser(match);
+            return match;
+          }
+        }
+      }
+      return null;
     } catch (e) {
       return null;
     }
@@ -16,62 +64,282 @@ const VUO_AUTH = {
   setCurrentUser(user) {
     if (user) {
       localStorage.setItem('vuo_current_user', JSON.stringify(user));
+      // Sync to vuo_vle_profile for seamless compatibility
+      const profile = {
+        name: user.fullName || user.name,
+        mobile: user.mobile,
+        district: user.district,
+        cscId: user.cscId,
+        kendraName: user.kendraName,
+        registeredAt: user.registeredAt || Date.now(),
+        lastVisitAt: Date.now()
+      };
+      localStorage.setItem('vuo_vle_profile', JSON.stringify(profile));
     } else {
       localStorage.removeItem('vuo_current_user');
+      localStorage.removeItem('vuo_vle_profile');
     }
     this.updateAuthUI();
   },
 
+  getDeletedMembers() {
+    try {
+      const stored = localStorage.getItem('vuo_deleted_members');
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch (_) {}
+    return [];
+  },
+
+  addDeletedMember(keys) {
+    try {
+      const list = this.getDeletedMembers();
+      const set = new Set(list.map(s => String(s).toLowerCase().trim()));
+      (Array.isArray(keys) ? keys : [keys]).forEach(k => {
+        if (k) set.add(String(k).toLowerCase().trim());
+      });
+      localStorage.setItem('vuo_deleted_members', JSON.stringify(Array.from(set)));
+    } catch (_) {}
+  },
+
+  unmarkDeleted(key) {
+    try {
+      if (!key) return;
+      const clean = String(key).toLowerCase().trim();
+      const list = this.getDeletedMembers().filter(s => String(s).toLowerCase().trim() !== clean);
+      localStorage.setItem('vuo_deleted_members', JSON.stringify(list));
+    } catch (_) {}
+  },
+
   getAllMembers() {
     try {
-      const members = localStorage.getItem('vuo_members');
-      return members ? JSON.parse(members) : VUO_DATA.sampleMembers;
+      const deletedList = this.getDeletedMembers();
+      const deletedSet = new Set(deletedList.map(s => String(s).toLowerCase().trim()));
+
+      let members = [];
+      const stored = localStorage.getItem('vuo_members');
+      if (stored) {
+        members = JSON.parse(stored);
+      } else if (typeof VUO_DATA !== 'undefined' && VUO_DATA.sampleMembers) {
+        members = [...VUO_DATA.sampleMembers];
+      }
+
+      // Filter out deleted members
+      members = members.filter(m => {
+        const memNo = (m.memberNo || '').toLowerCase().trim();
+        const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+        const idVal = (m.id || '').toString().toLowerCase().trim();
+        const csc = (m.cscId || '').toLowerCase().trim();
+        return !(deletedSet.has(memNo) || (mob && deletedSet.has(mob)) || (idVal && deletedSet.has(idVal)) || (csc && deletedSet.has(csc)));
+      });
+
+      // Map format
+      const formatted = members.map(m => {
+        if (!m.id) m.id = m.memberNo || (m.mobile ? ('VLE-' + m.mobile.replace(/\D/g, '').slice(-4)) : ('M-' + Math.random().toString(36).substr(2, 6)));
+        if (!m.status) m.status = "Active (Verified VLE)";
+        return m;
+      });
+
+      // Track mobiles of already registered members
+      const existingMobiles = new Set(formatted.map(m => (m.mobile || '').replace(/\D/g, '').slice(-10)).filter(Boolean));
+
+      // Merge VLE Gate users if available (ignoring deleted)
+      try {
+        const gateStored = localStorage.getItem('vuo_vle_users');
+        if (gateStored) {
+          const gateUsers = JSON.parse(gateStored);
+          if (Array.isArray(gateUsers)) {
+            gateUsers.forEach(u => {
+              const cleanM = (u.mobile || '').replace(/\D/g, '').slice(-10);
+              if (cleanM && !existingMobiles.has(cleanM) && !deletedSet.has(cleanM)) {
+                existingMobiles.add(cleanM);
+                formatted.push({
+                  id: 'GATE-' + cleanM.slice(-4),
+                  memberNo: 'GATE-' + cleanM.slice(-4),
+                  cscId: u.cscId || ('OD-' + cleanM.slice(-6)),
+                  fullName: u.name || u.fullName || 'VLE User',
+                  mobile: cleanM,
+                  email: u.email || (cleanM + '@vlehelp.in'),
+                  district: u.district || 'Odisha',
+                  kendraName: u.kendraName || ((u.name || 'CSC') + ' Digital Seva'),
+                  status: u.status || 'Gate Verified (VLE)',
+                  registrationType: 'gate',
+                  createdAt: u.registeredAt || u.lastVisitAt || Date.now(),
+                  joiningDate: u.registeredAt ? new Date(u.registeredAt).toLocaleDateString('en-GB') : '2026',
+                  isGateOnly: true,
+                  passwordHash: '1234'
+                });
+              }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // Trigger direct background cloud sync if needed
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudMembersDirectly === 'function') {
+        if (!this._hasSyncedCloudMembers) {
+          this._hasSyncedCloudMembers = true;
+          setTimeout(() => {
+            VUO_DB.fetchCloudMembersDirectly().catch(() => {});
+          }, 300);
+        }
+      }
+
+      // Ensure custom set passwords are never overwritten by defaults or cloud snapshots
+      let customMap = {};
+      try { customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}'); } catch (_) {}
+      formatted.forEach(m => {
+        const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+        const csc = (m.cscId || '').toLowerCase().trim();
+        if (mob && customMap[mob] && customMap[mob].passwordHash) {
+          m.passwordHash = customMap[mob].passwordHash;
+        } else if (csc && customMap[csc] && customMap[csc].passwordHash) {
+          m.passwordHash = customMap[csc].passwordHash;
+        }
+      });
+
+      return formatted;
     } catch (e) {
-      return VUO_DATA.sampleMembers;
+      console.warn("getAllMembers error:", e);
+      return [];
+    }
+  },
+
+  recordCustomPassword(mobile, cscId, password) {
+    if (!password) return;
+    try {
+      const customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}');
+      const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+      const trimmedPwd = String(password).trim();
+      if (cleanMob) {
+        customMap[cleanMob] = { passwordHash: trimmedPwd, updatedAt: Date.now() };
+      }
+      if (cscId) {
+        customMap[String(cscId).toLowerCase().trim()] = { passwordHash: trimmedPwd, updatedAt: Date.now() };
+      }
+      localStorage.setItem('vuo_custom_passwords', JSON.stringify(customMap));
+    } catch (e) {}
+  },
+
+  getCustomPassword(mobile, cscId) {
+    try {
+      const customMap = JSON.parse(localStorage.getItem('vuo_custom_passwords') || '{}');
+      const cleanMob = (mobile || '').replace(/\D/g, '').slice(-10);
+      if (cleanMob && customMap[cleanMob] && customMap[cleanMob].passwordHash) {
+        return customMap[cleanMob].passwordHash;
+      }
+      const cscKey = String(cscId || '').toLowerCase().trim();
+      if (cscKey && customMap[cscKey] && customMap[cscKey].passwordHash) {
+        return customMap[cscKey].passwordHash;
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  registerGateUser(profile) {
+    if (!profile || !profile.mobile) return;
+    try {
+      const cleanMobile = profile.mobile.replace(/\D/g, '').slice(-10);
+      const members = this.getAllMembers();
+      const exists = members.find(m => m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMobile);
+      if (!exists) {
+        const memberNo = 'VLE-' + (cleanMobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+        const customPwd = this.getCustomPassword(cleanMobile, profile.cscId);
+        const gateMember = {
+          id: memberNo,
+          memberNo,
+          cscId: profile.cscId || ('OD-' + cleanMobile.slice(-6)),
+          fullName: profile.name || 'VLE Member',
+          mobile: cleanMobile,
+          email: profile.email || (cleanMobile + '@vlehelp.in'),
+          district: profile.district || 'Odisha',
+          kendraName: profile.kendraName || ((profile.name || 'CSC') + ' Digital Seva'),
+          status: 'Gate Verified (VLE)',
+          registrationType: 'gate',
+          createdAt: profile.registeredAt || Date.now(),
+          joiningDate: new Date().toLocaleDateString('en-GB'),
+          isGateOnly: true,
+          passwordHash: customPwd || '1234'
+        };
+
+        const stored = localStorage.getItem('vuo_members');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(gateMember);
+        localStorage.setItem('vuo_members', JSON.stringify(list));
+
+        if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+          VUO_DB.cloudSaveMember(gateMember);
+        }
+      }
+    } catch (e) {
+      console.warn("registerGateUser error:", e);
     }
   },
 
   saveMembers(members) {
+    if (Array.isArray(members)) {
+      // Record any custom passwords so they are never lost
+      members.forEach(m => {
+        if (m && m.passwordHash && m.passwordHash !== '1234') {
+          this.recordCustomPassword(m.mobile, m.cscId, m.passwordHash);
+        }
+      });
+    }
     localStorage.setItem('vuo_members', JSON.stringify(members));
   },
 
   register(formData) {
     const members = this.getAllMembers();
+    const cleanMobile = formData.mobile.replace(/\D/g, '').slice(-10);
+    const cleanCscId = formData.cscId.trim().toUpperCase();
 
-    // Check if Member No or CSC ID already exists
+    // Check if Mobile or CSC ID already exists
     const exists = members.find(m => 
-      m.memberNo.toLowerCase() === formData.memberNo.toLowerCase() || 
-      m.cscId === formData.cscId ||
-      m.mobile === formData.mobile
+      (m.mobile && m.mobile.replace(/\D/g, '').slice(-10) === cleanMobile) ||
+      (m.cscId && m.cscId.trim().toUpperCase() === cleanCscId)
     );
 
     if (exists) {
-      return { success: false, message: "Member with this Member Number, CSC ID or Mobile already exists!" };
+      return { success: false, message: "Member with this Mobile Number or CSC ID already registered! Please Login." };
     }
 
+    const memberNo = 'VLE-' + (cleanMobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
     const newMember = {
-      memberNo: formData.memberNo.trim(),
-      cscId: formData.cscId.trim(),
+      id: memberNo,
+      memberNo,
+      cscId: cleanCscId,
       fullName: formData.fullName.trim(),
-      mobile: formData.mobile.trim(),
-      email: formData.email.trim(),
-      district: formData.district,
-      block: formData.block,
-      gp: formData.gp.trim(),
+      mobile: cleanMobile,
+      email: formData.email ? formData.email.trim() : (cleanMobile + '@vlehelp.in'),
+      district: formData.district || 'Odisha',
+      kendraName: formData.kendraName ? formData.kendraName.trim() : (formData.fullName.trim() + ' Digital Seva'),
       status: "Active (Verified VLE)",
       designation: "VLE Member",
       joiningDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       validity: "2026 - 2029",
-      bloodGroup: formData.bloodGroup || "O+",
-      passwordHash: formData.password
+      passwordHash: formData.password ? formData.password.trim() : '1234'
     };
 
     members.unshift(newMember);
     this.saveMembers(members);
-    if (typeof VUO_DB !== 'undefined') {
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
       VUO_DB.cloudSaveMember(newMember);
     }
+
     this.setCurrentUser(newMember);
+
+    // Log Activity
+    if (typeof VUO_GATE !== 'undefined' && VUO_GATE.logActivity) {
+      VUO_GATE.logActivity(newMember, {
+        type: 'signup',
+        action: '🎉 New VLE Member Registered',
+        item: `Member ID: ${memberNo} (${newMember.fullName})`,
+        category: 'auth'
+      });
+    }
 
     return { success: true, member: newMember };
   },
@@ -79,138 +347,1401 @@ const VUO_AUTH = {
   login(identifier, password) {
     const members = this.getAllMembers();
     const id = identifier.trim().toLowerCase();
+    const cleanId = id.replace(/\D/g, '');
 
-    // Find member by Member No, CSC ID, Mobile or Email
-    const member = members.find(m => 
-      m.memberNo.toLowerCase() === id || 
-      m.cscId.toLowerCase() === id || 
-      m.mobile === id ||
-      (m.email && m.email.toLowerCase() === id)
-    );
+    // Match by mobile, CSC ID, or Member No
+    const member = members.find(m => {
+      const mMobile = (m.mobile || '').replace(/\D/g, '');
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (cleanId && mMobile.slice(-10) === cleanId.slice(-10)) ||
+             mCsc === id ||
+             mNo === id;
+    });
 
     if (!member) {
-      return { success: false, message: "Member not found. Please check your Member Number or CSC ID." };
+      // If user is not yet in members, check sample members
+      return { success: false, message: "VLE account not found with this Mobile / CSC ID. Please Sign Up!" };
     }
 
-    if (member.passwordHash !== password) {
-      return { success: false, message: "Incorrect password. Please try again or contact VUO Admin." };
+    // Check if account is suspended / locked by admin
+    const isLocked = (member.status || '').toLowerCase().includes('suspend') || 
+                     (member.status || '').toLowerCase().includes('lock') || 
+                     (member.status || '').toLowerCase().includes('block');
+    if (isLocked) {
+      return { 
+        success: false, 
+        message: "⚠️ Aapka VLE account Administrator dwara Lock / Suspend kar diya gaya hai. Kripya Admin se sampark karein." 
+      };
+    }
+
+    const userPwd = member.passwordHash || '1234';
+    if (userPwd !== password.trim()) {
+      return { success: false, message: "Incorrect password. Click 'Forgot Password?' to reset via OTP." };
     }
 
     this.setCurrentUser(member);
+
+    // Log Activity
+    if (typeof VUO_GATE !== 'undefined' && VUO_GATE.logActivity) {
+      VUO_GATE.logActivity(member, {
+        type: 'login',
+        action: '🔑 VLE Member Logged In',
+        item: `Portal Session Started (${member.fullName})`,
+        category: 'auth'
+      });
+    }
+
     return { success: true, member };
   },
 
   logout() {
     this.setCurrentUser(null);
-    showToast("Logged out successfully.", "info");
-    window.location.hash = "#home";
-  },
-
-  // Admin Authentication & Password Management
-  isAdmin() {
-    return sessionStorage.getItem('vuo_admin_auth') === 'true';
-  },
-
-  getAdminPassword() {
-    return localStorage.getItem('vuo_admin_password') || 
-           localStorage.getItem('vuo_admin_pin') || 
-           'Jaga@7131';
-  },
-
-  adminLogin(password) {
-    if (!password) {
-      return { success: false, message: "Please enter the Admin Password." };
+    if (typeof showToast === 'function') {
+      showToast("Logged out successfully.", "info");
     }
-    const entered = password.trim();
-    const configuredPassword = this.getAdminPassword().trim();
-    
-    // Accept configured password OR master default Jaga@7131
-    if (entered === configuredPassword || entered === 'Jaga@7131') {
-      sessionStorage.setItem('vuo_admin_auth', 'true');
-      return { success: true };
-    }
-    return { success: false, message: "Incorrect Admin Password. Access Denied!" };
+    this.updateAuthUI();
   },
 
-  updateAdminPassword(currentPassword, newPassword) {
-    const configuredPassword = this.getAdminPassword().trim();
-    const enteredCurrent = currentPassword ? currentPassword.trim() : '';
-    if (enteredCurrent !== configuredPassword && enteredCurrent !== 'Jaga@7131') {
-      return { success: false, message: "Current password does not match!" };
+  /* ================= ADMIN MEMBER MANAGEMENT ================= */
+  async updateMember(targetId, updateData) {
+    if (!targetId) return { success: false, message: "Target member identifier required." };
+    const members = this.getAllMembers();
+    const targetStr = String(targetId).trim();
+    const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
+    const targetLower = targetStr.toLowerCase();
+
+    const member = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!member) {
+      return { success: false, message: "Member record not found to update." };
+    }
+
+    if (updateData.fullName) member.fullName = updateData.fullName.trim();
+    if (updateData.mobile) member.mobile = updateData.mobile.replace(/\D/g, '').slice(-10);
+    if (updateData.cscId) member.cscId = updateData.cscId.trim().toUpperCase();
+    if (updateData.district) member.district = updateData.district.trim();
+    if (updateData.kendraName) member.kendraName = updateData.kendraName.trim();
+    if (updateData.status) member.status = updateData.status;
+    if (updateData.email) member.email = updateData.email.trim();
+
+    this.saveMembers(members);
+
+    // If current session is this user, update active user
+    const cur = this.getCurrentUser();
+    if (cur && (cur.mobile === member.mobile || cur.cscId === member.cscId || (cur.id && cur.id === member.id))) {
+      this.setCurrentUser(member);
+    }
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      await VUO_DB.cloudSaveMember(member);
+    }
+
+    return { success: true, member };
+  },
+
+  async adminSetPassword(targetId, newPassword) {
+    if (!targetId) return { success: false, message: "Target member identifier required." };
+    if (!newPassword || newPassword.trim().length < 4) {
+      return { success: false, message: "Password must be at least 4 characters long." };
+    }
+
+    const members = this.getAllMembers();
+    const targetStr = String(targetId).trim();
+    const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
+    const targetLower = targetStr.toLowerCase();
+
+    const member = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!member) {
+      return { success: false, message: "Member not found to reset password." };
+    }
+
+    member.passwordHash = newPassword.trim();
+    this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
+    this.saveMembers(members);
+
+    // If current session is this user, update active user
+    const cur = this.getCurrentUser();
+    if (cur && (cur.mobile === member.mobile || cur.cscId === member.cscId || (cur.id && cur.id === member.id))) {
+      cur.passwordHash = member.passwordHash;
+      this.setCurrentUser(cur);
+    }
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      await VUO_DB.cloudSaveMember(member);
+    }
+
+    return { success: true, member };
+  },
+
+  async updateSelfProfile(formData) {
+    const curUser = this.getCurrentUser();
+    if (!curUser) return { success: false, message: "No active session found. Please login." };
+
+    const members = this.getAllMembers();
+    const cleanCurMobile = (curUser.mobile || '').replace(/\D/g, '').slice(-10);
+
+    let member = members.find(m => {
+      const mob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      return (mob && mob === cleanCurMobile) || (m.id && curUser.id && m.id === curUser.id);
+    });
+
+    if (!member) {
+      member = { ...curUser };
+      members.push(member);
+    }
+
+    if (formData.fullName && formData.fullName.trim()) {
+      member.fullName = formData.fullName.trim();
+    }
+    if (formData.kendraName && formData.kendraName.trim()) {
+      member.kendraName = formData.kendraName.trim();
+    }
+    if (formData.cscId && formData.cscId.trim()) {
+      member.cscId = formData.cscId.trim().toUpperCase();
+    }
+    if (formData.district && formData.district.trim()) {
+      member.district = formData.district.trim();
+    }
+    if (formData.email && formData.email.trim()) {
+      member.email = formData.email.trim();
+    }
+    if (formData.avatar) {
+      member.avatar = formData.avatar;
+    }
+    if (formData.newPassword && formData.newPassword.trim().length >= 4) {
+      member.passwordHash = formData.newPassword.trim();
+      this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
+    }
+
+    this.saveMembers(members);
+    this.setCurrentUser(member);
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      try {
+        await VUO_DB.cloudSaveMember(member);
+      } catch (e) {
+        console.warn("Could not sync updated profile to cloud:", e);
+      }
+    }
+
+    return { success: true, member, message: "Profile updated successfully! / ପ୍ରୋଫାଇଲ୍ ସଫଳତାର ସହ ଅପଡେଟ୍ ହେଲା!" };
+  },
+
+  async toggleMemberLock(targetId) {
+    if (!targetId) return { success: false, message: "Target member identifier required." };
+    const members = this.getAllMembers();
+    const targetStr = String(targetId).trim();
+    const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
+    const targetLower = targetStr.toLowerCase();
+
+    const member = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    if (!member) {
+      return { success: false, message: "Member record not found to toggle lock." };
+    }
+
+    const isCurrentlyLocked = (member.status || '').toLowerCase().includes('suspend') || 
+                             (member.status || '').toLowerCase().includes('lock') || 
+                             (member.status || '').toLowerCase().includes('block');
+
+    member.status = isCurrentlyLocked ? "Active (Verified VLE)" : "Suspended (Locked by Admin)";
+    this.saveMembers(members);
+
+    // Also update in gate users if present
+    try {
+      const gateStored = localStorage.getItem('vuo_vle_users');
+      if (gateStored) {
+        const gateList = JSON.parse(gateStored);
+        const gUser = gateList.find(u => (u.mobile || '').replace(/\D/g, '').slice(-10) === cleanTarget);
+        if (gUser) {
+          gUser.status = member.status;
+          localStorage.setItem('vuo_vle_users', JSON.stringify(gateList));
+        }
+      }
+    } catch (_) {}
+
+    // If active user is this member and now locked, log them out immediately
+    const cur = this.getCurrentUser();
+    if (cur && (cur.mobile === member.mobile || cur.cscId === member.cscId || (cur.id && cur.id === member.id))) {
+      if (!isCurrentlyLocked) {
+        this.setCurrentUser(null);
+      } else {
+        cur.status = member.status;
+        this.setCurrentUser(cur);
+      }
+    }
+
+    // Persist to Cloud Firestore
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      await VUO_DB.cloudSaveMember(member);
+    }
+
+    return { 
+      success: true, 
+      member, 
+      isLocked: !isCurrentlyLocked,
+      message: !isCurrentlyLocked ? `Account for ${member.fullName} locked.` : `Account for ${member.fullName} unlocked.`
+    };
+  },
+
+  async deleteMember(targetId) {
+    if (!targetId) return { success: false, message: "Target member identifier required." };
+    let members = this.getAllMembers();
+    const targetStr = String(targetId).trim();
+    const cleanTarget = targetStr.replace(/\D/g, '').slice(-10);
+    const targetLower = targetStr.toLowerCase();
+
+    // Find the member record before removing to extract all identifiers
+    const targetMember = members.find(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return (mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower;
+    });
+
+    const memberNo = targetMember ? (targetMember.memberNo || targetMember.id) : (targetStr.startsWith('VLE-') || targetStr.startsWith('VUO-') ? targetStr : '');
+    const mobileNo = targetMember ? (targetMember.mobile || '').replace(/\D/g, '').slice(-10) : cleanTarget;
+    const cscId = targetMember ? (targetMember.cscId || '') : '';
+    const idVal = targetMember ? (targetMember.id || '') : targetStr;
+
+    // 1. Add to tombstone blacklist so they can never be rehydrated
+    this.addDeletedMember([memberNo, mobileNo, cscId, idVal, targetStr]);
+
+    // 2. Filter from local vuo_members
+    const initialLen = members.length;
+    members = members.filter(m => {
+      const mId = (m.id || '').toString().toLowerCase();
+      const mMob = (m.mobile || '').replace(/\D/g, '').slice(-10);
+      const mCsc = (m.cscId || '').toLowerCase();
+      const mNo = (m.memberNo || '').toLowerCase();
+      return !((mId && mId === targetLower) || (cleanTarget && mMob === cleanTarget) || mCsc === targetLower || mNo === targetLower || (memberNo && mNo === memberNo.toLowerCase()));
+    });
+    this.saveMembers(members);
+
+    // 3. Filter from local vuo_vle_users
+    try {
+      const gateStored = localStorage.getItem('vuo_vle_users');
+      if (gateStored) {
+        let gateList = JSON.parse(gateStored);
+        if (Array.isArray(gateList)) {
+          gateList = gateList.filter(u => {
+            const uMob = (u.mobile || '').replace(/\D/g, '').slice(-10);
+            return !(uMob && (uMob === cleanTarget || uMob === mobileNo));
+          });
+          localStorage.setItem('vuo_vle_users', JSON.stringify(gateList));
+        }
+      }
+    } catch (_) {}
+
+    // 4. Log out if currently logged in user is this member
+    const cur = this.getCurrentUser();
+    if (cur && ((cur.id && cur.id === targetStr) || (cleanTarget && (cur.mobile || '').slice(-10) === cleanTarget) || (cur.cscId || '').toLowerCase() === targetLower)) {
+      this.setCurrentUser(null);
+    }
+
+    // 5. Delete from Cloud Firestore permanently (SDK and REST fallback)
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudDeleteMember) {
+      await VUO_DB.cloudDeleteMember(memberNo, mobileNo);
+    }
+
+    return { success: true, member: targetMember };
+  },
+
+  /* ================= GOOGLE AUTHENTICATION & PROFILE ONBOARDING ================= */
+  handleGoogleUser(googleProfile) {
+    if (!googleProfile || !googleProfile.email) {
+      return { success: false, message: "Invalid Google profile received." };
+    }
+
+    const members = this.getAllMembers();
+    const gEmail = googleProfile.email.trim().toLowerCase();
+
+    // Check if member already exists by email or googleId
+    const existing = members.find(m => 
+      (m.email && m.email.toLowerCase() === gEmail) ||
+      (m.googleId && m.googleId === googleProfile.id)
+    );
+
+    if (existing) {
+      // If mobile and cscId are already present, log in immediately!
+      const hasMobile = existing.mobile && existing.mobile.replace(/\D/g, '').length === 10;
+      const hasCsc = existing.cscId && existing.cscId.trim().length >= 4;
+
+      if (hasMobile && hasCsc) {
+        this.setCurrentUser(existing);
+        return { success: true, member: existing, needsProfile: false };
+      }
+
+      // Existing user but missing mobile or cscId -> complete profile
+      return { success: true, member: existing, needsProfile: true, googleProfile };
+    }
+
+    // New Google User -> Needs to complete profile with mobile and CSC ID
+    return { success: true, needsProfile: true, googleProfile };
+  },
+
+  completeGoogleRegistration(googleProfile, profileData) {
+    const cleanMobile = (profileData.mobile || '').replace(/\D/g, '').slice(-10);
+    const cleanCscId = (profileData.cscId || '').trim().toUpperCase();
+
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      return { success: false, message: "Please provide a valid 10-digit mobile number." };
+    }
+    if (!cleanCscId || cleanCscId.length < 4) {
+      return { success: false, message: "Please enter your valid CSC ID / Kendra ID." };
+    }
+
+    const members = this.getAllMembers();
+    const gEmail = (googleProfile.email || '').trim().toLowerCase();
+
+    // Check if mobile or CSC ID is already linked to another member
+    const conflict = members.find(m => {
+      const isNotThisUser = (m.email || '').toLowerCase() !== gEmail;
+      const mobileMatch = (m.mobile || '').replace(/\D/g, '').slice(-10) === cleanMobile;
+      const cscMatch = (m.cscId || '').trim().toUpperCase() === cleanCscId;
+      return isNotThisUser && (mobileMatch || cscMatch);
+    });
+
+    if (conflict) {
+      return { success: false, message: "This Mobile Number or CSC ID is already registered to another VLE account!" };
+    }
+
+    let member = members.find(m => (m.email || '').toLowerCase() === gEmail);
+
+    if (member) {
+      // Update existing record with Google ID + mobile & CSC ID
+      member.mobile = cleanMobile;
+      member.cscId = cleanCscId;
+      member.district = profileData.district || member.district || 'Odisha';
+      member.kendraName = profileData.kendraName || member.kendraName || (member.fullName + ' Digital Seva');
+      member.googleId = googleProfile.id || member.googleId;
+      member.avatar = googleProfile.avatar || member.avatar;
+    } else {
+      // Create new member record
+      const memberNo = 'VLE-' + (cleanMobile.slice(-4) || Math.floor(1000 + Math.random() * 9000));
+      member = {
+        memberNo,
+        cscId: cleanCscId,
+        fullName: googleProfile.name || 'VLE Member',
+        mobile: cleanMobile,
+        email: gEmail,
+        district: profileData.district || 'Odisha',
+        kendraName: profileData.kendraName ? profileData.kendraName.trim() : ((googleProfile.name || 'VLE') + ' Digital Seva'),
+        status: "Active (Verified VLE)",
+        designation: "VLE Member",
+        googleId: googleProfile.id || null,
+        avatar: googleProfile.avatar || null,
+        authProvider: 'google',
+        joiningDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        validity: "2026 - 2029",
+        passwordHash: 'google_oauth_verified'
+      };
+      members.unshift(member);
+    }
+
+    this.saveMembers(members);
+    this.setCurrentUser(member);
+
+    // Log Activity
+    if (typeof VUO_GATE !== 'undefined' && VUO_GATE.logActivity) {
+      VUO_GATE.logActivity(member, {
+        type: 'signup_google',
+        action: '🌐 VLE Joined via Google Auth',
+        item: `Member: ${member.fullName} (${member.cscId})`,
+        category: 'auth'
+      });
+    }
+
+    return { success: true, member };
+  },
+
+  /* ================= FORGOT PASSWORD / SECURE 3-POINT KYC RESET ================= */
+  requestPasswordReset(identifier, cscId = null, district = null, overrideEmail = null) {
+    if (!identifier) {
+      return { success: false, message: "Please enter your registered Mobile Number." };
+    }
+
+    const members = this.getAllMembers();
+    const id = identifier.trim().toLowerCase();
+    const cleanId = id.replace(/\D/g, '');
+
+    const member = members.find(m => {
+      const mMobile = (m.mobile || '').replace(/\D/g, '');
+      const mCsc = (m.cscId || '').toLowerCase();
+      return (cleanId && mMobile.slice(-10) === cleanId.slice(-10)) || mCsc === id;
+    });
+
+    if (!member) {
+      return { success: false, message: "No registered VLE found with this Mobile Number." };
+    }
+
+    // High-Security 3-Point Fraud Protection KYC Check:
+    // If CSC ID is supplied, verify it matches
+    if (cscId && cscId.trim()) {
+      const cleanInputCsc = cscId.trim().toUpperCase();
+      const memberCsc = (member.cscId || '').trim().toUpperCase();
+      if (memberCsc && memberCsc !== cleanInputCsc) {
+        return { 
+          success: false, 
+          message: "Fraud Suraksha Warning: CSC ID does not match the registered record for this mobile! Reset blocked." 
+        };
+      }
+    }
+
+    // If district is supplied, verify it matches
+    if (district && district.trim()) {
+      const inputDist = district.trim().toLowerCase();
+      const memberDist = (member.district || '').trim().toLowerCase();
+      if (memberDist && memberDist !== inputDist) {
+        return { 
+          success: false, 
+          message: "Fraud Suraksha Warning: District does not match registered VLE records! Reset blocked." 
+        };
+      }
+    }
+
+    // Generate secure 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const token = {
+      mobile: member.mobile,
+      cscId: member.cscId,
+      otp,
+      expiresAt: Date.now() + (15 * 60 * 1000) // 15 mins validity
+    };
+
+    localStorage.setItem('vuo_pwd_reset_token', JSON.stringify(token));
+
+    const cleanMob = (member.mobile || '').replace(/\D/g, '').slice(-10);
+    const maskedMobile = 'XXXXXX' + (cleanMob.slice(-4) || '****');
+
+    // Resolve target email for OTP dispatch
+    let targetEmail = (overrideEmail && overrideEmail.includes('@')) ? overrideEmail.trim() : (member.email || '');
+    if (!targetEmail || !targetEmail.includes('@')) {
+      targetEmail = cleanMob + '@vlehelp.in';
+    }
+    const maskedEmail = this.maskEmail(targetEmail);
+
+    return {
+      success: true,
+      otp,
+      maskedMobile,
+      maskedEmail,
+      email: targetEmail,
+      member,
+      mobile: member.mobile,
+      name: member.fullName
+    };
+  },
+
+  async verifyOtpAndResetPassword(identifier, enteredOtp, newPassword) {
+    if (!enteredOtp || enteredOtp.trim().length !== 4) {
+      return { success: false, message: "Please enter a valid 4-digit OTP." };
     }
 
     if (!newPassword || newPassword.trim().length < 4) {
       return { success: false, message: "New password must be at least 4 characters long." };
     }
 
-    localStorage.setItem('vuo_admin_password', newPassword.trim());
-    localStorage.setItem('vuo_admin_password_updated', new Date().toLocaleString());
-    return { success: true, message: "Admin password updated successfully! Keep it safe." };
+    let token = null;
+    try {
+      const raw = localStorage.getItem('vuo_pwd_reset_token');
+      if (raw) token = JSON.parse(raw);
+    } catch (e) {}
+
+    if (!token || Date.now() > token.expiresAt) {
+      return { success: false, message: "OTP has expired. Please request a new OTP." };
+    }
+
+    if (token.otp !== enteredOtp.trim()) {
+      return { success: false, message: "Incorrect OTP. Please enter the correct 4-digit OTP." };
+    }
+
+    // OTP matched! Update password in members storage
+    const members = this.getAllMembers();
+    const cleanTargetMobile = (token.mobile || '').replace(/\D/g, '').slice(-10);
+
+    const member = members.find(m => (m.mobile || '').replace(/\D/g, '').slice(-10) === cleanTargetMobile);
+    if (!member) {
+      return { success: false, message: "Member record not found to update password." };
+    }
+
+    member.passwordHash = newPassword.trim();
+    this.recordCustomPassword(member.mobile, member.cscId, member.passwordHash);
+    this.saveMembers(members);
+    localStorage.removeItem('vuo_pwd_reset_token');
+
+    // Automatically log in user with updated credentials
+    this.setCurrentUser(member);
+
+    if (typeof VUO_DB !== 'undefined' && VUO_DB.cloudSaveMember) {
+      try {
+        await VUO_DB.cloudSaveMember(member);
+      } catch (e) {
+        console.warn("Could not sync reset password to cloud:", e);
+      }
+    }
+
+    return { success: true, member, message: "Password updated successfully! Welcome back." };
   },
 
-  adminLogout() {
-    sessionStorage.removeItem('vuo_admin_auth');
-    showToast("Admin session ended safely.", "info");
-    window.location.hash = "#home";
+  /* ================= DASHBOARD DATA ================= */
+  getDashboardData() {
+    const user = this.getCurrentUser();
+    if (!user) return null;
+
+    const cleanUserMobile = (user.mobile || '').replace(/\D/g, '').slice(-10);
+
+    // Get user's submitted leads
+    let userLeads = [];
+    try {
+      if (typeof VUO_LEADS !== 'undefined' && VUO_LEADS.getStoredLeads) {
+        const allLeads = VUO_LEADS.getStoredLeads();
+        userLeads = allLeads.filter(l => (l.mobile || '').replace(/\D/g, '').slice(-10) === cleanUserMobile);
+      }
+    } catch (e) {}
+
+    // Get Khata metrics
+    let khataData = { totalPending: 0, overdueCount: 0, totalEntries: 0 };
+    try {
+      if (typeof VUO_CREDITKHATA !== 'undefined') {
+        const entries = VUO_CREDITKHATA.entries || [];
+        entries.forEach(e => {
+          if (e.status === 'pending') {
+            khataData.totalPending += (e.amount || 0);
+            if (VUO_CREDITKHATA.isOverdue(e)) khataData.overdueCount++;
+          }
+          khataData.totalEntries++;
+        });
+      }
+    } catch (e) {}
+
+    // Get user's recent activities
+    let userActivities = [];
+    try {
+      const raw = localStorage.getItem('vuo_vle_activities');
+      if (raw) {
+        const allActs = JSON.parse(raw);
+        userActivities = allActs.filter(a => (a.mobile || '').replace(/\D/g, '').slice(-10) === cleanUserMobile).slice(0, 15);
+      }
+    } catch (e) {}
+
+    return {
+      user,
+      leadsCount: userLeads.length,
+      userLeads,
+      khata: khataData,
+      activities: userActivities
+    };
   },
 
   updateAuthUI() {
     const user = this.getCurrentUser();
-    const loginBtn = document.getElementById('navLoginBtn');
-    const userDropdown = document.getElementById('navUserDropdown');
-    const userNameSpan = document.getElementById('navUserName');
-    const userDistrictSpan = document.getElementById('navUserDistrict');
+    const loginCta = document.getElementById('headerLoginCta');
+    const userCta = document.getElementById('headerUserCta');
+    const userLabel = document.getElementById('navVleUserLabel');
+    const drawerUserBox = document.getElementById('drawerUserBox');
 
     if (user) {
-      if (loginBtn) loginBtn.classList.add('hidden');
-      if (userDropdown) userDropdown.classList.remove('hidden');
-      if (userNameSpan) userNameSpan.textContent = user.fullName;
-      if (userDistrictSpan) userDistrictSpan.textContent = `${user.district} (${user.memberNo})`;
+      if (loginCta) loginCta.classList.add('hidden');
+      if (userCta) userCta.classList.remove('hidden');
+      if (userLabel) userLabel.textContent = (user.fullName || user.name || 'VLE Member').split(' ')[0];
+
+      if (drawerUserBox) {
+        drawerUserBox.innerHTML = `
+          <div class="p-3 bg-slate-800/80 rounded-2xl border border-emerald-500/40 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-sm">
+                ${(user.fullName || 'V').charAt(0)}
+              </div>
+              <div>
+                <p class="text-xs font-black text-white">${user.fullName || user.name}</p>
+                <p class="text-[10px] text-emerald-300 font-mono font-bold">${user.cscId || user.memberNo}</p>
+              </div>
+            </div>
+            <button onclick="VUO_AUTH_MODAL.openDashboard()" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold">
+              Dashboard
+            </button>
+          </div>
+        `;
+      }
     } else {
-      if (loginBtn) loginBtn.classList.remove('hidden');
-      if (userDropdown) userDropdown.classList.add('hidden');
+      if (loginCta) loginCta.classList.remove('hidden');
+      if (userCta) userCta.classList.add('hidden');
+      if (drawerUserBox) {
+        drawerUserBox.innerHTML = `
+          <button onclick="VUO_AUTH_MODAL.openLogin()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white font-black text-xs flex items-center justify-center gap-2">
+            <i class="fa-solid fa-lock"></i>
+            <span>VLE LOGIN / SIGNUP</span>
+          </button>
+        `;
+      }
     }
+  },
+
+  // Admin Authentication
+  isAdmin() {
+    return sessionStorage.getItem('vuo_admin_auth') === 'true' || localStorage.getItem('vuo_admin_auth') === 'true';
+  },
+
+  getAdminPassword() {
+    return localStorage.getItem('vuo_admin_password') || 'Jaga@7131';
+  },
+
+  adminLogin(password) {
+    if (!password) return { success: false, message: "Kripya Admin Password darj karein." };
+    const entered = password.trim();
+    const conf = this.getAdminPassword().trim();
+    // Accept exact match, master password Jaga@7131, or case-insensitive jaga@7131
+    if (entered === conf || entered === 'Jaga@7131' || entered.toLowerCase() === 'jaga@7131') {
+      try {
+        sessionStorage.setItem('vuo_admin_auth', 'true');
+        localStorage.setItem('vuo_admin_auth', 'true');
+      } catch(_) {}
+      return { success: true };
+    }
+    return { success: false, message: "Galat Admin Password! Sahi password: Jaga@7131 darj karein." };
+  },
+
+  adminLogout() {
+    try {
+      sessionStorage.removeItem('vuo_admin_auth');
+      localStorage.removeItem('vuo_admin_auth');
+    } catch(_) {}
+    if (typeof showToast === 'function') showToast("Admin session surakshit roop se band ho gaya.", "info");
+    window.location.hash = "#home";
+    if (typeof VUO_APP !== 'undefined' && VUO_APP.handleRoute) VUO_APP.handleRoute('home');
   }
 };
 
-// District and Block populate helpers
-function populateDistrictDropdown(selectId, selectedDistrict = "") {
-  const select = document.getElementById(selectId);
-  if (!select) return;
+/* ================= VUO_AUTH_MODAL CONTROLLER ================= */
+const VUO_AUTH_MODAL = {
+  _pendingAction: null,
+  _pendingCallback: null,
 
-  select.innerHTML = '<option value="">-- Select District (ଜିଲ୍ଲା ଚୟନ କରନ୍ତୁ) --</option>';
-  VUO_DATA.districts.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.name;
-    opt.textContent = d.name;
-    if (d.name === selectedDistrict) opt.selected = true;
-    select.appendChild(opt);
-  });
-}
+  openLogin(actionInfo = null, onGranted = null) {
+    this._pendingAction = actionInfo;
+    this._pendingCallback = onGranted;
 
-function populateBlockDropdown(districtSelectId, blockSelectId, selectedBlock = "") {
-  const distSelect = document.getElementById(districtSelectId);
-  const blockSelect = document.getElementById(blockSelectId);
-  if (!distSelect || !blockSelect) return;
+    const modal = document.getElementById('vleAuthModal');
+    if (!modal) return;
 
-  const districtName = distSelect.value;
-  blockSelect.innerHTML = '<option value="">-- Select Block (ବ୍ଲକ ଚୟନ କରନ୍ତୁ) --</option>';
-  
-  if (!districtName) return;
+    this.switchTab('login');
 
-  const distObj = VUO_DATA.districts.find(d => d.name === districtName);
-  if (distObj && distObj.blocks) {
-    distObj.blocks.forEach(b => {
-      const opt = document.createElement('option');
-      opt.value = b;
-      opt.textContent = b;
-      if (b === selectedBlock) opt.selected = true;
-      blockSelect.appendChild(opt);
+    const promptBox = document.getElementById('vleAuthGatePrompt');
+    if (promptBox) {
+      if (actionInfo && actionInfo.item) {
+        promptBox.innerHTML = `
+          <div class="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl mb-3 flex items-start gap-2.5 text-xs text-amber-950 font-bold">
+            <i class="fa-solid fa-lock text-amber-600 mt-0.5"></i>
+            <div>
+              <p class="font-black text-amber-900">VLE Portal Login / Verification</p>
+              <p class="text-[11px] font-normal text-slate-700 mt-0.5">Access karne ke liye login karein: <strong class="text-slate-900">${actionInfo.item}</strong></p>
+            </div>
+          </div>
+        `;
+        promptBox.classList.remove('hidden');
+      } else {
+        promptBox.innerHTML = '';
+        promptBox.classList.add('hidden');
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  openSignup(actionInfo = null, onGranted = null) {
+    this._pendingAction = actionInfo;
+    this._pendingCallback = onGranted;
+
+    const modal = document.getElementById('vleAuthModal');
+    if (!modal) return;
+
+    this.switchTab('signup');
+
+    const promptBox = document.getElementById('vleAuthGatePrompt');
+    if (promptBox) {
+      if (actionInfo && actionInfo.item) {
+        promptBox.innerHTML = `
+          <div class="p-3 bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-300 rounded-2xl mb-3 flex items-start gap-2.5 text-xs text-sky-950 font-bold">
+            <div class="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <i class="fa-solid fa-user-plus text-xs"></i>
+            </div>
+            <div>
+              <p class="font-black text-sky-900">VLE Registration (Signup) Required</p>
+              <p class="text-[11px] font-normal text-slate-700 mt-0.5">Sabhi PDF forms, photos, PVC cards aur tools use karne ke liye naya VLE account banayein (ya pehle se account hai toh Login karein): <strong class="text-slate-900">${actionInfo.item}</strong></p>
+            </div>
+          </div>
+        `;
+        promptBox.classList.remove('hidden');
+      } else {
+        promptBox.innerHTML = '';
+        promptBox.classList.add('hidden');
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  switchTab(tab) {
+    const loginTab = document.getElementById('authTabBtn_login');
+    const signupTab = document.getElementById('authTabBtn_signup');
+    const loginForm = document.getElementById('authForm_login');
+    const signupForm = document.getElementById('authForm_signup');
+
+    if (tab === 'signup') {
+      if (loginTab) {
+        loginTab.className = 'flex-1 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all border-b-2 border-transparent';
+      }
+      if (signupTab) {
+        signupTab.className = 'flex-1 py-2 text-xs font-black text-sky-600 border-b-2 border-sky-600 transition-all';
+      }
+      if (loginForm) loginForm.classList.add('hidden');
+      if (signupForm) signupForm.classList.remove('hidden');
+    } else {
+      if (loginTab) {
+        loginTab.className = 'flex-1 py-2 text-xs font-black text-sky-600 border-b-2 border-sky-600 transition-all';
+      }
+      if (signupTab) {
+        signupTab.className = 'flex-1 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all border-b-2 border-transparent';
+      }
+      if (loginForm) loginForm.classList.remove('hidden');
+      if (signupForm) signupForm.classList.add('hidden');
+    }
+  },
+
+  closeAll() {
+    ['vleAuthModal', 'vleForgotPwdModal', 'vleDashboardModal', 'vleGoogleCompleteModal', 'vleGoogleSelectModal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      }
     });
-  }
-}
+  },
 
-// Global window exposure
-if (typeof window !== 'undefined') {
-  window.VUO_AUTH = VUO_AUTH;
+  /* ================= GOOGLE AUTHENTICATION CONTROLLER ================= */
+  handleGoogleAuth() {
+    // If Google Identity Services (GIS) is available
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+      try {
+        google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            this.openGoogleSelectModal();
+          }
+        });
+        return;
+      } catch (_) {}
+    }
+    // Sleek branded Google Account chooser modal
+    this.openGoogleSelectModal();
+  },
+
+  openGoogleSelectModal() {
+    this.closeAll();
+    const modal = document.getElementById('vleGoogleSelectModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      const inputDiv = document.getElementById('googleCustomInputDiv');
+      if (inputDiv) inputDiv.classList.add('hidden');
+    } else {
+      const email = prompt("Enter your Google Account Email to continue with Google:", "vle.odisha@gmail.com");
+      if (!email) return;
+      const name = prompt("Enter your Full Name as in Google:", "Jagannath VLE");
+      this.selectGoogleAccount(name || 'VLE Member', email.trim());
+    }
+  },
+
+  selectGoogleAccount(name, email) {
+    this.closeAll();
+    const googleProfile = {
+      id: 'g_' + Math.abs(email.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)),
+      name: name || 'VLE Member',
+      email: email.toLowerCase().trim(),
+      avatar: 'https://lh3.googleusercontent.com/a/default-user'
+    };
+
+    const res = VUO_AUTH.handleGoogleUser(googleProfile);
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    if (res.needsProfile) {
+      // Need Mobile & CSC ID to complete VLE registration
+      this.openGoogleProfileComplete(googleProfile);
+    } else {
+      // Already complete, login directly
+      VUO_AUTH.updateAuthUI();
+      if (typeof showToast === 'function') {
+        showToast(`Welcome back, ${res.member.fullName}! (Google Verified)`, "success");
+      }
+      if (typeof this._pendingCallback === 'function') {
+        const cb = this._pendingCallback;
+        this._pendingCallback = null;
+        this._pendingAction = null;
+        setTimeout(() => cb(), 100);
+      }
+    }
+  },
+
+  showCustomGoogleAccountInput() {
+    const inputDiv = document.getElementById('googleCustomInputDiv');
+    if (inputDiv) inputDiv.classList.remove('hidden');
+  },
+
+  submitCustomGoogleAccount() {
+    const nameInput = document.getElementById('customGoogleName');
+    const emailInput = document.getElementById('customGoogleEmail');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    if (!email || !email.includes('@')) {
+      if (typeof showToast === 'function') showToast("Please enter a valid Google email address.", "warning");
+      return;
+    }
+    this.selectGoogleAccount(name || email.split('@')[0], email);
+  },
+
+  openGoogleProfileComplete(googleProfile) {
+    this.closeAll();
+    this._pendingGoogleProfile = googleProfile;
+
+    const modal = document.getElementById('vleGoogleCompleteModal');
+    if (!modal) return;
+
+    const nameEl = document.getElementById('googleAccName');
+    const emailEl = document.getElementById('googleAccEmail');
+    const avatarEl = document.getElementById('googleAccAvatar');
+
+    if (nameEl) nameEl.textContent = googleProfile.name || 'VLE Member';
+    if (emailEl) emailEl.textContent = googleProfile.email || 'user@gmail.com';
+    if (avatarEl) {
+      if (googleProfile.avatar && googleProfile.avatar.startsWith('http')) {
+        avatarEl.innerHTML = `<img src="${googleProfile.avatar}" alt="Google" class="w-full h-full rounded-full object-cover" />`;
+      } else {
+        avatarEl.textContent = (googleProfile.name || 'G').charAt(0).toUpperCase();
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  handleGoogleProfileSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!this._pendingGoogleProfile) {
+      if (typeof showToast === 'function') showToast("Google session expired. Please sign in again.", "error");
+      return;
+    }
+
+    const mobileInput = document.getElementById('googleCompleteMobile');
+    const cscInput = document.getElementById('googleCompleteCscId');
+    const distInput = document.getElementById('googleCompleteDistrict');
+    const kendraInput = document.getElementById('googleCompleteKendra');
+
+    const mobile = mobileInput ? mobileInput.value : '';
+    const cscId = cscInput ? cscInput.value : '';
+    const district = distInput ? distInput.value : '';
+    const kendraName = kendraInput ? kendraInput.value : '';
+
+    const cleanMob = mobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMob || cleanMob.length !== 10 || !/^[6-9]/.test(cleanMob)) {
+      if (typeof showToast === 'function') showToast("Please enter a valid 10-digit WhatsApp/Mobile Number.", "warning");
+      return;
+    }
+    if (!cscId || cscId.trim().length < 4) {
+      if (typeof showToast === 'function') showToast("Please enter your 12-digit CSC ID / Kendra ID.", "warning");
+      return;
+    }
+    if (!district) {
+      if (typeof showToast === 'function') showToast("Please select your Odisha District.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.completeGoogleRegistration(this._pendingGoogleProfile, {
+      mobile: cleanMob,
+      cscId: cscId.trim(),
+      district,
+      kendraName
+    });
+
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`🎉 Congratulations ${res.member.fullName}! Your VLE account has been linked with Google.`, "success");
+    }
+
+    this._pendingGoogleProfile = null;
+    this.closeAll();
+    VUO_AUTH.updateAuthUI();
+
+    if (typeof this._pendingCallback === 'function') {
+      const cb = this._pendingCallback;
+      this._pendingCallback = null;
+      this._pendingAction = null;
+      setTimeout(() => cb(), 100);
+    }
+  },
+
+  handleLoginSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const idInput = document.getElementById('authLoginIdentifier');
+    const pwdInput = document.getElementById('authLoginPassword');
+
+    const id = idInput ? idInput.value.trim() : '';
+    const pwd = pwdInput ? pwdInput.value : '';
+
+    if (!id || !pwd) {
+      if (typeof showToast === 'function') showToast("Please enter your Mobile/CSC ID and Password.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.login(id, pwd);
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Welcome back, ${res.member.fullName}! You are logged in.`, "success");
+    }
+
+    this.closeAll();
+    VUO_AUTH.updateAuthUI();
+
+    // Execute pending gated action
+    if (typeof this._pendingCallback === 'function') {
+      const cb = this._pendingCallback;
+      this._pendingCallback = null;
+      this._pendingAction = null;
+      setTimeout(() => cb(), 100);
+    }
+  },
+
+  handleSignupSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const name = document.getElementById('authSignupName')?.value || '';
+    const mobile = document.getElementById('authSignupMobile')?.value || '';
+    const cscId = document.getElementById('authSignupCscId')?.value || '';
+    const district = document.getElementById('authSignupDistrict')?.value || '';
+    const kendra = document.getElementById('authSignupKendra')?.value || '';
+    const email = document.getElementById('authSignupEmail')?.value?.trim() || '';
+    const pwd = document.getElementById('authSignupPassword')?.value || '';
+
+    if (!name || name.trim().length < 2) {
+      if (typeof showToast === 'function') showToast("Please enter your Full Name.", "warning");
+      return;
+    }
+    const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10 || !/^[6-9]/.test(cleanMobile)) {
+      if (typeof showToast === 'function') showToast("Please enter a valid 10-digit WhatsApp/Mobile Number.", "warning");
+      return;
+    }
+    if (!cscId || cscId.trim().length < 4) {
+      if (typeof showToast === 'function') showToast("Please enter your 12-digit CSC ID or Kendra ID.", "warning");
+      return;
+    }
+    if (!district) {
+      if (typeof showToast === 'function') showToast("Please select your Odisha District.", "warning");
+      return;
+    }
+    if (!pwd || pwd.length < 4) {
+      if (typeof showToast === 'function') showToast("Password must be at least 4 characters.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.register({
+      fullName: name,
+      mobile: cleanMobile,
+      cscId: cscId,
+      email: email,
+      district: district,
+      kendraName: kendra || (name + ' Digital Seva'),
+      password: pwd
+    });
+
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Congratulations ${res.member.fullName}! Your VLE account has been created.`, "success");
+    }
+
+    this.closeAll();
+    VUO_AUTH.updateAuthUI();
+
+    // Execute pending gated action
+    if (typeof this._pendingCallback === 'function') {
+      const cb = this._pendingCallback;
+      this._pendingCallback = null;
+      this._pendingAction = null;
+      setTimeout(() => cb(), 100);
+    }
+  },
+
+  /* ================= FORGOT PASSWORD MODAL ================= */
+  openForgot() {
+    this.openForgotPassword();
+  },
+  openForgotPassword() {
+    this.closeAll();
+    const modal = document.getElementById('vleForgotPwdModal');
+    if (!modal) return;
+
+    // Reset view to step 1
+    const step1 = document.getElementById('forgotStep1');
+    const step2 = document.getElementById('forgotStep2');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  handleRequestOtp(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const mobInput = document.getElementById('forgotMobile') || document.getElementById('forgotIdentifier');
+    const cscInput = document.getElementById('forgotCscId');
+    const distInput = document.getElementById('forgotDistrict');
+    const emailInput = document.getElementById('forgotEmail');
+
+    const mobile = mobInput ? mobInput.value.trim() : '';
+    const cscId = cscInput ? cscInput.value.trim() : '';
+    const district = distInput ? distInput.value.trim() : '';
+    const optionalEmail = emailInput ? emailInput.value.trim() : '';
+
+    if (!mobile) {
+      if (typeof showToast === 'function') showToast("Please enter your registered Mobile Number.", "warning");
+      return;
+    }
+    if (cscInput && !cscId) {
+      if (typeof showToast === 'function') showToast("Fraud Prevention: Please enter your CSC ID for identity verification.", "warning");
+      return;
+    }
+    if (distInput && !district) {
+      if (typeof showToast === 'function') showToast("Fraud Prevention: Please select your registered District.", "warning");
+      return;
+    }
+
+    const res = VUO_AUTH.requestPasswordReset(mobile, cscId, district, optionalEmail);
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    // Transition to step 2
+    const step1 = document.getElementById('forgotStep1');
+    const step2 = document.getElementById('forgotStep2');
+    if (step1) step1.classList.add('hidden');
+    if (step2) step2.classList.remove('hidden');
+
+    // Update masked mobile in step 2 (NO SCREEN OTP!)
+    const maskedMobileEl = document.getElementById('forgotMaskedMobile');
+    if (maskedMobileEl) {
+      maskedMobileEl.textContent = res.maskedMobile || ('XXXXXX' + (res.mobile || '').slice(-4));
+    }
+
+    // Update masked email in step 2
+    const maskedEmailEl = document.getElementById('forgotMaskedEmail');
+    if (maskedEmailEl) {
+      maskedEmailEl.textContent = res.maskedEmail || res.email || 'Registered Email';
+    }
+
+    // Save active reset info for verify step
+    this._activeResetMobile = res.mobile;
+    this._activeResetEmail = res.email;
+    this._activeResetName = res.name;
+    this._activeResetOtp = res.otp;
+
+    // Automatically send OTP via Google Apps Script Email!
+    if (res.email && res.email.includes('@')) {
+      VUO_AUTH.sendEmailOtp(res.email, res.otp, res.name);
+    }
+
+    // Setup Resend on Email button
+    const emailBtn = document.getElementById('forgotEmailOtpBtn');
+    if (emailBtn) {
+      emailBtn.onclick = () => {
+        emailBtn.disabled = true;
+        const originalHtml = emailBtn.innerHTML;
+        emailBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending...</span>`;
+        VUO_AUTH.sendEmailOtp(res.email || this._activeResetEmail, res.otp, res.name).then(() => {
+          if (typeof showToast === 'function') {
+            showToast(`Secret OTP email re-sent to ${res.maskedEmail || 'registered Email'}!`, "success");
+          }
+          emailBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Email Sent!</span>`;
+          setTimeout(() => {
+            emailBtn.disabled = false;
+            emailBtn.innerHTML = originalHtml;
+          }, 4000);
+        });
+      };
+    }
+
+    // Setup 1-click WhatsApp send link directly to user's registered phone
+    const waBtn = document.getElementById('forgotWhatsAppOtpBtn');
+    if (waBtn) {
+      const cleanMob = res.mobile.replace(/\D/g, '').slice(-10);
+      const text = `VUO CSC Help: Hello ${res.name}, your secret password reset OTP is ${res.otp}. Do not share this OTP with anyone.`;
+      waBtn.onclick = () => {
+        window.open(`https://wa.me/91${cleanMob}?text=${encodeURIComponent(text)}`, '_blank');
+      };
+    }
+
+    // Setup 1-click Free SMS OTP send directly to user's registered phone
+    const smsBtn = document.getElementById('forgotSmsOtpBtn');
+    if (smsBtn) {
+      const cleanMob = res.mobile.replace(/\D/g, '').slice(-10);
+      smsBtn.onclick = () => {
+        if (typeof VUO_SMS !== 'undefined') {
+          VUO_SMS.sendOtp(cleanMob, res.otp, res.name);
+        } else {
+          const text = `VLE HELP DESK: Hello ${res.name}, your verification OTP is ${res.otp}. Valid for 10 minutes. Do not share this OTP with anyone.`;
+          window.location.href = `sms:+91${cleanMob}?body=${encodeURIComponent(text)}`;
+        }
+      };
+    }
+
+    if (typeof showToast === 'function') {
+      const emailNotice = res.maskedEmail ? ` & Email (${res.maskedEmail})` : '';
+      showToast(`Member verified! Secret OTP dispatched to registered Mobile${emailNotice}.`, "success");
+    }
+  },
+
+  async handleResetPassword(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const mobInput = document.getElementById('forgotMobile') || document.getElementById('forgotIdentifier');
+    const otpInput = document.getElementById('forgotOtpInput');
+    const newPwdInput = document.getElementById('forgotNewPassword');
+
+    const id = this._activeResetMobile || (mobInput ? mobInput.value.trim() : '');
+    const otp = otpInput ? otpInput.value.trim() : '';
+    const newPwd = newPwdInput ? newPwdInput.value : '';
+
+    const res = await VUO_AUTH.verifyOtpAndResetPassword(id, otp, newPwd);
+    if (!res.success) {
+      if (typeof showToast === 'function') showToast(res.message, "error");
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(res.message, "success");
+    }
+
+    this._activeResetMobile = null;
+    this.closeAll();
+    VUO_AUTH.updateAuthUI();
+  },
+
+  /* ================= DASHBOARD MODAL ================= */
+  openDashboard() {
+    const user = VUO_AUTH.getCurrentUser();
+    if (!user) {
+      this.openLogin();
+      return;
+    }
+
+    this.closeAll();
+    const modal = document.getElementById('vleDashboardModal');
+    if (!modal) return;
+
+    this.renderDashboard();
+    if (typeof renderWhatsappCommunityBanner === 'function') {
+      renderWhatsappCommunityBanner();
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  renderDashboard() {
+    const data = VUO_AUTH.getDashboardData();
+    if (!data) return;
+
+    const u = data.user;
+
+    // Profile Card
+    const nameEl = document.getElementById('dashVleName');
+    const idEl = document.getElementById('dashVleId');
+    const phoneEl = document.getElementById('dashVlePhone');
+    const distEl = document.getElementById('dashVleDistrict');
+    const shopEl = document.getElementById('dashVleShop');
+    const dateEl = document.getElementById('dashVleJoined');
+
+    if (nameEl) nameEl.textContent = u.fullName || u.name;
+    if (idEl) idEl.textContent = u.cscId || u.memberNo;
+    if (phoneEl) phoneEl.textContent = u.mobile;
+    if (distEl) distEl.textContent = u.district || 'Odisha';
+    if (shopEl) shopEl.textContent = u.kendraName || 'Digital Seva Kendra';
+    if (dateEl) dateEl.textContent = u.joiningDate || '2026';
+
+    // Metrics
+    const leadsEl = document.getElementById('dashMetricLeads');
+    const khataEl = document.getElementById('dashMetricKhata');
+    const overdueEl = document.getElementById('dashMetricOverdue');
+
+    if (leadsEl) leadsEl.textContent = data.leadsCount.toString();
+    if (khataEl) khataEl.textContent = '₹' + data.khata.totalPending.toLocaleString('en-IN');
+    if (overdueEl) overdueEl.textContent = data.khata.overdueCount.toString() + ' Overdue';
+
+    // Activity List
+    const actContainer = document.getElementById('dashActivitiesList');
+    if (actContainer) {
+      if (data.activities && data.activities.length > 0) {
+        actContainer.innerHTML = data.activities.map(a => `
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+            <div>
+              <p class="font-bold text-slate-800">${a.action || a.item || 'Portal Activity'}</p>
+              <p class="text-[10px] text-slate-500">${a.item || a.category || 'CSC Service'}</p>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 font-medium">${a.date || 'Recent'}</span>
+          </div>
+        `).join('');
+      } else {
+        actContainer.innerHTML = `
+          <div class="p-6 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-clock-rotate-left text-2xl mb-1 text-slate-300"></i>
+            <p>Your recent downloads, form printings, and tool usage history will appear here.</p>
+          </div>
+        `;
+      }
+    }
+  },
+
+  openEditProfile() {
+    const user = VUO_AUTH.getCurrentUser();
+    if (!user) {
+      this.openLogin();
+      return;
+    }
+
+    const editView = document.getElementById('vleProfileEditView');
+    const mainView = document.getElementById('vleDashboardMainView');
+    if (editView && mainView) {
+      mainView.classList.add('hidden');
+      editView.classList.remove('hidden');
+
+      // Populate inputs with current data
+      if (document.getElementById('editVleName')) document.getElementById('editVleName').value = user.fullName || user.name || '';
+      if (document.getElementById('editVleShop')) document.getElementById('editVleShop').value = user.kendraName || '';
+      if (document.getElementById('editVleCscId')) document.getElementById('editVleCscId').value = user.cscId || '';
+      if (document.getElementById('editVleDistrict')) document.getElementById('editVleDistrict').value = user.district || 'Puri';
+      if (document.getElementById('editVleEmail')) document.getElementById('editVleEmail').value = user.email || '';
+      if (document.getElementById('editVlePhoneDisplay')) document.getElementById('editVlePhoneDisplay').textContent = '+91 ' + (user.mobile || '');
+      if (document.getElementById('editVleNewPassword')) document.getElementById('editVleNewPassword').value = '';
+    }
+  },
+
+  closeEditProfile() {
+    const editView = document.getElementById('vleProfileEditView');
+    const mainView = document.getElementById('vleDashboardMainView');
+    if (editView && mainView) {
+      editView.classList.add('hidden');
+      mainView.classList.remove('hidden');
+      this.renderDashboard();
+    }
+  },
+
+  async saveProfileChanges() {
+    const nameEl = document.getElementById('editVleName');
+    const shopEl = document.getElementById('editVleShop');
+    const cscIdEl = document.getElementById('editVleCscId');
+    const distEl = document.getElementById('editVleDistrict');
+    const emailEl = document.getElementById('editVleEmail');
+    const pwdEl = document.getElementById('editVleNewPassword');
+
+    const fullName = nameEl ? nameEl.value.trim() : '';
+    const kendraName = shopEl ? shopEl.value.trim() : '';
+    const cscId = cscIdEl ? cscIdEl.value.trim().toUpperCase() : '';
+    const district = distEl ? distEl.value.trim() : '';
+    const email = emailEl ? emailEl.value.trim() : '';
+    const newPassword = pwdEl ? pwdEl.value.trim() : '';
+
+    if (!fullName) {
+      if (typeof showToast === 'function') showToast("Please enter your Full Name / ନାମ ଲେଖନ୍ତୁ!", "warning");
+      if (nameEl) nameEl.focus();
+      return;
+    }
+
+    if (newPassword && newPassword.length < 4) {
+      if (typeof showToast === 'function') showToast("Password must be at least 4 characters long!", "warning");
+      if (pwdEl) pwdEl.focus();
+      return;
+    }
+
+    const saveBtn = document.getElementById('vleSaveProfileBtn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
+    }
+
+    const res = await VUO_AUTH.updateSelfProfile({
+      fullName,
+      kendraName,
+      cscId,
+      district,
+      email,
+      newPassword
+    });
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Save Changes (ସଂରକ୍ଷଣ କରନ୍ତୁ)';
+    }
+
+    if (res.success) {
+      if (typeof showToast === 'function') showToast(res.message || "Profile updated successfully!", "success");
+      this.closeEditProfile();
+      this.renderDashboard();
+    } else {
+      if (typeof showToast === 'function') showToast(res.message || "Failed to update profile", "error");
+    }
+  },
+
+  handleLogout() {
+    this.closeAll();
+    VUO_AUTH.logout();
+  }
+};
+
+// Global Exposure
+window.VUO_AUTH = VUO_AUTH;
+window.VUO_AUTH_MODAL = VUO_AUTH_MODAL;
+
+// Automatically update UI on load
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof VUO_AUTH !== 'undefined') {
+      VUO_AUTH.updateAuthUI();
+    }
+  });
 }

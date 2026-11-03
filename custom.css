@@ -22,10 +22,50 @@ body {
   color: #1e293b;
 }
 
-/* Ensure hidden always overrides any flex or grid display */
-.hidden {
+/* Modal & dialog hidden states - safe override that doesn't break responsive classes */
+.hidden:not([class*="sm:"]):not([class*="md:"]):not([class*="lg:"]):not([class*="xl:"]):not([class*="2xl:"]) {
   display: none !important;
 }
+
+/* Explicit responsive utilities ensuring desktop/tablet visibility regardless of CSS precedence */
+@media (min-width: 640px) {
+  .sm\:flex { display: flex !important; }
+  .sm\:block { display: block !important; }
+  .sm\:inline { display: inline !important; }
+  .sm\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 768px) {
+  .md\:flex { display: flex !important; }
+  .md\:block { display: block !important; }
+  .md\:inline { display: inline !important; }
+  .md\:inline-flex { display: inline-flex !important; }
+}
+
+@media (min-width: 1024px) {
+  .lg\:flex { display: flex !important; }
+  .lg\:block { display: block !important; }
+  .lg\:inline { display: inline !important; }
+  .lg\:inline-flex { display: inline-flex !important; }
+  .lg\:hidden { display: none !important; }
+  .vuo-header-nav { display: flex !important; }
+  .vuo-header-cta { display: flex !important; }
+  .vuo-mobile-toggle { display: none !important; }
+}
+
+@media (max-width: 1023px) {
+  .vuo-header-nav { display: none !important; }
+  .vuo-header-cta { display: none !important; }
+  .vuo-mobile-toggle { display: flex !important; }
+}
+
+@media (min-width: 1280px) {
+  .xl\:flex { display: flex !important; }
+  .xl\:block { display: block !important; }
+  .xl\:inline { display: inline !important; }
+  .xl\:inline-flex { display: inline-flex !important; }
+}
+
 
 .font-odia {
   font-family: 'Noto Sans Odia', 'Inter', sans-serif;
@@ -162,12 +202,25 @@ body {
   
   /* Print Specific Containers */
   #printableArea, #printableArea *,
+  #printableBillArea, #printableBillArea *,
+  #affidavitPreviewDoc, #affidavitPreviewDoc *,
+  #idCardCanvas,
   .printable-content, .printable-content * {
     visibility: visible;
   }
   
-  #printableArea {
+  #printableArea,
+  #printableBillArea,
+  #affidavitPreviewDoc {
     position: absolute !important;
+  #affidavitPreviewDoc .text-center {
+    text-align: center !important;
+  }
+  #affidavitPreviewDoc h1, #affidavitPreviewDoc h2, #affidavitPreviewDoc h3 {
+    text-align: center !important;
+    margin: 0 auto !important;
+  }
+
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
@@ -192,13 +245,33 @@ body {
 
   #printableBillArea {
     box-shadow: none !important;
-    border: 1.5px solid #1e293b !important;
-    border-radius: 8px !important;
-    padding: 10mm 12mm !important; /* Beautiful margin inside the bill */
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     width: 100% !important;
-    background: #ffffff !important;
+    background: transparent !important;
     overflow: visible !important;
+  }
+
+  .bill-a4-page {
+    border: 1.5px solid #1e293b !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 8mm 10mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  }
+
+  .bill-a4-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
   /* Multi-page table print support */
@@ -285,10 +358,19 @@ body {
 .nav-dropdown-menu {
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-35%);
+  left: 0;
+  transform: none;
   padding-top: 10px;
   z-index: 99999;
+  max-width: calc(100vw - 24px);
+}
+
+.vuo-header-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.vuo-header-nav::-webkit-scrollbar {
+  display: none;
 }
 
 /* Open on Desktop Hover & Focus */
@@ -311,8 +393,18 @@ body {
   pointer-events: auto !important;
 }
 
+.nav-dropdown-wrapper.open .nav-chevron,
+.nav-dropdown-wrapper:hover .nav-chevron,
 .nav-dropdown-wrapper.open #navToolsChevron,
-.nav-dropdown-wrapper:hover #navToolsChevron {
+.nav-dropdown-wrapper:hover #navToolsChevron,
+.nav-dropdown-wrapper.open #navImageToolsChevron,
+.nav-dropdown-wrapper:hover #navImageToolsChevron,
+.nav-dropdown-wrapper.open #navPdfToolsChevron,
+.nav-dropdown-wrapper:hover #navPdfToolsChevron,
+.nav-dropdown-wrapper.open #navOfficeToolsChevron,
+.nav-dropdown-wrapper:hover #navOfficeToolsChevron,
+.nav-dropdown-wrapper.open #navServicesChevron,
+.nav-dropdown-wrapper:hover #navServicesChevron {
   transform: rotate(180deg);
 }
 
@@ -476,3 +568,277 @@ body {
   color: #9a3412;
 }
 
+/* ==========================================================================
+   Pi7 Style Interactive PDF Text Layer & Live In-Place Editor
+   ========================================================================== */
+#pdfEditorCanvasWrapper {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+#pdfEditorTextLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.pdf-text-node {
+  position: absolute;
+  box-sizing: border-box;
+  color: transparent;
+  cursor: text;
+  line-height: 1;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 2px;
+  z-index: 10;
+  pointer-events: auto;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.pdf-text-node:hover {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+  border: 1px dashed rgba(2, 132, 199, 0.6) !important;
+  cursor: pointer;
+}
+
+.pdf-text-node.is-replaced {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.pdf-text-node.is-replaced:hover {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+  border: 1px dashed rgba(2, 132, 199, 0.6) !important;
+}
+
+.pdf-inline-editor {
+  position: absolute;
+  z-index: 60;
+  box-sizing: border-box;
+  padding: 0 4px;
+  margin: 0;
+  border: 1.5px solid #0284c7;
+  border-radius: 3px;
+  background-color: transparent;
+  color: #0f172a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 600;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+  line-height: 1.2;
+}
+
+.pdf-inline-editor:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.pdf-custom-text-node {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.pdf-custom-text-node:hover {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  border: 1px dashed rgba(37, 99, 235, 0.6) !important;
+}
+
+/* Pi7 Style Floating Text Formatting Bar */
+.pdf-floating-format-bar {
+  position: absolute;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.25), 0 2px 6px -1px rgba(15, 23, 42, 0.1);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  color: #1e293b;
+  user-select: none;
+  animation: formatBarFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+@keyframes formatBarFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pdf-format-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.pdf-format-btn:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.pdf-format-btn.is-active {
+  background: #0284c7;
+  border-color: #0369a1;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.3);
+}
+
+.pdf-format-select {
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+}
+
+.pdf-format-size-input {
+  width: 38px;
+  height: 24px;
+  text-align: center;
+  padding: 0 2px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  outline: none;
+}
+
+.pdf-format-color-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.pdf-format-color-chip:hover {
+  transform: scale(1.15);
+}
+
+.pdf-format-color-chip.is-active {
+  box-shadow: 0 0 0 2px #0284c7;
+  transform: scale(1.1);
+}
+
+.pdf-format-divider {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+  margin: 0 2px;
+}
+
+/* Ensure resume page footers are strictly hidden everywhere */
+.resume-page-footer {
+  display: none !important;
+}
+
+/* ==========================================================================
+   RESUME & BIODATA MAKER - TRUE A4 LAYOUT, MARGINS & PRINT SPECIFICATIONS
+   ========================================================================== */
+
+/* A4 Page Container on Screen Preview */
+.resume-a4-page {
+  font-family: Arial, Helvetica, sans-serif !important;
+  word-spacing: normal !important;
+  letter-spacing: 0px !important;
+  text-rendering: geometricPrecision !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 210mm !important;
+  min-height: 297mm !important;
+  padding: 13mm 14mm !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  background-color: #ffffff;
+  position: relative;
+}
+
+.resume-a4-page.font-serif {
+  font-family: Georgia, "Times New Roman", serif !important;
+}
+
+@media screen and (max-width: 768px) {
+  .resume-a4-page {
+    padding: 16px 14px !important;
+    min-height: auto !important;
+  }
+}
+
+/* Print Rules for Resume & Biodata */
+@media print {
+  .resume-a4-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  .resume-page-break,
+  .resume-page-header-tag {
+    display: none !important;
+  }
+
+  .resume-page-1 {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .resume-page-2 {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 2mm !important;
+  }
+
+  .resume-section,
+  .resume-signature-block,
+  .resume-experience-item,
+  .resume-education-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+
+
+
+/* Responsive Mobile Drawer State Enforcement */
+#mobileDrawer.hidden {
+  display: none !important;
+}
+#mobileDrawer:not(.hidden) {
+  display: flex !important;
+}

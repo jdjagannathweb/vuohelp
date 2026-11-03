@@ -14,7 +14,132 @@ const VUO_JOB_ALERT = {
   _isSyncing: false,
 
   // Fallback high-value curated job notifications for Odisha VLEs & Citizens
-  defaultJobs: [],
+  defaultJobs: [
+    {
+      id: "job-odisha-police-constable-2026-3075546",
+      title: "Odisha Police Constable Recruitment 2026 - 7268 Posts",
+      titleOdia: "ଓଡ଼ିଶା ପୋଲିସ କନଷ୍ଟେବଲ ନିଯୁକ୍ତି ୨୦୨୬ - ୭,୨୬୮ ପଦବୀ",
+      organization: "State Selection Board (SSB), Odisha Police",
+      post: "Constable (Civil), Firefighter & Driver",
+      vacancies: "7,268 Posts",
+      qualification: "+2 / 10th Class (Matric) Passed from Recognized Board",
+      ageLimit: "18 - 23 Years (Age relaxation for SC/ST/SEBC as per rules)",
+      salary: "₹21,700 - ₹69,100 (Level-5 Pay Scale)",
+      startDate: "2026-10-20",
+      lastDate: "2026-11-30",
+      category: "Defense & Police",
+      status: "Active",
+      applyUrl: "https://odishapolice.gov.in",
+      notificationUrl: "https://odishapolice.gov.in",
+      officialUrl: "https://odishapolice.gov.in",
+      source: "Odisha Police Recruitment Board",
+      documents: [
+        "10th (Matric) Board Certificate & Marksheet (Age Proof)",
+        "+2 / Higher Secondary Passing Certificate & Marksheet",
+        "Aadhaar Card (Mobile Linked for OTP Verification)",
+        "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+        "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+        "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
+        "Caste Certificate (SC / ST / SEBC if applicable)",
+        "Odia Language Pass Certificate (ME School Standard / Matric Odia)"
+      ],
+      examFee: "Free for all categories (Odisha Govt Rule)",
+      featured: true,
+      syncedAt: 1793700000000
+    },
+    {
+      id: "job-ossc-cgl-recruitment-2026-595",
+      title: "OSSC Combined Graduate Level (CGL) Recruitment 2026 - 595 Posts",
+      titleOdia: "ଓଏସଏସସି ସିଜିଏଲ (CGL) ସ୍ନାତକ ସ୍ତରୀୟ ନିଯୁକ୍ତି ୨୦୨୬ - ୫୯୫ ପଦବୀ",
+      organization: "Odisha Staff Selection Commission (OSSC)",
+      post: "Auditor, Inspector of Supplies, Junior Fishery Tech Assistant",
+      vacancies: "595 Posts",
+      qualification: "Bachelor's Degree in any discipline with Computer proficiency (DCA / PGDCA)",
+      ageLimit: "21 - 38 Years (Relaxation for SC/ST/SEBC/Women as per Govt rules)",
+      salary: "₹35,400 - ₹1,12,400 (Level-9 Pay Scale)",
+      startDate: "2026-10-01",
+      lastDate: "2026-11-25",
+      category: "Odisha Govt",
+      status: "Active",
+      applyUrl: "https://ossc.gov.in",
+      notificationUrl: "https://ossc.gov.in",
+      officialUrl: "https://ossc.gov.in",
+      source: "Odisha Staff Selection Commission",
+      documents: [
+        "Graduation Degree Certificate & Marksheets (All Semesters)",
+        "10th Board Certificate for Age Verification",
+        "Computer Proficiency Certificate (DCA/PGDCA/Equivalent)",
+        "Aadhaar Card (Linked Mobile)",
+        "Caste Certificate (OBC/SEBC/SC/ST)",
+        "Resident / Nativity Certificate",
+        "Recent Passport Size Photograph & Signature"
+      ],
+      examFee: "Free (No application fee as per Odisha Govt Notification)",
+      featured: true,
+      syncedAt: 1793700000000
+    },
+    {
+      id: "job-osssc-cre-ri-ari-amin-2026-2895",
+      title: "OSSSC Revenue Inspector (RI), ARI & Amin Recruitment 2026 - 2895 Posts",
+      titleOdia: "ଓଡ଼ିଶା ରାଜସ୍ୱ ନିରୀକ୍ଷକ (RI), ARI ଏବଂ ଅମିନ ନିଯୁକ୍ତି ୨୦୨୬ - ୨,୮୯୫ ପଦବୀ",
+      organization: "Odisha Sub-Ordinate Staff Selection Commission (OSSSC)",
+      post: "Revenue Inspector (RI), Assistant RI, Amin, ICDS Supervisor",
+      vacancies: "2,895 Posts",
+      qualification: "+2 / Higher Secondary / Graduate with Computer Knowledge",
+      ageLimit: "21 - 38 Years (Age relaxation applicable for reserved categories)",
+      salary: "₹19,900 - ₹63,200 (Level-4 to Level-9 Pay Scale)",
+      startDate: "2026-10-15",
+      lastDate: "2026-12-15",
+      category: "Odisha Govt",
+      status: "Active",
+      applyUrl: "https://osssc.gov.in",
+      notificationUrl: "https://osssc.gov.in",
+      officialUrl: "https://osssc.gov.in",
+      source: "OSSSC Bhubaneswar",
+      documents: [
+        "10th Class Passing Certificate & Marksheet",
+        "+2 / Higher Secondary School Certificate",
+        "Graduation Degree Certificate (for RI & Supervisor)",
+        "DCA / PGDCA Computer Certificate",
+        "Aadhaar Card with active mobile number",
+        "Resident / Nativity Certificate issued by Tehsildar",
+        "Recent Color Passport Size Photo & Signature"
+      ],
+      examFee: "Nil (Exempted for all candidates in Odisha)",
+      featured: true,
+      syncedAt: 1793700000000
+    },
+    {
+      id: "job-india-post-gds-odisha-2026-1382",
+      title: "India Post GDS Recruitment 2026 - Odisha Circle (1382 Posts)",
+      titleOdia: "ଭାରତୀୟ ଡାକ ବିଭାଗ ଗ୍ରାମୀଣ ଡାକ ସେବକ (GDS) ନିଯୁକ୍ତି ୨୦୨୬ - ୧,୩୮୨ ପଦବୀ",
+      organization: "Department of Posts, Ministry of Communications",
+      post: "Branch Postmaster (BPM) & Assistant BPM",
+      vacancies: "1,382 Posts (Odisha Circle)",
+      qualification: "10th Class (Matric) Passed with Mathematics & English as compulsory subjects and Odia language study",
+      ageLimit: "18 - 40 Years (Age relaxation 5 yrs for SC/ST, 3 yrs for OBC)",
+      salary: "₹10,000 - ₹29,380 per month (TRCA Slab)",
+      startDate: "2026-10-10",
+      lastDate: "2026-12-10",
+      category: "Central Govt",
+      status: "Active",
+      applyUrl: "https://indiapostgdsonline.gov.in",
+      notificationUrl: "https://indiapostgdsonline.gov.in",
+      officialUrl: "https://indiapostgdsonline.gov.in",
+      source: "India Post",
+      documents: [
+        "10th Class (Secondary School) Marksheet & Certificate",
+        "Aadhaar Card (linked mobile number)",
+        "Recent Passport Size Photograph (JPG, max 50 KB)",
+        "Signature (JPG, max 20 KB)",
+        "Caste / Community Certificate (SC/ST/OBC/EWS)",
+        "Disability Certificate (if PwD category)"
+      ],
+      examFee: "₹100 (Female, SC, ST, PwD candidates exempt)",
+      featured: true,
+      syncedAt: 1793700000000
+    }
+  ],
 
   escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -74,26 +199,63 @@ const VUO_JOB_ALERT = {
   },
 
   loadJobs() {
-    let list = this.defaultJobs.filter(dj => !this.isJobDeleted(dj));
+    const map = new Map();
+    // 1. Default high-value jobs
+    this.defaultJobs.forEach(dj => {
+      if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+    });
+
+    // 2. Cloud-synced jobs (from Firebase Firestore)
+    try {
+      const cloudRaw = localStorage.getItem('vuo_cloud_job_alerts');
+      if (cloudRaw) {
+        const parsed = JSON.parse(cloudRaw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(cj => {
+            if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
+          });
+        }
+      }
+    } catch (e) {}
+
+    // 3. Local custom jobs (from admin/user device)
     try {
       const localCustom = localStorage.getItem('vuo_custom_job_alerts');
       if (localCustom) {
         const parsed = JSON.parse(localCustom);
         if (Array.isArray(parsed)) {
-          // Prepend custom user-added jobs (excluding deleted ones)
-          const existingIds = new Set(list.map(j => j.id));
           parsed.forEach(pj => {
-            if (!this.isJobDeleted(pj) && !existingIds.has(pj.id)) {
-              list.unshift(pj);
-              existingIds.add(pj.id);
-            }
+            if (!this.isJobDeleted(pj)) map.set(pj.id, pj);
           });
         }
       }
     } catch (e) {
       console.warn('[JobAlert] Error loading local custom jobs:', e);
     }
-    this.jobs = list.filter(j => !this.isJobDeleted(j));
+    this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+  },
+
+  syncFromCloud(cloudJobs) {
+    if (!Array.isArray(cloudJobs)) return;
+    const map = new Map();
+    this.defaultJobs.forEach(dj => {
+      if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+    });
+    cloudJobs.forEach(cj => {
+      if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
+    });
+    try {
+      const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      localCustom.forEach(lj => {
+        if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
+      });
+    } catch(e) {}
+    this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+    this.renderStats();
+    this.renderJobs();
+    if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+      try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+    }
   },
 
   async fetchLiveServerJobs(force = false) {
@@ -107,19 +269,32 @@ const VUO_JOB_ALERT = {
 
     try {
       let rawJobs = [];
-      // 1. Try dynamic backend API endpoint first
-      const endpoint = force ? '/api/sync-job-alerts' : '/api/job-alerts';
-      try {
-        const res = await fetch(endpoint, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
-            rawJobs = data.jobs;
-          }
-        }
-      } catch (errApi) {}
 
-      // 2. If API was 404 or failed (e.g. static hosting on Render/GitHub Pages), fallback to static job_alerts.json
+      // 1. Fetch directly from Firebase Firestore Cloud Database
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudJobAlertsDirectly === 'function') {
+        try {
+          const cloudRes = await VUO_DB.fetchCloudJobAlertsDirectly();
+          if (cloudRes && cloudRes.success && Array.isArray(cloudRes.jobs) && cloudRes.jobs.length > 0) {
+            rawJobs = [...cloudRes.jobs];
+          }
+        } catch(e) {}
+      }
+
+      // 2. Try dynamic backend API endpoint
+      if (rawJobs.length === 0) {
+        const endpoint = force ? '/api/sync-job-alerts' : '/api/job-alerts';
+        try {
+          const res = await fetch(endpoint, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
+              rawJobs = data.jobs;
+            }
+          }
+        } catch (errApi) {}
+      }
+
+      // 3. Fallback to static job_alerts.json
       if (rawJobs.length === 0) {
         try {
           const resStatic = await fetch('/job_alerts.json', { cache: 'no-store' });
@@ -132,36 +307,36 @@ const VUO_JOB_ALERT = {
         } catch (errStatic) {}
       }
 
-      if (rawJobs.length > 0 || this.defaultJobs.length > 0) {
-        const map = new Map();
-        // Keep server / scraped jobs (strictly excluding deleted ones)
-        rawJobs.forEach(j => {
-          if (!this.isJobDeleted(j)) map.set(j.id, j);
+      const map = new Map();
+      this.defaultJobs.forEach(dj => {
+        if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+      });
+      rawJobs.forEach(j => {
+        if (!this.isJobDeleted(j)) map.set(j.id, j);
+      });
+      try {
+        const cloudJobs = JSON.parse(localStorage.getItem('vuo_cloud_job_alerts') || '[]');
+        cloudJobs.forEach(cj => {
+          if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
         });
-        // Merge custom & default (strictly excluding deleted ones)
-        this.defaultJobs.forEach(dj => {
-          if (!this.isJobDeleted(dj) && !map.has(dj.id)) map.set(dj.id, dj);
+      } catch(e) {}
+      try {
+        const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+        localCustom.forEach(lj => {
+          if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
         });
-        // Local custom jobs
-        try {
-          const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
-          localCustom.forEach(lj => {
-            if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
-          });
-        } catch(e) {}
+      } catch(e) {}
 
-        this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
-        this.renderStats();
-        this.renderJobs();
+      this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+      this.renderStats();
+      this.renderJobs();
 
-        // Also notify admin job alerts table if admin panel is open
-        if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
-          try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
-        }
+      if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+        try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+      }
 
-        if (force && typeof showToast === 'function') {
-          showToast(`✅ Successfully synced ${this.jobs.length} Live Govt Jobs!`, 'success');
-        }
+      if (force && typeof showToast === 'function') {
+        showToast(`✅ ସଫଳତାର ସହିତ ${this.jobs.length} ଟି ସରକାରୀ ଚାକିରୀ ସିଙ୍କ ହେଲା!`, 'success');
       }
     } catch (e) {
       console.log('[JobAlert] Running in offline / static hosting mode:', e.message);
@@ -805,6 +980,11 @@ ${docsText}
         body: JSON.stringify(newJob)
       }).catch(() => {});
     } catch(e) {}
+
+    // Save to Firebase Cloud
+    if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudSaveJobAlert === 'function') {
+      try { VUO_DB.cloudSaveJobAlert(newJob); } catch(e) {}
+    }
 
     this.jobs.unshift(newJob);
     this.renderStats();

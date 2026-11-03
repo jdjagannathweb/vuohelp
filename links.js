@@ -245,8 +245,8 @@ const VUO_LINKS = {
 
           <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
             <span class="text-[11px] text-slate-400 font-mono truncate max-w-[150px] sm:max-w-[180px]">${link.url}</span>
-            <a href="${link.url}" target="_blank" rel="noopener noreferrer" 
-              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0">
+            <a href="${link.url}" onclick="return VUO_LINKS.openPortalLink(event, '${link.url}', '${(link.title || 'Govt Portal').replace(/'/g, "\\'")}')" 
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer">
               <span>Open Portal</span>
               <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
             </a>
@@ -254,5 +254,33 @@ const VUO_LINKS = {
         </div>
       `;
     }).join('');
+  },
+
+  openPortalLink(event, url, title) {
+    if (event) event.preventDefault();
+    if (typeof VUO_GATE !== 'undefined') {
+      return VUO_GATE.requireAccess({
+        type: 'link',
+        item: `Portal Link: ${title || 'Official Govt / CSC Portal'}`,
+        category: 'links'
+      }, () => {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    }
+    const user = (typeof VUO_AUTH !== 'undefined' && VUO_AUTH.getCurrentUser) ? VUO_AUTH.getCurrentUser() : null;
+    if (!user) {
+      if (typeof VUO_AUTH_MODAL !== 'undefined' && VUO_AUTH_MODAL.openLogin) {
+        VUO_AUTH_MODAL.openLogin({ item: `Portal Link: ${title || 'Official Govt / CSC Portal'}` }, () => {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        });
+      }
+      return false;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return false;
   }
 };
+
+window.VUO_LINKS = VUO_LINKS;
+if (typeof module !== 'undefined') module.exports = VUO_LINKS;
+

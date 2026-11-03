@@ -16,322 +16,176 @@ const VUO_JOB_ALERT = {
   // Fallback high-value curated job notifications for Odisha VLEs & Citizens
   defaultJobs: [
     {
-      id: 'job-ossc-cgl-2026',
-      title: 'OSSC Combined Graduate Level (CGL) Specialist Recruitment 2026',
-      titleOdia: 'OSSC ସମ୍ମିଳିତ ସ୍ନାତକ ସ୍ତରୀୟ (CGL) ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Odisha Staff Selection Commission (OSSC)',
-      post: 'Auditor, Inspector of Supplies, Junior Fishery Technical Assistant',
-      vacancies: '595 Posts',
-      qualification: 'Graduate in Any Discipline (B.A / B.Sc / B.Com / B.Tech)',
-      ageLimit: '21 - 38 Years (SC/ST/SEBC +5 Yrs, Women +5 Yrs)',
-      salary: '₹35,400 - ₹1,12,400 (Level-9 Pay Matrix)',
-      startDate: '05-10-2026',
-      lastDate: '04-11-2026',
-      category: 'Odisha Govt',
-      status: 'Active',
-      applyUrl: 'https://www.ossc.gov.in',
-      notificationUrl: 'https://www.ossc.gov.in/Public/OSSC/Default.aspx',
-      officialUrl: 'https://www.ossc.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/odisha-government-jobs/',
-      source: 'OSSC Portal',
+      id: "job-odisha-police-constable-2026-3075546",
+      title: "Odisha Police Constable Recruitment 2026 - 7268 Posts",
+      titleOdia: "ଓଡ଼ିଶା ପୋଲିସ କନଷ୍ଟେବଲ ନିଯୁକ୍ତି ୨୦୨୬ - ୭,୨୬୮ ପଦବୀ",
+      organization: "State Selection Board (SSB), Odisha Police",
+      post: "Constable (Civil), Firefighter & Driver",
+      vacancies: "7,268 Posts",
+      qualification: "+2 / 10th Class (Matric) Passed from Recognized Board",
+      ageLimit: "18 - 23 Years (Age relaxation for SC/ST/SEBC as per rules)",
+      salary: "₹21,700 - ₹69,100 (Level-5 Pay Scale)",
+      startDate: "2026-10-20",
+      lastDate: "2026-11-30",
+      category: "Defense & Police",
+      status: "Active",
+      applyUrl: "https://odishapolice.gov.in",
+      notificationUrl: "https://odishapolice.gov.in",
+      officialUrl: "https://odishapolice.gov.in",
+      source: "Odisha Police Recruitment Board",
       documents: [
-        '10th Class Board Certificate & Marksheet (Age & DOB Proof)',
-        '+2 / Higher Secondary Passing Certificate & Marksheet',
-        'Graduation Degree Certificate & Final Year Marksheet',
-        'Aadhaar Card (Clean Photo & Address Linked with Mobile)',
-        'Recent Passport Size Photo (White Background, 20-50 KB)',
-        'Candidate Signature (Black Ink on White Paper, 10-20 KB)',
-        'Odisha Resident / Domicile Certificate (Tahasil e-District)',
-        'Caste Certificate (SC / ST / SEBC if applicable)',
-        'Employment Exchange Registration Card'
+        "10th (Matric) Board Certificate & Marksheet (Age Proof)",
+        "+2 / Higher Secondary Passing Certificate & Marksheet",
+        "Aadhaar Card (Mobile Linked for OTP Verification)",
+        "Recent Passport Size Color Photo (White Background, 20-50 KB)",
+        "Candidate Signature (Black Ink on White Paper, 10-20 KB)",
+        "Resident / Domicile Certificate (Odisha / Local Tehsildar)",
+        "Caste Certificate (SC / ST / SEBC if applicable)",
+        "Odia Language Pass Certificate (ME School Standard / Matric Odia)"
       ],
-      examFee: '₹0 (Free for All Categories as per Odisha Govt Rule)',
-      featured: true
+      examFee: "Free for all categories (Odisha Govt Rule)",
+      featured: true,
+      syncedAt: 1793700000000
     },
     {
-      id: 'job-odisha-police-sepoy-2026',
-      title: 'Odisha Police Sepoy / Constable Recruitment 2026',
-      titleOdia: 'ଓଡ଼ିଶା ପୋଲିସ୍ କନଷ୍ଟେବଲ୍ / ସିପାହୀ ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'State Selection Board, Odisha Police (SSB)',
-      post: 'Sepoy / Constable in OSAP / IRBn / SSBn Battalions',
-      vacancies: '1,360 Posts',
-      qualification: '10th / Matriculation Pass with Odia subject',
-      ageLimit: '18 - 23 Years (Relaxable up to 28 for SC/ST/SEBC)',
-      salary: '₹21,700 - ₹69,100 (Level-3 Pay Matrix)',
-      startDate: '23-09-2026',
-      lastDate: '30-10-2026',
-      category: 'Defense & Police',
-      status: 'Active',
-      applyUrl: 'https://odishapolice.gov.in',
-      notificationUrl: 'https://odishapolice.gov.in/sites/default/files/recruitment.pdf',
-      officialUrl: 'https://odishapolice.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/odisha-government-jobs/',
-      source: 'Odisha Police',
+      id: "job-ossc-cgl-recruitment-2026-595",
+      title: "OSSC Combined Graduate Level (CGL) Recruitment 2026 - 595 Posts",
+      titleOdia: "ଓଏସଏସସି ସିଜିଏଲ (CGL) ସ୍ନାତକ ସ୍ତରୀୟ ନିଯୁକ୍ତି ୨୦୨୬ - ୫୯୫ ପଦବୀ",
+      organization: "Odisha Staff Selection Commission (OSSC)",
+      post: "Auditor, Inspector of Supplies, Junior Fishery Tech Assistant",
+      vacancies: "595 Posts",
+      qualification: "Bachelor's Degree in any discipline with Computer proficiency (DCA / PGDCA)",
+      ageLimit: "21 - 38 Years (Relaxation for SC/ST/SEBC/Women as per Govt rules)",
+      salary: "₹35,400 - ₹1,12,400 (Level-9 Pay Scale)",
+      startDate: "2026-10-01",
+      lastDate: "2026-11-25",
+      category: "Odisha Govt",
+      status: "Active",
+      applyUrl: "https://ossc.gov.in",
+      notificationUrl: "https://ossc.gov.in",
+      officialUrl: "https://ossc.gov.in",
+      source: "Odisha Staff Selection Commission",
       documents: [
-        '10th Board Certificate & Marksheet (Mandatory DOB)',
-        'Odia Subject Pass Certificate (ME Standard or Class 10)',
-        'Aadhaar Card (Mobile Number Linked)',
-        'Recent Passport Size Photo (White Background, 20-50 KB)',
-        'Candidate Signature (Black Ink, 10-20 KB)',
-        'Resident Certificate of Odisha (Issued by Tehsildar)',
-        'Caste Certificate (SC / ST / SEBC if applicable)',
-        'Valid Driving License (For Driver preference, if available)',
-        'Sports / NCC Certificate (For Bonus marks, if any)'
+        "Graduation Degree Certificate & Marksheets (All Semesters)",
+        "10th Board Certificate for Age Verification",
+        "Computer Proficiency Certificate (DCA/PGDCA/Equivalent)",
+        "Aadhaar Card (Linked Mobile)",
+        "Caste Certificate (OBC/SEBC/SC/ST)",
+        "Resident / Nativity Certificate",
+        "Recent Passport Size Photograph & Signature"
       ],
-      examFee: '₹0 (No Examination Fee for Any Candidate)',
-      featured: true
+      examFee: "Free (No application fee as per Odisha Govt Notification)",
+      featured: true,
+      syncedAt: 1793700000000
     },
     {
-      id: 'job-rrb-ntpc-2026',
-      title: 'Railway RRB NTPC Graduate & 12th Level Recruitment 2026',
-      titleOdia: 'ରେଳବାଇ RRB NTPC ଗ୍ରାଜୁଏଟ୍ ଓ +୨ ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Railway Recruitment Control Board (RRB)',
-      post: 'Station Master, Goods Train Manager, Jr Accounts Assistant, Typist',
-      vacancies: '11,558 Posts (8,113 Graduate + 3,445 12th Level)',
-      qualification: '12th Pass or Any Bachelor Degree',
-      ageLimit: '18 - 36 Years (3 Years Covid Relief Included)',
-      salary: '₹19,900 - ₹35,400 (Level-2 to Level-5 + Railway DA & Perks)',
-      startDate: '14-09-2026',
-      lastDate: '20-10-2026',
-      category: 'Railway',
-      status: 'Active',
-      applyUrl: 'https://www.rrbapply.gov.in',
-      notificationUrl: 'https://indianrailways.gov.in',
-      officialUrl: 'https://www.rrbapply.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/rrb-ntpc/',
-      source: 'RRB Official',
+      id: "job-osssc-cre-ri-ari-amin-2026-2895",
+      title: "OSSSC Revenue Inspector (RI), ARI & Amin Recruitment 2026 - 2895 Posts",
+      titleOdia: "ଓଡ଼ିଶା ରାଜସ୍ୱ ନିରୀକ୍ଷକ (RI), ARI ଏବଂ ଅମିନ ନିଯୁକ୍ତି ୨୦୨୬ - ୨,୮୯୫ ପଦବୀ",
+      organization: "Odisha Sub-Ordinate Staff Selection Commission (OSSSC)",
+      post: "Revenue Inspector (RI), Assistant RI, Amin, ICDS Supervisor",
+      vacancies: "2,895 Posts",
+      qualification: "+2 / Higher Secondary / Graduate with Computer Knowledge",
+      ageLimit: "21 - 38 Years (Age relaxation applicable for reserved categories)",
+      salary: "₹19,900 - ₹63,200 (Level-4 to Level-9 Pay Scale)",
+      startDate: "2026-10-15",
+      lastDate: "2026-12-15",
+      category: "Odisha Govt",
+      status: "Active",
+      applyUrl: "https://osssc.gov.in",
+      notificationUrl: "https://osssc.gov.in",
+      officialUrl: "https://osssc.gov.in",
+      source: "OSSSC Bhubaneswar",
       documents: [
-        '10th Board Certificate & Marksheet (Roll No & DOB)',
-        '12th (+2) / Graduation Final Marksheet & Certificate',
-        'Aadhaar Card (Mandatory for biometric & face verify)',
-        'Recent Color Passport Photo (Light Background, no cap/specs)',
-        'Scanned Signature (Running handwriting, 10-20 KB)',
-        'SC / ST Certificate (for Free Sleeper Class Travel Pass)',
-        'Bank Account Passbook / Cancelled Cheque (for Fee Refund)'
+        "10th Class Passing Certificate & Marksheet",
+        "+2 / Higher Secondary School Certificate",
+        "Graduation Degree Certificate (for RI & Supervisor)",
+        "DCA / PGDCA Computer Certificate",
+        "Aadhaar Card with active mobile number",
+        "Resident / Nativity Certificate issued by Tehsildar",
+        "Recent Color Passport Size Photo & Signature"
       ],
-      examFee: 'Gen/OBC: ₹500 (₹400 Refundable) | SC/ST/Female: ₹250 (Full Refund)',
-      featured: true
+      examFee: "Nil (Exempted for all candidates in Odisha)",
+      featured: true,
+      syncedAt: 1793700000000
     },
     {
-      id: 'job-india-post-gds-2026',
-      title: 'India Post GDS (Gramin Dak Sevak - BPM / ABPM) Cycle 2026',
-      titleOdia: 'ଭାରତୀୟ ଡାକ ବିଭାଗ GDS (ଡାକ ସେବକ) ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Department of Posts, Govt of India',
-      post: 'Branch Postmaster (BPM) & Assistant Branch Postmaster (ABPM)',
-      vacancies: '44,228 Posts (Odisha Circle: 2,477 Posts)',
-      qualification: '10th Pass with Mathematics, English & Local Language (Odia)',
-      ageLimit: '18 - 40 Years (SC/ST +5, OBC +3, PWD +10)',
-      salary: '₹10,000 - ₹29,380 TRCA (BPM: ₹12K-29K | ABPM: ₹10K-24K)',
-      startDate: '15-07-2026',
-      lastDate: '18-10-2026',
-      category: '10th & 12th Pass',
-      status: 'Closing Soon',
-      applyUrl: 'https://indiapostgdsonline.gov.in',
-      notificationUrl: 'https://indiapostgdsonline.gov.in',
-      officialUrl: 'https://indiapostgdsonline.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/india-post-gds/',
-      source: 'India Post',
+      id: "job-india-post-gds-odisha-2026-1382",
+      title: "India Post GDS Recruitment 2026 - Odisha Circle (1382 Posts)",
+      titleOdia: "ଭାରତୀୟ ଡାକ ବିଭାଗ ଗ୍ରାମୀଣ ଡାକ ସେବକ (GDS) ନିଯୁକ୍ତି ୨୦୨୬ - ୧,୩୮୨ ପଦବୀ",
+      organization: "Department of Posts, Ministry of Communications",
+      post: "Branch Postmaster (BPM) & Assistant BPM",
+      vacancies: "1,382 Posts (Odisha Circle)",
+      qualification: "10th Class (Matric) Passed with Mathematics & English as compulsory subjects and Odia language study",
+      ageLimit: "18 - 40 Years (Age relaxation 5 yrs for SC/ST, 3 yrs for OBC)",
+      salary: "₹10,000 - ₹29,380 per month (TRCA Slab)",
+      startDate: "2026-10-10",
+      lastDate: "2026-12-10",
+      category: "Central Govt",
+      status: "Active",
+      applyUrl: "https://indiapostgdsonline.gov.in",
+      notificationUrl: "https://indiapostgdsonline.gov.in",
+      officialUrl: "https://indiapostgdsonline.gov.in",
+      source: "India Post",
       documents: [
-        '10th Board Marksheet with Marks/Grades details',
-        '10th Pass Certificate',
-        'Aadhaar Card',
-        'Passport Size Color Photograph (Max 50 KB JPG)',
-        'Candidate Signature (Max 20 KB JPG)',
-        'Caste / Community Certificate (SC / ST / OBC / EWS)',
-        'Computer Training Certificate (Basic 60 Days, if any)'
+        "10th Class (Secondary School) Marksheet & Certificate",
+        "Aadhaar Card (linked mobile number)",
+        "Recent Passport Size Photograph (JPG, max 50 KB)",
+        "Signature (JPG, max 20 KB)",
+        "Caste / Community Certificate (SC/ST/OBC/EWS)",
+        "Disability Certificate (if PwD category)"
       ],
-      examFee: '₹100 (Female, SC, ST, PWD: No Fee)',
-      featured: true
-    },
-    {
-      id: 'job-ssc-gd-constable-2026',
-      title: 'SSC GD Constable (BSF, CISF, CRPF, SSB, ITBP, AR, SSF) 2026',
-      titleOdia: 'SSC GD କନଷ୍ଟେବଲ୍ (ଅର୍ଦ୍ଧସାମରିକ ବଳ) ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Staff Selection Commission (SSC)',
-      post: 'Constable (General Duty) & Rifleman in Assam Rifles',
-      vacancies: '39,481 Posts',
-      qualification: '10th Pass (Matriculation) from recognized Board',
-      ageLimit: '18 - 23 Years (SC/ST: 28, OBC: 26)',
-      salary: '₹21,700 - ₹69,100 (Pay Level-3 Matrix)',
-      startDate: '05-09-2026',
-      lastDate: '14-10-2026',
-      category: 'Defense & Police',
-      status: 'Closing Soon',
-      applyUrl: 'https://ssc.gov.in',
-      notificationUrl: 'https://ssc.gov.in',
-      officialUrl: 'https://ssc.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/ssc-gd-constable/',
-      source: 'SSC Portal',
-      documents: [
-        '10th Class Board Certificate (Roll No & Passing Year)',
-        'Live Webcam Photo Capture (through SSC MyGov App or Browser)',
-        'Scanned Signature (10 to 20 KB, Sharp JPG)',
-        'Aadhaar Card / Voter ID / DL',
-        'State Domicile / Permanent Resident Certificate',
-        'Caste Certificate (Central Govt Format for OBC/SC/ST)',
-        'NCC Certificate (A/B/C bonus marks, if applicable)'
-      ],
-      examFee: '₹100 (Women, SC, ST, ESM: No Fee)',
-      featured: true
-    },
-    {
-      id: 'job-osssc-cre-2026',
-      title: 'OSSSC Combined Recruitment Examination (RI, ARI, Amin, ICDS)',
-      titleOdia: 'OSSSC ରାଜସ୍ୱ ପରିଦର୍ଶକ (RI), ARI ଓ ଅମିନ ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Odisha Sub-ordinate Staff Selection Commission (OSSSC)',
-      post: 'Revenue Inspector (RI), Assistant RI (ARI), Amin, Supervisor',
-      vacancies: '2,895 Posts',
-      qualification: '12th (+2) Pass for ARI/Amin | Graduation for RI & Supervisor',
-      ageLimit: '21 - 38 Years (Relaxable for SC/ST/SEBC/Women)',
-      salary: '₹19,900 - ₹35,400 (Level-4 for ARI/Amin | Level-9 for RI)',
-      startDate: '01-10-2026',
-      lastDate: '31-10-2026',
-      category: 'Odisha Govt',
-      status: 'Active',
-      applyUrl: 'https://www.osssc.gov.in',
-      notificationUrl: 'https://www.osssc.gov.in',
-      officialUrl: 'https://www.osssc.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/osssc/',
-      source: 'OSSSC',
-      documents: [
-        '10th Pass Certificate with Odia Subject Proof',
-        '+2 / Intermediate Marksheet (for ARI & Amin)',
-        'Graduation Degree Certificate (for RI & ICDS Supervisor)',
-        'Aadhaar Card',
-        'Passport Photo (White BG, 20-50KB)',
-        'Signature (Black Ink, 10-20KB)',
-        'Resident Certificate of Odisha (Revenue Tehsildar)',
-        'Caste Certificate (SC/ST/SEBC)',
-        'Employment Exchange Registration Number'
-      ],
-      examFee: '₹0 (Free for All Candidates)',
-      featured: true
-    },
-    {
-      id: 'job-sbi-clerk-2026',
-      title: 'SBI Junior Associate (Customer Support & Sales / Clerk) 2026',
-      titleOdia: 'SBI ବ୍ୟାଙ୍କ ଜୁନିଅର ଆସୋସିଏଟ୍ (କ୍ଲର୍କ) ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'State Bank of India (SBI)',
-      post: 'Junior Associate (Clerk) - Odisha Circle (Bhubaneswar)',
-      vacancies: '8,773 Posts (Odisha: 310 Posts)',
-      qualification: 'Graduation in Any Discipline / Final Year Students',
-      ageLimit: '20 - 28 Years (SC/ST: 33, OBC: 31)',
-      salary: '₹26,730 - ₹45,000 (Basic ₹19,900 + DA + Special Allowance)',
-      startDate: '10-10-2026',
-      lastDate: '05-11-2026',
-      category: 'Banking',
-      status: 'Active',
-      applyUrl: 'https://sbi.co.in/careers',
-      notificationUrl: 'https://sbi.co.in/web/careers',
-      officialUrl: 'https://sbi.co.in',
-      sourceUrl: 'https://www.freejobalert.com/sbi-clerk/',
-      source: 'SBI Careers',
-      documents: [
-        'Graduation Degree Marksheet & Provisional Certificate',
-        '10th Board Certificate (Name & Date of Birth)',
-        'Aadhaar Card / PAN Card',
-        'Passport Size Photograph (4.5 cm x 3.5 cm, 20-50 KB)',
-        'Signature in Black Ink (10-20 KB, No Capital Letters)',
-        'Left Thumb Impression (Blue/Black Ink, 20-50 KB)',
-        'Hand-written Declaration Form (as per SBI Format)',
-        'Caste Certificate (Central Format for OBC-NCL / SC / ST)'
-      ],
-      examFee: '₹750 (General/OBC/EWS) | SC/ST/PWD: Nil',
-      featured: false
-    },
-    {
-      id: 'job-odisha-anganwadi-2026',
-      title: 'Odisha Anganwadi Worker & Helper District-wise Recruitment 2026',
-      titleOdia: 'ଓଡ଼ିଶା ଅଙ୍ଗନୱାଡ଼ି କର୍ମୀ ଓ ସହାୟିକା ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Women & Child Development Department, Govt of Odisha',
-      post: 'Anganwadi Worker (AWW) & Anganwadi Helper (AWH)',
-      vacancies: '3,250 Posts (District Gram Panchayat Ward Level)',
-      qualification: '10th Pass for Worker | 8th / 9th Pass for Helper (Female Only)',
-      ageLimit: '19 - 43 Years',
-      salary: '₹7,500 - ₹10,000 Monthly Honorarium + State Incentives',
-      startDate: '20-09-2026',
-      lastDate: '28-10-2026',
-      category: '10th & 12th Pass',
-      status: 'Active',
-      applyUrl: 'https://anganwadirec.odisha.gov.in',
-      notificationUrl: 'https://wcd.odisha.gov.in',
-      officialUrl: 'https://anganwadirec.odisha.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/odisha-government-jobs/',
-      source: 'WCD Odisha',
-      documents: [
-        '10th / 8th Pass Marksheet & School Leaving Certificate',
-        'Permanent Resident Certificate (Same Gram Panchayat / Ward mandatory)',
-        'Aadhaar Card & Voter ID Card',
-        'Ration Card / NFSA / SFSS Card (Family proof)',
-        'Caste Certificate (SC / ST / SEBC)',
-        'Passport Size Photo (2 Copies)',
-        'Married / Unmarried / Widow Certificate (Ward Member signed)'
-      ],
-      examFee: '₹0 (No Application Fee)',
-      featured: false
-    },
-    {
-      id: 'job-itr-drdo-2026',
-      title: 'ITR DRDO Chandipur Graduate & Technician Apprentice 2026',
-      titleOdia: 'DRDO ଚାନ୍ଦିପୁର ଆପ୍ରେଣ୍ଟିସ୍ ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Integrated Test Range (ITR), DRDO Chandipur, Balasore',
-      post: 'Graduate Apprentice (B.Tech/Degree) & Technician (Diploma)',
-      vacancies: '54 Posts',
-      qualification: 'B.E/B.Tech, Diploma, B.B.A, B.Com, B.Lib',
-      ageLimit: '18 - 28 Years',
-      salary: '₹8,000 - ₹9,000 Monthly Stipend',
-      startDate: '09-10-2026',
-      lastDate: '02-11-2026',
-      category: 'Odisha Govt',
-      status: 'Active',
-      applyUrl: 'https://www.drdo.gov.in',
-      notificationUrl: 'https://www.drdo.gov.in/drdo/careers',
-      officialUrl: 'https://www.drdo.gov.in',
-      sourceUrl: 'https://www.freejobalert.com/articles/itr-drdo-vacancy-2026/',
-      source: 'DRDO ITR',
-      documents: [
-        'Degree / Diploma Marksheet & Passing Certificate',
-        '10th Board Certificate for DOB proof',
-        'NATS 2.0 / NAPS Portal 16-Digit Enrollment Number',
-        'Aadhaar Card',
-        'Passport Photo (White BG, 20-50KB)',
-        'Candidate Signature (10-20KB)',
-        'Caste Certificate (if applicable)'
-      ],
-      examFee: 'Nil (No Fee)',
-      featured: false
-    },
-    {
-      id: 'job-cuo-koraput-2026',
-      title: 'Central University of Odisha (CUO Koraput) Non-Teaching Staff',
-      titleOdia: 'ଓଡ଼ିଶା କେନ୍ଦ୍ରୀୟ ବିଶ୍ୱବିଦ୍ୟାଳୟ (କୋରାପୁଟ) ନିଯୁକ୍ତି ୨୦୨୬',
-      organization: 'Central University of Odisha (CUO)',
-      post: 'Junior Assistant, LDC, MTS & Laboratory Attendant',
-      vacancies: '32 Posts',
-      qualification: '10th / 12th / Any Graduate with Typing Knowledge',
-      ageLimit: '18 - 32 Years',
-      salary: '₹19,900 - ₹63,200 (Level-2 / Level-4)',
-      startDate: '08-10-2026',
-      lastDate: '20-11-2026',
-      category: 'Odisha Govt',
-      status: 'Active',
-      applyUrl: 'https://cuo.ac.in',
-      notificationUrl: 'https://cuo.ac.in/recruitment.asp',
-      officialUrl: 'https://cuo.ac.in',
-      sourceUrl: 'https://www.freejobalert.com/odisha-government-jobs/',
-      source: 'CUO Koraput',
-      documents: [
-        '10th Class Certificate & Marksheet',
-        '+2 / Graduation Certificate & Marksheets',
-        'Computer & Typing Certificate (30/35 wpm)',
-        'Aadhaar Card',
-        'Passport Photo & Signature',
-        'Caste / EWS Certificate (if applicable)'
-      ],
-      examFee: '₹500 (SC/ST/PWD/Female: Exempted)',
-      featured: false
+      examFee: "₹100 (Female, SC, ST, PwD candidates exempt)",
+      featured: true,
+      syncedAt: 1793700000000
     }
   ],
+
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  getDeletedJobIds() {
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      const parsed = raw ? JSON.parse(raw) : [];
+      // Clean up any stale URLs or non-ID strings from previous versions
+      if (Array.isArray(parsed)) {
+        const cleanIds = parsed.filter(item => typeof item === 'string' && !item.includes('http') && !item.includes('/') && item.length < 90);
+        return new Set(cleanIds);
+      }
+      return new Set();
+    } catch (e) {
+      return new Set();
+    }
+  },
+
+  isJobDeleted(job) {
+    if (!job) return false;
+    const deleted = this.getDeletedJobIds();
+    if (!deleted || deleted.size === 0) return false;
+    // Strictly match by unique job ID only so adding/editing jobs with links or titles is never falsely blocked
+    const id = typeof job === 'string' ? job : (job.id || '');
+    return id ? deleted.has(id) : false;
+  },
+
+  unmarkJobAsDeleted(id, url) {
+    if (!id && !url) return;
+    try {
+      const raw = localStorage.getItem('vuo_deleted_job_ids');
+      if (!raw) return;
+      let list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      list = list.filter(item => item !== id && (!url || item !== url.trim()));
+      localStorage.setItem('vuo_deleted_job_ids', JSON.stringify(list));
+    } catch (e) {}
+  },
 
   init() {
     this.loadJobs();
@@ -345,26 +199,63 @@ const VUO_JOB_ALERT = {
   },
 
   loadJobs() {
-    let list = [...this.defaultJobs];
+    const map = new Map();
+    // 1. Default high-value jobs
+    this.defaultJobs.forEach(dj => {
+      if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+    });
+
+    // 2. Cloud-synced jobs (from Firebase Firestore)
+    try {
+      const cloudRaw = localStorage.getItem('vuo_cloud_job_alerts');
+      if (cloudRaw) {
+        const parsed = JSON.parse(cloudRaw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(cj => {
+            if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
+          });
+        }
+      }
+    } catch (e) {}
+
+    // 3. Local custom jobs (from admin/user device)
     try {
       const localCustom = localStorage.getItem('vuo_custom_job_alerts');
       if (localCustom) {
         const parsed = JSON.parse(localCustom);
         if (Array.isArray(parsed)) {
-          // Prepend custom user-added jobs
-          const existingIds = new Set(list.map(j => j.id));
           parsed.forEach(pj => {
-            if (!existingIds.has(pj.id)) {
-              list.unshift(pj);
-              existingIds.add(pj.id);
-            }
+            if (!this.isJobDeleted(pj)) map.set(pj.id, pj);
           });
         }
       }
     } catch (e) {
       console.warn('[JobAlert] Error loading local custom jobs:', e);
     }
-    this.jobs = list;
+    this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+  },
+
+  syncFromCloud(cloudJobs) {
+    if (!Array.isArray(cloudJobs)) return;
+    const map = new Map();
+    this.defaultJobs.forEach(dj => {
+      if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+    });
+    cloudJobs.forEach(cj => {
+      if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
+    });
+    try {
+      const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+      localCustom.forEach(lj => {
+        if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
+      });
+    } catch(e) {}
+    this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+    this.renderStats();
+    this.renderJobs();
+    if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+      try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+    }
   },
 
   async fetchLiveServerJobs(force = false) {
@@ -377,36 +268,77 @@ const VUO_JOB_ALERT = {
     }
 
     try {
-      const endpoint = force ? '/api/sync-job-alerts' : '/api/job-alerts';
-      const res = await fetch(endpoint, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
-          const map = new Map();
-          // Keep server scraped jobs
-          data.jobs.forEach(j => map.set(j.id, j));
-          // Merge custom & default
-          this.defaultJobs.forEach(dj => {
-            if (!map.has(dj.id)) map.set(dj.id, dj);
-          });
-          // Local custom jobs
-          try {
-            const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
-            localCustom.forEach(lj => map.set(lj.id, lj));
-          } catch(e) {}
+      let rawJobs = [];
 
-          this.jobs = Array.from(map.values());
-          this.renderStats();
-          this.renderJobs();
-
-          if (force && typeof showToast === 'function') {
-            const addedMsg = data.newAdded ? ` (${data.newAdded} New Jobs Added!)` : '';
-            showToast(`✅ Successfully synced ${data.count} Live Govt Jobs!${addedMsg}`, 'success');
+      // 1. Fetch directly from Firebase Firestore Cloud Database
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudJobAlertsDirectly === 'function') {
+        try {
+          const cloudRes = await VUO_DB.fetchCloudJobAlertsDirectly();
+          if (cloudRes && cloudRes.success && Array.isArray(cloudRes.jobs) && cloudRes.jobs.length > 0) {
+            rawJobs = [...cloudRes.jobs];
           }
-        }
+        } catch(e) {}
+      }
+
+      // 2. Try dynamic backend API endpoint
+      if (rawJobs.length === 0) {
+        const endpoint = force ? '/api/sync-job-alerts' : '/api/job-alerts';
+        try {
+          const res = await fetch(endpoint, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.jobs) && data.jobs.length > 0) {
+              rawJobs = data.jobs;
+            }
+          }
+        } catch (errApi) {}
+      }
+
+      // 3. Fallback to static job_alerts.json
+      if (rawJobs.length === 0) {
+        try {
+          const resStatic = await fetch('/job_alerts.json', { cache: 'no-store' });
+          if (resStatic.ok) {
+            const dataStatic = await resStatic.json();
+            if (Array.isArray(dataStatic) && dataStatic.length > 0) {
+              rawJobs = dataStatic;
+            }
+          }
+        } catch (errStatic) {}
+      }
+
+      const map = new Map();
+      this.defaultJobs.forEach(dj => {
+        if (!this.isJobDeleted(dj)) map.set(dj.id, dj);
+      });
+      rawJobs.forEach(j => {
+        if (!this.isJobDeleted(j)) map.set(j.id, j);
+      });
+      try {
+        const cloudJobs = JSON.parse(localStorage.getItem('vuo_cloud_job_alerts') || '[]');
+        cloudJobs.forEach(cj => {
+          if (!this.isJobDeleted(cj)) map.set(cj.id, cj);
+        });
+      } catch(e) {}
+      try {
+        const localCustom = JSON.parse(localStorage.getItem('vuo_custom_job_alerts') || '[]');
+        localCustom.forEach(lj => {
+          if (!this.isJobDeleted(lj)) map.set(lj.id, lj);
+        });
+      } catch(e) {}
+
+      this.jobs = Array.from(map.values()).filter(j => !this.isJobDeleted(j));
+      this.renderStats();
+      this.renderJobs();
+
+      if (typeof VUO_ADMIN !== 'undefined' && typeof VUO_ADMIN.renderJobAlertsAdmin === 'function') {
+        try { VUO_ADMIN.renderJobAlertsAdmin(); } catch(e) {}
+      }
+
+      if (force && typeof showToast === 'function') {
+        showToast(`✅ ସଫଳତାର ସହିତ ${this.jobs.length} ଟି ସରକାରୀ ଚାକିରୀ ସିଙ୍କ ହେଲା!`, 'success');
       }
     } catch (e) {
-      // Offline fallback: jobs already loaded from defaultJobs
       console.log('[JobAlert] Running in offline / static hosting mode:', e.message);
     } finally {
       this._isSyncing = false;
@@ -473,7 +405,8 @@ const VUO_JOB_ALERT = {
   },
 
   getAllJobs() {
-    return (this.jobs && this.jobs.length > 0) ? this.jobs : this.defaultJobs;
+    const all = (this.jobs && this.jobs.length > 0) ? this.jobs : this.defaultJobs;
+    return all.filter(j => !this.isJobDeleted(j));
   },
 
   setCategory(cat) {
@@ -532,14 +465,20 @@ const VUO_JOB_ALERT = {
     const countBadge = document.getElementById('jobAlertsCountBadge');
     if (!container) return;
 
+    // Strictly filter out any deleted jobs
+    this.jobs = (this.jobs || []).filter(j => !this.isJobDeleted(j));
+
     let filtered = this.jobs.filter(job => {
       // Category filter
       if (this.currentCategory === 'odisha' && job.category !== 'Odisha Govt') return false;
       if (this.currentCategory === 'central' && job.category !== 'Central Govt') return false;
       if (this.currentCategory === 'railway' && job.category !== 'Railway') return false;
       if (this.currentCategory === 'banking' && job.category !== 'Banking') return false;
-      if (this.currentCategory === 'defense' && job.category !== 'Defense & Police') return false;
-      if (this.currentCategory === 'matric' && job.category !== '10th & 12th Pass') return false;
+      if (this.currentCategory === 'matric') {
+        const isMatric = job.category === '10th & 12th Pass' ||
+          /10th|10 th|8th|matric|12th|\+2|intermediate/i.test((job.qualification || '') + ' ' + (job.post || ''));
+        if (!isMatric) return false;
+      }
       if (this.currentCategory === 'closing') {
         const days = this.getDaysRemaining(job.lastDate);
         if (days > 7 || days < 0) return false;
@@ -614,12 +553,21 @@ const VUO_JOB_ALERT = {
 
     const docsCount = Array.isArray(job.documents) ? job.documents.length : 0;
     const docsListHtml = (Array.isArray(job.documents) && job.documents.length > 0)
-      ? job.documents.map(d => `<li class="flex items-start gap-2 py-1 border-b border-slate-100 text-xs text-slate-700 last:border-none"><i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-[11px] shrink-0"></i><span>${d}</span></li>`).join('')
+      ? job.documents.map(d => `<li class="flex items-start gap-2 py-1 border-b border-slate-100 text-xs text-slate-700 last:border-none"><i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-[11px] shrink-0"></i><span>${this.escapeHtml(d)}</span></li>`).join('')
       : `<li class="text-xs text-slate-500 py-1">Standard Government Job Documents (10th/12th certificate, Aadhaar, Photo & Signature).</li>`;
 
     const cleanSafeTitle = (job.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const cleanSafePost = (job.post || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeJobId = job.id;
+    const safeJobId = (job.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeOrg = this.escapeHtml(job.organization || 'Govt Department');
+    const safeTitle = this.escapeHtml(job.title || '');
+    const safeTitleOdia = this.escapeHtml(job.titleOdia || '');
+    const safeSalary = this.escapeHtml(job.salary || 'Govt Norms');
+    const safeVacancies = this.escapeHtml(job.vacancies || 'Check Notice');
+    const safeQual = this.escapeHtml(job.qualification || 'Matric / Degree');
+    const safeStartDate = this.escapeHtml(job.startDate || 'Started');
+    const safeLastDate = this.escapeHtml(job.lastDate || 'Closing Soon');
+    const safeAge = this.escapeHtml(job.ageLimit || '');
 
     return `
       <div class="bg-white rounded-2xl border border-slate-200 hover:border-amber-400 hover:shadow-xl transition-all duration-200 flex flex-col overflow-hidden group">
@@ -637,12 +585,12 @@ const VUO_JOB_ALERT = {
           <!-- Organization & Title -->
           <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <i class="fa-regular fa-building text-amber-500"></i>
-            <span class="truncate">${job.organization || 'Govt Department'}</span>
+            <span class="truncate">${safeOrg}</span>
           </div>
           <h3 class="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-800 transition-colors leading-snug mt-1">
-            ${job.title}
+            ${safeTitle}
           </h3>
-          ${job.titleOdia ? `<p class="text-xs font-semibold text-amber-700/90 mt-0.5 font-sans">${job.titleOdia}</p>` : ''}
+          ${job.titleOdia ? `<p class="text-xs font-semibold text-amber-700/90 mt-0.5 font-sans">${safeTitleOdia}</p>` : ''}
         </div>
 
         <!-- Key Metrics Strip: Salary, Vacancy & Qualification -->
@@ -652,7 +600,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm shrink-0 font-bold">₹</span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Salary / Pay Scale</span>
-              <span class="font-black text-emerald-800 text-xs truncate block mt-0.5">${job.salary || 'Govt Norms'}</span>
+              <span class="font-black text-emerald-800 text-xs truncate block mt-0.5">${safeSalary}</span>
             </div>
           </div>
 
@@ -661,7 +609,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs shrink-0 font-bold"><i class="fa-solid fa-users"></i></span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Total Vacancies</span>
-              <span class="font-extrabold text-slate-900 text-xs truncate block mt-0.5">${job.vacancies || 'Check Notice'}</span>
+              <span class="font-extrabold text-slate-900 text-xs truncate block mt-0.5">${safeVacancies}</span>
             </div>
           </div>
 
@@ -670,7 +618,7 @@ const VUO_JOB_ALERT = {
             <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 font-bold"><i class="fa-solid fa-user-graduate"></i></span>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase text-slate-500 block leading-none">Qualification</span>
-              <span class="font-bold text-slate-800 text-xs truncate block mt-0.5">${job.qualification || 'Matric / Degree'}</span>
+              <span class="font-bold text-slate-800 text-xs truncate block mt-0.5">${safeQual}</span>
             </div>
           </div>
         </div>
@@ -680,14 +628,14 @@ const VUO_JOB_ALERT = {
           <div class="flex items-center gap-1.5">
             <i class="fa-regular fa-calendar-check text-emerald-600"></i>
             <span class="text-slate-500">Apply Start:</span>
-            <span class="font-bold text-slate-900">${job.startDate || 'Started'}</span>
+            <span class="font-bold text-slate-900">${safeStartDate}</span>
           </div>
           <div class="flex items-center gap-1.5 font-extrabold">
             <i class="fa-regular fa-calendar-xmark text-rose-600"></i>
             <span class="text-slate-500">Last Date:</span>
-            <span class="text-rose-700">${job.lastDate || 'Closing Soon'}</span>
+            <span class="text-rose-700">${safeLastDate}</span>
           </div>
-          ${job.ageLimit ? `<div class="w-full text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cake-candles text-amber-500"></i> <span>Age Limit: <b>${job.ageLimit}</b></span></div>` : ''}
+          ${job.ageLimit ? `<div class="w-full text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cake-candles text-amber-500"></i> <span>Age Limit: <b>${safeAge}</b></span></div>` : ''}
         </div>
 
         <!-- Required Documents Accordion -->
@@ -1032,6 +980,11 @@ ${docsText}
         body: JSON.stringify(newJob)
       }).catch(() => {});
     } catch(e) {}
+
+    // Save to Firebase Cloud
+    if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudSaveJobAlert === 'function') {
+      try { VUO_DB.cloudSaveJobAlert(newJob); } catch(e) {}
+    }
 
     this.jobs.unshift(newJob);
     this.renderStats();

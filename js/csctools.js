@@ -19,13 +19,25 @@ const VUO_CSCTOOLS = {
     this.initTypingTest();
     this.initQrCode();
     this.initPosterMaker();
+    if (typeof VUO_CASHBOOK !== 'undefined') {
+      VUO_CASHBOOK.init();
+    }
     if (typeof VUO_CREDITKHATA !== 'undefined') {
       VUO_CREDITKHATA.init();
+    }
+    if (typeof VUO_AFFIDAVIT !== 'undefined') {
+      VUO_AFFIDAVIT.init();
     }
   },
 
   switchTab(tabId) {
     this.currentTab = tabId;
+    if (tabId === 'credit' && typeof VUO_CASHBOOK !== 'undefined') {
+      VUO_CASHBOOK.init();
+    }
+    if (tabId === 'affidavit' && typeof VUO_AFFIDAVIT !== 'undefined') {
+      VUO_AFFIDAVIT.init();
+    }
     document.querySelectorAll('.csctool-tab-btn').forEach(btn => {
       const target = btn.getAttribute('data-csctool-tab');
       if (target === tabId) {

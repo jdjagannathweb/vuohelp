@@ -827,10 +827,21 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         }
         this.cropper = new Cropper(cropImgEl, {
           aspectRatio: currentRatio,
-          viewMode: 1,
+          viewMode: 0,
+          dragMode: 'move',
           autoCropArea: 0.85,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: false,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: false,
           responsive: true,
           checkOrientation: true,
+          zoomable: true,
+          zoomOnWheel: true,
+          zoomOnTouch: true,
           ready: () => {
             this.generateSheet();
           },
@@ -856,6 +867,74 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
     cropImgEl.src = imageSrc;
     if (cropImgEl.complete && cropImgEl.naturalWidth > 0 && cropImgEl.src === imageSrc) {
       startCropper();
+    }
+  },
+
+  getTopEdgeFillColor() {
+    if (this.bgColor && this.bgColor !== 'original' && this.bgColor !== 'none') {
+      return this.bgColor;
+    }
+    try {
+      if (this.uploadedImage) {
+        const c = document.createElement('canvas');
+        c.width = 16;
+        c.height = 16;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(this.uploadedImage, 0, 0, 16, 16);
+        const p = ctx.getImageData(8, 1, 1, 1).data;
+        return `rgb(${p[0]},${p[1]},${p[2]})`;
+      }
+    } catch (_) {}
+    return '#ffffff';
+  },
+
+  movePhoto(dx, dy) {
+    if (this.cropper) {
+      this.cropper.move(dx, dy);
+      this.generateSheet();
+    }
+  },
+
+  zoomPhoto(ratio) {
+    if (this.cropper) {
+      this.cropper.zoom(ratio);
+      this.generateSheet();
+    }
+  },
+
+  fitHeadRoom() {
+    if (this.cropper) {
+      this.cropper.zoom(-0.08);
+      this.cropper.move(0, 25);
+      this.generateSheet();
+      if (typeof showToast === 'function') {
+        showToast("Head space adjusted! Photo moved down cleanly.", "success");
+      }
+    }
+  },
+
+  moveWifePhoto(dx, dy) {
+    if (this.wifeCropper) {
+      this.wifeCropper.move(dx, dy);
+      this.generateSheet();
+    }
+  },
+
+  zoomWifePhoto(ratio) {
+    if (this.wifeCropper) {
+      this.wifeCropper.zoom(ratio);
+      this.generateSheet();
+    }
+  },
+
+  fitWifeHeadRoom() {
+    if (this.wifeCropper) {
+      this.wifeCropper.zoom(-0.08);
+      this.wifeCropper.move(0, 25);
+      this.generateSheet();
+      if (typeof showToast === 'function') {
+        showToast("Wife head space adjusted!", "success");
+      }
     }
   },
 
@@ -1664,7 +1743,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         }
         this.wifeCropper = new Cropper(imageEl, {
           aspectRatio: wifeRatio,
-          viewMode: 1,
+          viewMode: 0,
           dragMode: 'move',
           autoCropArea: 0.88,
           restore: false,
@@ -1674,6 +1753,11 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
           cropBoxMovable: true,
           cropBoxResizable: true,
           toggleDragModeOnDblclick: false,
+          responsive: true,
+          checkOrientation: true,
+          zoomable: true,
+          zoomOnWheel: true,
+          zoomOnTouch: true,
           crop: () => {
             if (this._wifeCropTimeout) clearTimeout(this._wifeCropTimeout);
             this._wifeCropTimeout = setTimeout(() => {
@@ -1774,6 +1858,7 @@ var VUO_PASSPHOTO = window.VUO_PASSPHOTO = {
         cropped = this.cropper.getCroppedCanvas({
           width: targetW,
           height: targetH,
+          fillColor: this.getTopEdgeFillColor(),
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high'
         });

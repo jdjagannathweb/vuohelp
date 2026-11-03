@@ -31,6 +31,7 @@ const VUO_IMAGETOOLS = {
     this.setupDropZone('convertDropZone', 'convertFileInput', (file) => this.handleConvertFile(file));
     this.setupDropZone('cropDropZone', 'cropFileInput', (file) => this.handleCropFile(file));
     this.setupDropZone('sigDropZone', 'sigFileInput', (file) => this.handleSigFile(file));
+    this.initGovtJobSuite();
   },
 
   setupDropZone(dropZoneId, fileInputId, handler) {
@@ -88,18 +89,52 @@ const VUO_IMAGETOOLS = {
     });
   },
 
-  // ---------------- 1. IMAGE COMPRESSOR ---------------- //
+  // ---------------- 1. IMAGE COMPRESSOR (PX * PX & KB TO KB) ---------------- //
+  _compressImg: null,
+  _compressOrigW: 0,
+  _compressOrigH: 0,
+  _compressedDataUrl: null,
+  _compressedW: 0,
+  _compressedH: 0,
+  _compressedKb: 0,
+
   handleCompressFile(file) {
     this.uploadedFiles.compress = file;
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        document.getElementById('compressOrigImg').src = e.target.result;
-        document.getElementById('compressOrigSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
-        document.getElementById('compressOrigDim').textContent = `${img.naturalWidth} x ${img.naturalHeight} px`;
-        document.getElementById('compressWorkspace').classList.remove('hidden');
-        document.getElementById('compressDropZone').classList.add('hidden');
+        this._compressImg = img;
+        this._compressOrigW = img.naturalWidth;
+        this._compressOrigH = img.naturalHeight;
+
+        const origSizeKb = (file.size / 1024).toFixed(1);
+        const origDimText = `${img.naturalWidth} × ${img.naturalHeight} px`;
+
+        const origImg = document.getElementById('compressOrigImg');
+        if (origImg) origImg.src = e.target.result;
+        const origSizeEl = document.getElementById('compressOrigSize');
+        if (origSizeEl) origSizeEl.textContent = `${origSizeKb} KB`;
+        const origDimEl = document.getElementById('compressOrigDim');
+        if (origDimEl) origDimEl.textContent = origDimText;
+
+        // Populate Target Dimension Inputs with original dimensions
+        const wInput = document.getElementById('compressTargetW');
+        if (wInput) wInput.value = img.naturalWidth;
+        const hInput = document.getElementById('compressTargetH');
+        if (hInput) hInput.value = img.naturalHeight;
+
+        // Reset target KB inputs to empty initially
+        const minKbInput = document.getElementById('compressMinKb');
+        if (minKbInput) minKbInput.value = '';
+        const maxKbInput = document.getElementById('compressMaxKb');
+        if (maxKbInput) maxKbInput.value = '';
+
+        const ws = document.getElementById('compressWorkspace');
+        if (ws) ws.classList.remove('hidden');
+        const dz = document.getElementById('compressDropZone');
+        if (dz) dz.classList.add('hidden');
+
         this.processCompression();
       };
       img.src = e.target.result;
@@ -107,64 +142,288 @@ const VUO_IMAGETOOLS = {
     reader.readAsDataURL(file);
   },
 
+  onCompressDimChange(changedField) {
+    if (!this._compressImg) return;
+    const ratioLock = document.getElementById('compressRatioLock');
+    const isLocked = ratioLock ? ratioLock.checked : true;
+    const ratio = (this._compressOrigW && this._compressOrigH) ? (this._compressOrigW / this._compressOrigH) : 1;
+
+    const wInput = document.getElementById('compressTargetW');
+    const hInput = document.getElementById('compressTargetH');
+
+    if (isLocked) {
+      if (changedField === 'width' && wInput && hInput) {
+        const w = parseInt(wInput.value, 10);
+        if (w > 0) hInput.value = Math.round(w / ratio);
+      } else if (changedField === 'height' && wInput && hInput) {
+        const h = parseInt(hInput.value, 10);
+        if (h > 0) wInput.value = Math.round(h * ratio);
+      }
+    }
+    this.processCompression();
+  },
+
+  onCompressRatioToggle() {
+    if (!this._compressImg) return;
+    const ratioLock = document.getElementById('compressRatioLock');
+    if (ratioLock && ratioLock.checked) {
+      const ratio = (this._compressOrigW && this._compressOrigH) ? (this._compressOrigW / this._compressOrigH) : 1;
+      const wInput = document.getElementById('compressTargetW');
+      const hInput = document.getElementById('compressTargetH');
+      const w = parseInt(wInput?.value, 10);
+      if (w > 0 && hInput) hInput.value = Math.round(w / ratio);
+    }
+    this.processCompression();
+  },
+
+  setCompressDimPreset(w, h) {
+    if (!this._compressImg) return;
+    const wInput = document.getElementById('compressTargetW');
+    const hInput = document.getElementById('compressTargetH');
+    if (!wInput || !hInput) return;
+
+    if (w === 'orig') {
+      wInput.value = this._compressOrigW;
+      hInput.value = this._compressOrigH;
+    } else if (w === 'half') {
+      wInput.value = Math.round(this._compressOrigW / 2);
+      hInput.value = Math.round(this._compressOrigH / 2);
+    } else {
+      wInput.value = w;
+      hInput.value = h;
+    }
+    this.processCompression();
+  },
+
+  setCompressKbPreset(minKb, maxKb) {
+    const minInput = document.getElementById('compressMinKb');
+    const maxInput = document.getElementById('compressMaxKb');
+    if (minInput) minInput.value = minKb > 0 ? minKb : '';
+    if (maxInput) maxInput.value = maxKb > 0 ? maxKb : '';
+    this.processCompression();
+  },
+
+  onQualitySliderChange(val) {
+    const valEl = document.getElementById('compressQualityVal');
+    if (valEl) valEl.textContent = `${val}%`;
+    this.processCompression();
+  },
+
+  padJpegDataUrl(dataUrl, targetMinBytes) {
+    try {
+      const parts = dataUrl.split(',');
+      const byteString = atob(parts[1]);
+      const byteLen = byteString.length;
+      if (byteLen >= targetMinBytes) return dataUrl;
+
+      const padNeeded = targetMinBytes - byteLen;
+      if (padNeeded < 4) return dataUrl;
+
+      const raw = new Uint8Array(byteLen);
+      for (let i = 0; i < byteLen; i++) raw[i] = byteString.charCodeAt(i);
+      if (raw[0] !== 0xFF || raw[1] !== 0xD8) return dataUrl;
+
+      const segLen = padNeeded - 2;
+      if (segLen > 65535) return dataUrl;
+
+      const newBuf = new Uint8Array(byteLen + padNeeded);
+      newBuf[0] = 0xFF; newBuf[1] = 0xD8;
+      newBuf[2] = 0xFF; newBuf[3] = 0xFE;
+      newBuf[4] = (segLen >> 8) & 0xFF;
+      newBuf[5] = segLen & 0xFF;
+
+      for (let p = 6; p < 2 + padNeeded; p++) newBuf[p] = (p * 37 + 11) & 0xFF;
+      newBuf.set(raw.subarray(2), 2 + padNeeded);
+
+      let binary = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < newBuf.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, newBuf.subarray(i, i + chunkSize));
+      }
+      return parts[0] + ',' + btoa(binary);
+    } catch (e) {
+      console.warn("JPEG padding warning:", e);
+      return dataUrl;
+    }
+  },
+
   processCompression() {
     const file = this.uploadedFiles.compress;
-    if (!file) return;
+    if (!file || !this._compressImg) return;
 
-    const quality = parseFloat(document.getElementById('compressQuality').value) / 100;
-    const targetKb = parseFloat(document.getElementById('compressTargetKb').value) || 0;
+    // 1. Target Dimensions (px * px)
+    const wInput = document.getElementById('compressTargetW');
+    const hInput = document.getElementById('compressTargetH');
+    let targetW = parseInt(wInput?.value, 10);
+    let targetH = parseInt(hInput?.value, 10);
 
-    const img = document.getElementById('compressOrigImg');
+    if (!targetW || targetW <= 0) targetW = this._compressOrigW;
+    if (!targetH || targetH <= 0) targetH = this._compressOrigH;
+
+    // 2. Target KB Range (kb to kb)
+    const minKbInput = document.getElementById('compressMinKb');
+    const maxKbInput = document.getElementById('compressMaxKb');
+    const minKb = parseFloat(minKbInput?.value) || 0;
+    const maxKb = parseFloat(maxKbInput?.value) || 0;
+
+    // 3. Format & Quality Slider
+    const formatEl = document.getElementById('compressFormat');
+    const format = formatEl ? formatEl.value : 'image/jpeg';
+    const qualitySlider = document.getElementById('compressQuality');
+    const manualQ = (parseFloat(qualitySlider ? qualitySlider.value : 75) || 75) / 100;
+
+    // 4. Draw to Canvas at Target Resolution (px * px)
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(this._compressImg, 0, 0, targetW, targetH);
 
-    let finalQuality = quality;
-    let dataUrl = canvas.toDataURL('image/jpeg', finalQuality);
+    let dataUrl = canvas.toDataURL(format, manualQ);
+    let bestQuality = manualQ;
 
-    // If user provided a target KB, binary search for optimal quality
-    if (targetKb > 0) {
-      let low = 0.05, high = 1.0;
-      for (let i = 0; i < 6; i++) {
-        const mid = (low + high) / 2;
-        const testUrl = canvas.toDataURL('image/jpeg', mid);
-        const testSizeKb = (testUrl.length * 3 / 4) / 1024;
-        if (testSizeKb > targetKb) {
-          high = mid;
+    // 5. Intelligent KB Target Compression
+    if (maxKb > 0 || minKb > 0) {
+      const upperKb = maxKb > 0 ? maxKb : (minKb * 1.5);
+      const lowerKb = minKb > 0 ? minKb : Math.max(1, upperKb * 0.75);
+
+      let lowQ = 0.02;
+      let highQ = 0.99;
+      let bestUrl = null;
+      let bestKb = 0;
+
+      for (let iter = 0; iter < 12; iter++) {
+        const midQ = (lowQ + highQ) / 2;
+        const testUrl = canvas.toDataURL(format, midQ);
+        const testKb = (testUrl.length * 3 / 4) / 1024;
+        bestUrl = testUrl;
+        bestKb = testKb;
+        bestQuality = midQ;
+
+        if (testKb >= lowerKb && testKb <= upperKb) {
+          break; // In ideal range!
+        }
+        if (testKb > upperKb) {
+          highQ = midQ;
         } else {
-          low = mid;
+          lowQ = midQ;
         }
       }
-      finalQuality = low;
-      dataUrl = canvas.toDataURL('image/jpeg', finalQuality);
+      dataUrl = bestUrl || dataUrl;
+
+      // Progressive scale down if resolution exceeds upperKb even at lowQ
+      let currentKb = (dataUrl.length * 3 / 4) / 1024;
+      if (currentKb > upperKb && targetW > 150 && targetH > 150) {
+        let curW = targetW;
+        let curH = targetH;
+        let scaleIter = 0;
+        while (currentKb > upperKb && curW > 120 && curH > 120 && scaleIter < 4) {
+          scaleIter++;
+          curW = Math.round(curW * 0.85);
+          curH = Math.round(curH * 0.85);
+          canvas.width = curW;
+          canvas.height = curH;
+          ctx.drawImage(this._compressImg, 0, 0, curW, curH);
+
+          lowQ = 0.05; highQ = 0.95;
+          for (let i = 0; i < 8; i++) {
+            const midQ = (lowQ + highQ) / 2;
+            const testUrl = canvas.toDataURL(format, midQ);
+            const testKb = (testUrl.length * 3 / 4) / 1024;
+            dataUrl = testUrl;
+            currentKb = testKb;
+            bestQuality = midQ;
+            if (testKb <= upperKb) break;
+            highQ = midQ;
+          }
+        }
+      }
+
+      // If user specified minKb and current size is below minKb, pad JPEG safely
+      if (minKb > 0 && currentKb < minKb && format === 'image/jpeg') {
+        const targetMinBytes = Math.ceil(minKb * 1024);
+        dataUrl = this.padJpegDataUrl(dataUrl, targetMinBytes);
+      }
+
+      // Update quality slider display to reflect optimized quality
+      if (qualitySlider) {
+        qualitySlider.value = Math.round(bestQuality * 100);
+        const valEl = document.getElementById('compressQualityVal');
+        if (valEl) valEl.textContent = `${Math.round(bestQuality * 100)}% (Auto Target)`;
+      }
+    } else {
+      const valEl = document.getElementById('compressQualityVal');
+      if (valEl) valEl.textContent = `${Math.round(manualQ * 100)}%`;
     }
 
+    // 6. Update Result Metrics
     const compressedSizeKb = ((dataUrl.length * 3 / 4) / 1024).toFixed(1);
     const origSizeKb = (file.size / 1024).toFixed(1);
     const savings = Math.max(0, Math.round(((origSizeKb - compressedSizeKb) / origSizeKb) * 100));
 
     const resultImg = document.getElementById('compressResultImg');
-    resultImg.src = dataUrl;
-    document.getElementById('compressResultSize').textContent = `${compressedSizeKb} KB`;
-    document.getElementById('compressSavings').textContent = `(-${savings}%)`;
+    if (resultImg) resultImg.src = dataUrl;
+
+    const resultSizeEl = document.getElementById('compressResultSize');
+    if (resultSizeEl) resultSizeEl.textContent = `${compressedSizeKb} KB`;
+
+    const resultDimEl = document.getElementById('compressResultDim');
+    if (resultDimEl) resultDimEl.textContent = `(${canvas.width} × ${canvas.height} px)`;
+
+    const savingsEl = document.getElementById('compressSavings');
+    if (savingsEl) {
+      savingsEl.textContent = savings > 0 ? `(-${savings}%)` : '';
+    }
+
+    // Target Status Badge
+    const badge = document.getElementById('compressTargetStatusBadge');
+    if (badge) {
+      if (maxKb > 0 || minKb > 0) {
+        const curNum = parseFloat(compressedSizeKb);
+        const meetsMax = (maxKb === 0 || curNum <= maxKb);
+        const meetsMin = (minKb === 0 || curNum >= minKb);
+
+        badge.classList.remove('hidden');
+        if (meetsMin && meetsMax) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+          badge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> Target Reached (${minKb > 0 ? minKb + ' - ' : '< '}${maxKb || minKb} KB)`;
+        } else {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300';
+          badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Target: ${minKb ? minKb + ' - ' : ''}${maxKb} KB`;
+        }
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
     this._compressedDataUrl = dataUrl;
+    this._compressedW = canvas.width;
+    this._compressedH = canvas.height;
+    this._compressedKb = compressedSizeKb;
   },
 
   downloadCompressed() {
     if (typeof VUO_GATE !== 'undefined') {
-      return VUO_GATE.requireAccess({ type: 'download', item: 'Compressed Image (JPG)', category: 'photo' }, () => this._doDownloadCompressed());
+      return VUO_GATE.requireAccess({ type: 'download', item: 'Compressed Image (JPG/WebP)', category: 'photo' }, () => this._doDownloadCompressed());
     }
     this._doDownloadCompressed();
   },
+
   _doDownloadCompressed() {
     if (!this._compressedDataUrl) return;
+    const format = document.getElementById('compressFormat')?.value || 'image/jpeg';
+    const ext = format === 'image/webp' ? 'webp' : (format === 'image/png' ? 'png' : 'jpg');
+    const w = this._compressedW || 'auto';
+    const h = this._compressedH || 'auto';
+    const kb = this._compressedKb || 'opt';
+
     const link = document.createElement('a');
-    link.download = `VUO_Compressed_${Date.now()}.jpg`;
+    link.download = `VUO_Compressed_${w}x${h}_${kb}KB_${Date.now()}.${ext}`;
     link.href = this._compressedDataUrl;
     link.click();
-    showToast("Compressed image downloaded!", "success");
+    showToast(`Compressed image (${kb} KB, ${w}x${h} px) downloaded successfully!`, "success");
   },
 
   // ---------------- 2. IMAGE RESIZER ---------------- //
@@ -643,5 +902,366 @@ const VUO_IMAGETOOLS = {
       if (ws) ws.classList.add('hidden');
       if (dz) dz.classList.remove('hidden');
     }
+  },
+
+  // ---------------- GOVT JOB IMAGE STUDIO ----------------
+  govtJobState: {
+    preset: 'ossc',
+    doctype: 'photo',
+    currentFile: null,
+    currentImage: null,
+    optimizedBlob: null,
+    optimizedDataUrl: null,
+    targetW: 200,
+    targetH: 230,
+    minKb: 20,
+    maxKb: 50
+  },
+
+  govtJobSpecs: {
+    ossc: {
+      name: 'OSSC / OSSSC / OPSC',
+      photo: { w: 200, h: 230, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 150, h: 150, minKb: 10, maxKb: 20 }
+    },
+    police: {
+      name: 'Odisha Police',
+      photo: { w: 200, h: 230, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 150, h: 150, minKb: 10, maxKb: 20 }
+    },
+    ssc: {
+      name: 'SSC (CGL/CHSL/MTS/GD)',
+      photo: { w: 138, h: 177, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 140, h: 60, minKb: 10, maxKb: 20 }
+    },
+    rrb: {
+      name: 'Railway RRB',
+      photo: { w: 200, h: 230, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 140, h: 60, minKb: 10, maxKb: 20 }
+    },
+    ibps: {
+      name: 'IBPS / SBI Banking',
+      photo: { w: 200, h: 230, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 150, h: 150, minKb: 10, maxKb: 20 }
+    },
+    nta: {
+      name: 'NTA (NEET/JEE/CUET)',
+      photo: { w: 200, h: 250, minKb: 10, maxKb: 200 },
+      signature: { w: 140, h: 60, minKb: 4, maxKb: 30 },
+      thumb: { w: 150, h: 150, minKb: 10, maxKb: 50 }
+    },
+    custom: {
+      name: 'Custom Target',
+      photo: { w: 200, h: 230, minKb: 20, maxKb: 50 },
+      signature: { w: 140, h: 60, minKb: 10, maxKb: 20 },
+      thumb: { w: 150, h: 150, minKb: 10, maxKb: 20 }
+    }
+  },
+
+  initGovtJobSuite() {
+    // Preset buttons
+    document.querySelectorAll('.img-job-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const preset = e.currentTarget.getAttribute('data-preset');
+        this.setGovtJobPreset(preset);
+      });
+    });
+
+    // Doctype buttons
+    document.querySelectorAll('.img-job-doctype-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const doctype = e.currentTarget.getAttribute('data-doctype');
+        this.setGovtJobDocType(doctype);
+      });
+    });
+
+    // Custom inputs
+    ['imgJobCustomW', 'imgJobCustomH', 'imgJobCustomMinKb', 'imgJobCustomMaxKb'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          if (this.govtJobState.preset === 'custom') {
+            this.updateGovtJobSpecBadge();
+            if (this.govtJobState.currentImage) {
+              this.reprocessGovtJobImage();
+            }
+          }
+        });
+      }
+    });
+
+    // Dropzone & File Input
+    const fileInput = document.getElementById('imgJobFileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.handleGovtJobImageFile(e.target.files[0]);
+        }
+      });
+    }
+
+    const dropZone = document.getElementById('imgJobDropZone');
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('border-amber-500', 'bg-amber-50/30');
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-amber-500', 'bg-amber-50/30');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          this.handleGovtJobImageFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    this.updateGovtJobSpecBadge();
+  },
+
+  setGovtJobPreset(preset) {
+    this.govtJobState.preset = preset;
+    document.querySelectorAll('.img-job-preset-btn').forEach(btn => {
+      if (btn.getAttribute('data-preset') === preset) {
+        btn.className = 'img-job-preset-btn px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 text-white shadow-sm flex items-center gap-1.5 cursor-pointer';
+      } else {
+        btn.className = 'img-job-preset-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition flex items-center gap-1.5 cursor-pointer';
+      }
+    });
+
+    const customBox = document.getElementById('imgJobCustomBox');
+    if (customBox) {
+      if (preset === 'custom') customBox.classList.remove('hidden');
+      else customBox.classList.add('hidden');
+    }
+
+    this.updateGovtJobSpecBadge();
+    if (this.govtJobState.currentImage) {
+      this.reprocessGovtJobImage();
+    }
+  },
+
+  setGovtJobDocType(doctype) {
+    this.govtJobState.doctype = doctype;
+    document.querySelectorAll('.img-job-doctype-btn').forEach(btn => {
+      if (btn.getAttribute('data-doctype') === doctype) {
+        btn.className = 'img-job-doctype-btn px-3.5 py-2 rounded-xl text-xs font-black bg-slate-900 text-white shadow-sm flex items-center gap-2 cursor-pointer border border-amber-400';
+      } else {
+        btn.className = 'img-job-doctype-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition flex items-center gap-2 cursor-pointer';
+      }
+    });
+
+    const uploadTitle = document.getElementById('imgJobUploadBoxTitle');
+    if (uploadTitle) {
+      const pName = (this.govtJobSpecs[this.govtJobState.preset]?.name || 'PORTAL').toUpperCase();
+      const dName = doctype.toUpperCase();
+      uploadTitle.textContent = `Upload ${pName} - ${dName}`;
+    }
+
+    this.updateGovtJobSpecBadge();
+    if (this.govtJobState.currentImage) {
+      this.reprocessGovtJobImage();
+    }
+  },
+
+  updateGovtJobSpecBadge() {
+    const { preset, doctype } = this.govtJobState;
+    let w, h, minKb, maxKb;
+
+    if (preset === 'custom') {
+      w = parseInt(document.getElementById('imgJobCustomW')?.value || '200', 10);
+      h = parseInt(document.getElementById('imgJobCustomH')?.value || '230', 10);
+      minKb = parseInt(document.getElementById('imgJobCustomMinKb')?.value || '20', 10);
+      maxKb = parseInt(document.getElementById('imgJobCustomMaxKb')?.value || '50', 10);
+    } else {
+      const spec = this.govtJobSpecs[preset]?.[doctype] || { w: 200, h: 230, minKb: 20, maxKb: 50 };
+      w = spec.w;
+      h = spec.h;
+      minKb = spec.minKb;
+      maxKb = spec.maxKb;
+    }
+
+    this.govtJobState.targetW = w;
+    this.govtJobState.targetH = h;
+    this.govtJobState.minKb = minKb;
+    this.govtJobState.maxKb = maxKb;
+
+    const badge = document.getElementById('imgJobSpecBadge');
+    if (badge) {
+      badge.innerHTML = `<i class="fa-solid fa-bullseye"></i><span>Target: ${w} x ${h} px | ${minKb} KB - ${maxKb} KB (JPG)</span>`;
+    }
+  },
+
+  async handleGovtJobImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      if (typeof showToast === 'function') showToast("Please select a valid image file (JPG, PNG, WebP).", "warning");
+      return;
+    }
+    this.govtJobState.currentFile = file;
+
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        this.govtJobState.currentImage = img;
+        this.reprocessGovtJobImage();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  },
+
+  async reprocessGovtJobImage() {
+    const img = this.govtJobState.currentImage;
+    if (!img) return;
+
+    const { targetW, targetH, minKb, maxKb } = this.govtJobState;
+
+    const statusBadge = document.getElementById('imgJobStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = "Resizing & Optimizing...";
+      statusBadge.className = "px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs inline-flex items-center";
+    }
+
+    // 1. Render on offscreen canvas at exact target dimensions
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+
+    // Fill clean white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
+
+    // Smart draw: preserve aspect ratio, fit cleanly with white margins if needed
+    const aspectImg = img.width / img.height;
+    const aspectTarget = targetW / targetH;
+    let drawW, drawH, drawX, drawY;
+
+    if (aspectImg > aspectTarget) {
+      drawW = targetW;
+      drawH = targetW / aspectImg;
+      drawX = 0;
+      drawY = (targetH - drawH) / 2;
+    } else {
+      drawH = targetH;
+      drawW = targetH * aspectImg;
+      drawX = (targetW - drawW) / 2;
+      drawY = 0;
+    }
+
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+    // 2. Binary search iterative compression
+    let lowQ = 0.05;
+    let highQ = 0.98;
+    let bestBlob = null;
+    let bestQuality = 0.85;
+
+    const getBlob = (quality) => new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+
+    for (let i = 0; i < 8; i++) {
+      const midQ = (lowQ + highQ) / 2;
+      const blob = await getBlob(midQ);
+      const kb = blob.size / 1024;
+
+      bestBlob = blob;
+      bestQuality = midQ;
+
+      if (kb >= minKb && kb <= maxKb) {
+        break;
+      }
+      if (kb > maxKb) {
+        highQ = midQ;
+      } else {
+        lowQ = midQ;
+      }
+    }
+
+    // If still below minKb, pad safely
+    if (bestBlob && (bestBlob.size / 1024) < minKb) {
+      const padBytes = Math.ceil((minKb * 1024) - bestBlob.size + 150);
+      const arr = await bestBlob.arrayBuffer();
+      const paddedArr = new Uint8Array(arr.byteLength + padBytes);
+      paddedArr.set(new Uint8Array(arr), 0);
+      // Safe padding bytes
+      for (let p = arr.byteLength; p < paddedArr.byteLength; p++) {
+        paddedArr[p] = (p * 31 + 7) & 0xFF;
+      }
+      bestBlob = new Blob([paddedArr], { type: 'image/jpeg' });
+    }
+
+    this.govtJobState.optimizedBlob = bestBlob;
+    const finalKb = Math.round((bestBlob.size / 1024) * 10) / 10;
+
+    const dataUrl = URL.createObjectURL(bestBlob);
+    this.govtJobState.optimizedDataUrl = dataUrl;
+
+    // Update UI
+    const resultBox = document.getElementById('imgJobResultBox');
+    if (resultBox) resultBox.classList.remove('hidden');
+
+    const previewImg = document.getElementById('imgJobResultImg');
+    if (previewImg) previewImg.src = dataUrl;
+
+    const dimEl = document.getElementById('imgJobResultDimensions');
+    if (dimEl) dimEl.textContent = `${targetW} x ${targetH} px`;
+
+    const sizeEl = document.getElementById('imgJobResultFileSize');
+    if (sizeEl) sizeEl.textContent = `${finalKb} KB`;
+
+    if (statusBadge) {
+      const inRange = finalKb >= minKb && finalKb <= maxKb;
+      statusBadge.innerHTML = inRange 
+        ? `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Strict Portal Match (${minKb}-${maxKb} KB)`
+        : `Ready: ${finalKb} KB`;
+      statusBadge.className = inRange 
+        ? "px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs inline-flex items-center"
+        : "px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs inline-flex items-center";
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Image optimized: ${targetW}x${targetH}px | ${finalKb} KB`, "success");
+    }
+  },
+
+  downloadGovtJobFile() {
+    const { optimizedBlob, preset, doctype, targetW, targetH } = this.govtJobState;
+    if (!optimizedBlob) {
+      if (typeof showToast === 'function') showToast("Please upload and optimize an image first.", "warning");
+      return;
+    }
+
+    const kb = Math.round((optimizedBlob.size / 1024) * 10) / 10;
+    const pName = (this.govtJobSpecs[preset]?.name || 'PORTAL').replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `${pName}_${doctype.toUpperCase()}_${targetW}x${targetH}_${kb}KB.jpg`;
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(optimizedBlob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (typeof showToast === 'function') {
+      showToast(`Downloaded: ${filename}`, "success");
+    }
   }
 };
+
+
+if (typeof window !== "undefined") {
+  window.VUO_IMAGETOOLS = VUO_IMAGETOOLS;
+}

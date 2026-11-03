@@ -16,10 +16,13 @@ const VUO_ADMIN = {
       .replace(/'/g, '&#39;');
   },
 
+  _eventsBound: false,
   init() {
-    this.bindEvents();
+    if (!this._eventsBound) {
+      this.bindEvents();
+      this._eventsBound = true;
+    }
     this.switchTab(this.activeTab || 'leads');
-    this.renderAll();
   },
 
   bindEvents() {
@@ -406,25 +409,65 @@ const VUO_ADMIN = {
       }
     });
 
-    this.renderAll();
+    this.renderCurrentTab();
+  },
+
+  renderCurrentTab() {
+    const tab = this.activeTab || 'leads';
+    switch (tab) {
+      case 'leads':
+        try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
+        break;
+      case 'members':
+        try { this.renderMembersTable(); } catch (e) { console.warn("renderMembersTable error:", e); }
+        break;
+      case 'links':
+        try { this.renderLinksTable(); } catch (e) { console.warn("renderLinksTable error:", e); }
+        break;
+      case 'forms':
+        try { this.renderFormsTable(); } catch (e) { console.warn("renderFormsTable error:", e); }
+        break;
+      case 'videos':
+        try { this.renderVideosTable(); } catch (e) { console.warn("renderVideosTable error:", e); }
+        break;
+      case 'announcements':
+        try { this.renderAnnouncementsTable(); } catch (e) { console.warn("renderAnnouncementsTable error:", e); }
+        break;
+      case 'tickets':
+        try { this.renderSupportTickets(); } catch (e) { console.warn("renderSupportTickets error:", e); }
+        break;
+      case 'donation':
+        try { this.renderDonationSettings(); } catch (e) { console.warn("renderDonationSettings error:", e); }
+        break;
+      case 'welcome_popup':
+        try { this.renderPopupSettings(); } catch (e) { console.warn("renderPopupSettings error:", e); }
+        break;
+      case 'whatsapp':
+        try { this.renderWhatsappCommunityAdmin(); } catch (e) { console.warn("renderWhatsappCommunityAdmin error:", e); }
+        break;
+      case 'security':
+        try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
+        break;
+      case 'firebase':
+        try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
+        break;
+      case 'cloud_storage':
+        try { this.renderCloudStorageSettings(); } catch (e) { console.warn("renderCloudStorageSettings error:", e); }
+        break;
+      case 'vle_activity':
+        try { this.renderVleActivityTable(); } catch (e) { console.warn("renderVleActivityTable error:", e); }
+        break;
+      case 'jobalerts':
+        try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
+        break;
+      default:
+        try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
+        break;
+    }
   },
 
   renderAll() {
-    try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
-    try { this.renderMembersTable(); } catch (e) { console.warn("renderMembersTable error:", e); }
-    try { this.renderLinksTable(); } catch (e) { console.warn("renderLinksTable error:", e); }
-    try { this.renderFormsTable(); } catch (e) { console.warn("renderFormsTable error:", e); }
-    try { this.renderVideosTable(); } catch (e) { console.warn("renderVideosTable error:", e); }
-    try { this.renderAnnouncementsTable(); } catch (e) { console.warn("renderAnnouncementsTable error:", e); }
-    try { this.renderSupportTickets(); } catch (e) { console.warn("renderSupportTickets error:", e); }
-    try { this.renderDonationSettings(); } catch (e) { console.warn("renderDonationSettings error:", e); }
-    try { this.renderPopupSettings(); } catch (e) { console.warn("renderPopupSettings error:", e); }
-    try { this.renderWhatsappCommunityAdmin(); } catch (e) { console.warn("renderWhatsappCommunityAdmin error:", e); }
-    try { this.renderSecurityInfo(); } catch (e) { console.warn("renderSecurityInfo error:", e); }
-    try { this.renderFirebaseStatus(); } catch (e) { console.warn("renderFirebaseStatus error:", e); }
-    try { this.renderCloudStorageSettings(); } catch (e) { console.warn("renderCloudStorageSettings error:", e); }
-    try { this.renderVleActivityTable(); } catch (e) { console.warn("renderVleActivityTable error:", e); }
-    try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
+    this.renderCurrentTab();
   },
 
   // ---------------- 1. IMPORTANT LINKS ---------------- //
@@ -857,7 +900,7 @@ const VUO_ADMIN = {
   renderVideosTable() {
     const tbody = document.getElementById('adminVideosTbody');
     if (!tbody) return;
-    const videos = VUO_TRAINING.getAllVideos();
+    const videos = (typeof VUO_TRAINING !== 'undefined' && VUO_TRAINING.getAllVideos) ? VUO_TRAINING.getAllVideos() : [];
 
     if (videos.length === 0) {
       tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">No training tutorials added yet.</td></tr>`;
@@ -900,7 +943,7 @@ const VUO_ADMIN = {
       return;
     }
 
-    const videos = VUO_TRAINING.getAllVideos();
+    const videos = (typeof VUO_TRAINING !== 'undefined' && VUO_TRAINING.getAllVideos) ? VUO_TRAINING.getAllVideos() : [];
     const newVideo = {
       id: `tr-${Date.now()}`,
       title,
@@ -944,24 +987,46 @@ const VUO_ADMIN = {
     showToast("Training video deleted.", "info");
   },
 
-  // ---------------- 4. ANNOUNCEMENTS ---------------- //
+  // ---------------- 4. ANNOUNCEMENTS & LIVE NEWS MANAGER ---------------- //
   renderAnnouncementsTable() {
     const tbody = document.getElementById('adminAnnTbody');
     if (!tbody) return;
-    const anns = JSON.parse(localStorage.getItem('vuo_announcements') || '[]');
 
-    tbody.innerHTML = anns.map(a => `
+    let newsItems = JSON.parse(localStorage.getItem('vuo_live_news_items') || 'null');
+    if (!newsItems) {
+      const anns = JSON.parse(localStorage.getItem('vuo_announcements') || '[]');
+      newsItems = anns.map(a => ({
+        id: a.id,
+        title: a.text,
+        titleOdia: a.textOdia || '',
+        category: a.urgent ? 'job' : 'scheme',
+        badge: a.urgent ? 'HOT JOB' : 'UPDATE',
+        badgeColor: 'from-amber-500 to-orange-500 text-slate-950',
+        desc: a.text,
+        date: a.date || 'Active',
+        link: '#jobalert',
+        linkText: 'View Details'
+      }));
+    }
+
+    tbody.innerHTML = newsItems.map(item => `
       <tr class="border-b border-slate-100 hover:bg-slate-50 text-xs">
-        <td class="p-3 text-slate-800">${a.text}</td>
-        <td class="p-3 text-slate-600 font-odia">${a.textOdia || '-'}</td>
         <td class="p-3">
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${a.urgent ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}">
-            ${a.urgent ? 'Urgent' : 'Normal'}
+          <div class="font-black text-slate-900">${this.escapeHtml(item.title)}</div>
+          <div class="text-[11px] text-slate-500 font-odia">${this.escapeHtml(item.titleOdia || '')}</div>
+          ${item.desc ? `<div class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">${this.escapeHtml(item.desc)}</div>` : ''}
+        </td>
+        <td class="p-3">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-900 text-white">
+            ${this.escapeHtml(item.badge || item.category || 'UPDATE')}
           </span>
         </td>
+        <td class="p-3 text-[11px] font-mono text-slate-500">
+          ${item.link ? `<a href="${item.link}" target="_blank" class="text-sky-700 hover:underline"><i class="fa-solid fa-link mr-1"></i>${item.linkText || 'Link'}</a>` : '-'}
+        </td>
         <td class="p-3 text-right">
-          <button onclick="VUO_ADMIN.deleteAnnouncement('${a.id}')" class="text-rose-500 hover:text-rose-700 font-bold text-[11px]">
-            Delete
+          <button type="button" onclick="VUO_ADMIN.deleteAnnouncement('${item.id}')" class="px-2 py-1 rounded bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px] transition cursor-pointer">
+            <i class="fa-solid fa-trash-can mr-1"></i>Delete
           </button>
         </td>
       </tr>
@@ -969,44 +1034,83 @@ const VUO_ADMIN = {
   },
 
   handleAddAnnouncement() {
-    const text = document.getElementById('adminAnnText').value.trim();
-    const textOdia = document.getElementById('adminAnnTextOdia').value.trim();
-    const urgent = document.getElementById('adminAnnUrgent').checked;
+    const title = (document.getElementById('adminAnnTitle')?.value || document.getElementById('adminAnnText')?.value || '').trim();
+    const titleOdia = (document.getElementById('adminAnnTitleOdia')?.value || document.getElementById('adminAnnTextOdia')?.value || '').trim();
+    const category = document.getElementById('adminAnnCategory')?.value || 'job';
+    const badge = document.getElementById('adminAnnBadge')?.value || 'HOT JOB';
+    const desc = document.getElementById('adminAnnDesc')?.value.trim() || '';
+    const link = document.getElementById('adminAnnLink')?.value.trim() || '#jobalert';
+    const linkText = document.getElementById('adminAnnLinkText')?.value.trim() || 'View Details';
+    const urgent = document.getElementById('adminAnnUrgent') ? document.getElementById('adminAnnUrgent').checked : true;
 
-    if (!text) {
-      showToast("Please enter announcement text.", "warning");
+    if (!title) {
+      showToast("Please enter headline/title for news or service alert.", "warning");
       return;
     }
 
-    const anns = JSON.parse(localStorage.getItem('vuo_announcements') || '[]');
-    const newAnn = {
-      id: `ann-${Date.now()}`,
-      text,
-      textOdia,
-      date: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+    let badgeColor = 'from-amber-500 to-orange-500 text-slate-950';
+    if (category === 'scheme') badgeColor = 'from-emerald-500 to-teal-500 text-white';
+    else if (category === 'csc_service') badgeColor = 'from-sky-500 to-indigo-500 text-white';
+    else if (badge === 'LAST DATE') badgeColor = 'from-rose-500 to-red-600 text-white';
+
+    const newItem = {
+      id: `news-${Date.now()}`,
+      title,
+      titleOdia,
+      category,
+      badge,
+      badgeColor,
+      desc: desc || title,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      link,
+      linkText,
       urgent
     };
 
-    anns.unshift(newAnn);
+    let newsItems = JSON.parse(localStorage.getItem('vuo_live_news_items') || '[]');
+    newsItems.unshift(newItem);
+    localStorage.setItem('vuo_live_news_items', JSON.stringify(newsItems));
+
+    // Also update legacy vuo_announcements for marquee ticker
+    const anns = JSON.parse(localStorage.getItem('vuo_announcements') || '[]');
+    anns.unshift({
+      id: newItem.id,
+      text: title,
+      textOdia: titleOdia,
+      date: newItem.date,
+      urgent
+    });
     localStorage.setItem('vuo_announcements', JSON.stringify(anns));
+
     if (typeof VUO_DB !== 'undefined') {
-      VUO_DB.cloudSaveAnnouncement(newAnn);
+      try { VUO_DB.cloudSaveAnnouncement(newItem); } catch(e) {}
     }
-    document.getElementById('adminAddAnnForm').reset();
+
+    const form = document.getElementById('adminAddAnnForm');
+    if (form) form.reset();
+
     this.renderAnnouncementsTable();
-    renderAnnouncementsTicker();
-    showToast("Announcement published live!", "success");
+    if (typeof renderHomeNewsBoard === 'function') renderHomeNewsBoard();
+    if (typeof renderAnnouncementsTicker === 'function') renderAnnouncementsTicker();
+    showToast("News / Service Alert published live on Homepage!", "success");
   },
 
   deleteAnnouncement(annId) {
+    let newsItems = JSON.parse(localStorage.getItem('vuo_live_news_items') || '[]');
+    newsItems = newsItems.filter(a => a.id !== annId);
+    localStorage.setItem('vuo_live_news_items', JSON.stringify(newsItems));
+
     let anns = JSON.parse(localStorage.getItem('vuo_announcements') || '[]');
     anns = anns.filter(a => a.id !== annId);
     localStorage.setItem('vuo_announcements', JSON.stringify(anns));
+
     if (typeof VUO_DB !== 'undefined') {
-      VUO_DB.cloudDeleteAnnouncement(annId);
+      try { VUO_DB.cloudDeleteAnnouncement(annId); } catch(e) {}
     }
+
     this.renderAnnouncementsTable();
-    renderAnnouncementsTicker();
+    if (typeof renderHomeNewsBoard === 'function') renderHomeNewsBoard();
+    if (typeof renderAnnouncementsTicker === 'function') renderAnnouncementsTicker();
     showToast("Announcement removed.", "info");
   },
 
@@ -1898,7 +2002,7 @@ const VUO_ADMIN = {
     if (VUO_LEADS.renderAdminServicesList) VUO_LEADS.renderAdminServicesList();
     if (VUO_LEADS.renderAdminServiceDropdowns) VUO_LEADS.renderAdminServiceDropdowns();
 
-    let leads = VUO_LEADS.getAllLeads();
+    let leads = (typeof VUO_LEADS !== 'undefined' && VUO_LEADS.getAllLeads) ? VUO_LEADS.getAllLeads() : [];
     
     // Stats calculation
     const totalCount = leads.length;
@@ -3151,6 +3255,27 @@ const VUO_ADMIN = {
     }
   },
 
+  async syncAllJobsToCloud() {
+    const btn = document.getElementById('adminSyncJobsCloudBtn');
+    if (btn) btn.disabled = true;
+    try {
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.syncLocalCustomJobsToCloud === 'function') {
+        await VUO_DB.syncLocalCustomJobsToCloud();
+      }
+      if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.fetchCloudJobAlertsDirectly === 'function') {
+        await VUO_DB.fetchCloudJobAlertsDirectly();
+      }
+      this.renderJobAlertsAdmin();
+      if (typeof showToast === 'function') {
+        showToast("✅ ସମସ୍ତ ଚାକିରୀ Firebase Cloud ରେ ସିଙ୍କ ହେଲା (All users will see all jobs)!", "success");
+      }
+    } catch(e) {
+      if (typeof showToast === 'function') showToast("Cloud sync error: " + e.message, "error");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
   refreshJobsTable() {
     if (typeof VUO_JOB_ALERT !== 'undefined' && typeof VUO_JOB_ALERT.fetchLiveServerJobs === 'function') {
       VUO_JOB_ALERT.fetchLiveServerJobs(true);
@@ -3222,6 +3347,11 @@ const VUO_ADMIN = {
             body: JSON.stringify(job)
           }).catch(() => {});
         } catch (e) {}
+
+        // Save to Firebase Cloud
+        if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudSaveJobAlert === 'function') {
+          try { await VUO_DB.cloudSaveJobAlert(job); } catch(e) {}
+        }
       }
     }
 
@@ -3244,7 +3374,7 @@ const VUO_ADMIN = {
     }
   },
 
-  handleAdminAddJob(e) {
+  async handleAdminAddJob(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const title = (document.getElementById('adminCustomJobTitle')?.value || '').trim();
@@ -3335,6 +3465,11 @@ const VUO_ADMIN = {
       }).catch(() => {});
     } catch(err) {}
 
+    // Save to Firebase Cloud (visible to all users across all devices)
+    if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudSaveJobAlert === 'function') {
+      try { await VUO_DB.cloudSaveJobAlert(newJob); } catch(err) {}
+    }
+
     // Update in-memory VUO_JOB_ALERT.jobs
     if (typeof VUO_JOB_ALERT !== 'undefined') {
       if (!Array.isArray(VUO_JOB_ALERT.jobs)) VUO_JOB_ALERT.jobs = [];
@@ -3407,7 +3542,7 @@ const VUO_ADMIN = {
     if (modal) modal.classList.add('hidden');
   },
 
-  saveEditedJob(e) {
+  async saveEditedJob(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const id = document.getElementById('adminEditJobId')?.value;
@@ -3518,10 +3653,10 @@ const VUO_ADMIN = {
       }).catch(() => {});
     } catch (err) {}
 
-    // 6. Sync to Firebase if available
-    if (typeof VUO_FIREBASE !== 'undefined' && typeof VUO_FIREBASE.saveDocument === 'function') {
+    // 6. Sync to Firebase Cloud (visible to all users across all devices)
+    if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudSaveJobAlert === 'function') {
       try {
-        VUO_FIREBASE.saveDocument('job_alerts', id, updatedJob);
+        await VUO_DB.cloudSaveJobAlert(updatedJob);
       } catch (e) {}
     }
 
@@ -3601,12 +3736,18 @@ const VUO_ADMIN = {
       }).catch(() => {});
     } catch(e) {}
 
-    // 7. Delete from Firebase Firestore if configured
-    if (typeof VUO_FIREBASE !== 'undefined' && typeof VUO_FIREBASE.deleteDocument === 'function') {
+    // 7. Delete from Firebase Cloud Firestore (SDK & REST)
+    if (typeof VUO_DB !== 'undefined' && typeof VUO_DB.cloudDeleteJobAlert === 'function') {
       try {
-        VUO_FIREBASE.deleteDocument('job_alerts', jobId);
+        await VUO_DB.cloudDeleteJobAlert(jobId);
       } catch (e) {}
     }
+    // Also remove from local vuo_cloud_job_alerts cache
+    try {
+      let cJobs = JSON.parse(localStorage.getItem('vuo_cloud_job_alerts') || '[]');
+      cJobs = cJobs.filter(j => j.id !== jobId && (!targetJob || j.applyUrl !== targetJob.applyUrl));
+      localStorage.setItem('vuo_cloud_job_alerts', JSON.stringify(cJobs));
+    } catch(e) {}
 
     // 8. Re-render admin job management table
     this.renderJobAlertsAdmin();

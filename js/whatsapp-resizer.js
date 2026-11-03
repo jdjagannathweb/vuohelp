@@ -56,12 +56,12 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     angleDeg: 0,
     flipH: false,
     flipV: false,
-    lockAspect: true
+    lockAspect: false
   },
   psAction: null, // 'move', 'scale', 'rotate'
   psHandle: null, // 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'
   psStart: null,
-  studioViewMode: 'a4_studio', // 'a4_studio' or 'doc_solo'
+  studioViewMode: 'warp', // 'a4_studio' or 'doc_solo'
 
   // Backwards compatibility getters/setters for legacy methods & tests
   get rotation() { return this.transform.angleDeg; },
@@ -110,6 +110,103 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
   // Display scale
   displayScale: 1.0,
 
+  
+  nudgeWidth(deltaMm) {
+    const sheetW = this.paperOrientation === 'landscape' ? 297 : 210;
+    this.transform.wMm = Math.max(15, Math.min(sheetW - 10, this.transform.wMm + deltaMm));
+    if (this.transform.lockAspect) {
+      const ratio = (this.resultCanvas && this.resultCanvas.height > 0)
+        ? (this.resultCanvas.width / this.resultCanvas.height)
+        : (this.transform.wMm / this.transform.hMm);
+      this.transform.hMm = Math.max(15, Math.round(this.transform.wMm / ratio));
+    }
+    this.updateA4DocItemDOM();
+    this.updatePsOptionsBar();
+    this.updateA4Inputs();
+  },
+
+  nudgeHeight(deltaMm) {
+    const sheetH = this.paperOrientation === 'landscape' ? 210 : 297;
+    this.transform.hMm = Math.max(15, Math.min(sheetH - 10, this.transform.hMm + deltaMm));
+    if (this.transform.lockAspect) {
+      const ratio = (this.resultCanvas && this.resultCanvas.height > 0)
+        ? (this.resultCanvas.width / this.resultCanvas.height)
+        : (this.transform.wMm / this.transform.hMm);
+      this.transform.wMm = Math.max(15, Math.round(this.transform.hMm * ratio));
+    }
+    this.updateA4DocItemDOM();
+    this.updatePsOptionsBar();
+    this.updateA4Inputs();
+  },
+
+  nudgePos(dxMm, dyMm) {
+    const sheetW = this.paperOrientation === 'landscape' ? 297 : 210;
+    const sheetH = this.paperOrientation === 'landscape' ? 210 : 297;
+    this.transform.xMm = Math.max(-20, Math.min(sheetW - 10, this.transform.xMm + dxMm));
+    this.transform.yMm = Math.max(-20, Math.min(sheetH - 10, this.transform.yMm + dyMm));
+    this.updateA4DocItemDOM();
+    this.updatePsOptionsBar();
+    this.updateA4Inputs();
+  },
+
+  centerDocument() {
+    const sheetW = this.paperOrientation === 'landscape' ? 297 : 210;
+    const sheetH = this.paperOrientation === 'landscape' ? 210 : 297;
+    this.transform.xMm = Math.round((sheetW - this.transform.wMm) / 2);
+    this.transform.yMm = Math.round((sheetH - this.transform.hMm) / 2);
+    this.updateA4DocItemDOM();
+    this.updatePsOptionsBar();
+    this.updateA4Inputs();
+  },
+
+  setA4Zoom(zoomVal) {
+    this.a4Zoom = zoomVal;
+    const sheet = document.getElementById('waA4Sheet');
+    if (sheet) {
+      sheet.style.transform = `scale(${zoomVal})`;
+      sheet.style.transformOrigin = 'top center';
+    }
+    const valBadge = document.getElementById('waA4ZoomVal');
+    if (valBadge) valBadge.textContent = `${Math.round(zoomVal * 100)}%`;
+
+    document.querySelectorAll('.wa-zoom-btn').forEach(btn => {
+      const bz = parseFloat(btn.getAttribute('data-zoom'));
+      if (Math.abs(bz - zoomVal) < 0.04) {
+        btn.className = 'wa-zoom-btn px-2.5 py-1 rounded bg-emerald-600 text-white font-black text-[11px] shadow-xs';
+      } else {
+        btn.className = 'wa-zoom-btn px-2.5 py-1 rounded text-slate-300 hover:text-white font-bold text-[11px]';
+      }
+    });
+  },
+
+  fitToScreen() {
+    const container = document.getElementById('waA4SheetContainer') || document.getElementById('waA4Sheet')?.parentElement;
+    const availHeight = window.innerHeight - 220;
+    const sheetHeight = this.a4Orientation === 'landscape' ? 420 : 594;
+    const fitScale = Math.min(1.0, Math.max(0.60, availHeight / (sheetHeight + 30)));
+    this.setA4Zoom(parseFloat(fitScale.toFixed(2)));
+  },
+
+  openCornerWarpModal() {
+    this.setStudioViewMode('warp');
+  },
+
+  closeCornerWarpModal() {
+    this.setStudioViewMode('a4');
+  },
+
+  applyWarpToA4() {
+    if (!this.imageLoaded || !this.originalImage) {
+      document.getElementById('waFileInput')?.click();
+      return;
+    }
+    this.processStraightenAndFilter();
+    this.setStudioViewMode('a4');
+    if (typeof showToast === 'function') {
+      showToast('✔ Document 4 କୋଣ ସିଧା ହୋଇ A4 Size Paper ରେ ସଜାଗଲା!', 'success');
+    }
+  },
+
   init() {
     if (this._initialized) return;
     this.sourceCanvas = document.getElementById('waSourceCanvas');
@@ -120,7 +217,11 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     this.resultCtx = this.resultCanvas.getContext('2d');
 
     this.bindEvents();
-    this.loadSampleWhatsAppDoc();
+    this.a4Zoom = 1.0;
+    this.setA4Zoom(1.0);
+    this.aspectRatio = 'a4_portrait';
+    this.studioViewMode = 'warp';
+    this.setStudioViewMode('warp');
     this._initialized = true;
   },
 
@@ -501,35 +602,27 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
             localCenterX = origW / 2 - newW / 2;
             localCenterY = origH / 2 - newH / 2;
           } else if (h === 'e') {
+            // Drag Right Handle: Resizes Width from Right side
             const vx = localX + origW / 2;
             newW = Math.max(15, Math.round(vx));
-            if (lockAspect) {
-              newH = Math.max(15, Math.round(newW / ratio));
-            }
             localCenterX = -origW / 2 + newW / 2;
             localCenterY = 0;
           } else if (h === 'w') {
+            // Drag Left Handle: Resizes Width from Left side
             const vx = origW / 2 - localX;
             newW = Math.max(15, Math.round(vx));
-            if (lockAspect) {
-              newH = Math.max(15, Math.round(newW / ratio));
-            }
             localCenterX = origW / 2 - newW / 2;
             localCenterY = 0;
           } else if (h === 's') {
+            // Drag Bottom Handle: Resizes Height from Bottom side
             const vy = localY + origH / 2;
             newH = Math.max(15, Math.round(vy));
-            if (lockAspect) {
-              newW = Math.max(15, Math.round(newH * ratio));
-            }
             localCenterY = -origH / 2 + newH / 2;
             localCenterX = 0;
           } else if (h === 'n') {
+            // Drag Top Handle: Resizes Height from Top side
             const vy = origH / 2 - localY;
             newH = Math.max(15, Math.round(vy));
-            if (lockAspect) {
-              newW = Math.max(15, Math.round(newH * ratio));
-            }
             localCenterY = origH / 2 - newH / 2;
             localCenterX = 0;
           }
@@ -959,6 +1052,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
         this.flipV = false;
         this.cropActive = false;
         this.initCorners();
+        this.setStudioViewMode('warp');
         this.renderSourceWithCorners();
         this.processStraightenAndFilter();
         this.initA4DocPlacement();
@@ -1255,8 +1349,6 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
 
   warpSingleQuad(img, corners) {
     if (!img || !corners) return null;
-    const dw = img.naturalWidth || 800;
-    const dh = img.naturalHeight || 600;
 
     const wTop = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
     const wBottom = Math.hypot(corners[2].x - corners[3].x, corners[2].y - corners[3].y);
@@ -1269,15 +1361,26 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     let targetW = Math.round(avgW);
     let targetH = Math.round(avgH);
 
+    // Guaranteed High-DPI Output (250-300 DPI equivalent for crystal clear text on A4 / ID Card)
     if (this.aspectRatio === 'a4_portrait') {
+      targetW = Math.max(2200, Math.round(avgW * 2.2));
       targetH = Math.round(targetW * (297 / 210));
     } else if (this.aspectRatio === 'a4_landscape') {
-      targetH = Math.round(targetW * (210 / 297));
+      targetH = Math.max(1600, Math.round(avgH * 2.2));
+      targetW = Math.round(targetH * (297 / 210));
     } else if (this.aspectRatio === 'id_card') {
+      targetW = Math.max(1600, Math.round(avgW * 2.0));
       targetH = Math.round(targetW * (54 / 85.6));
+    } else {
+      const maxEdge = Math.max(targetW, targetH);
+      if (maxEdge < 1800) {
+        const factor = 1800 / Math.max(1, maxEdge);
+        targetW = Math.round(avgW * factor);
+        targetH = Math.round(avgH * factor);
+      }
     }
 
-    const maxDim = 2400;
+    const maxDim = 3200;
     if (Math.max(targetW, targetH) > maxDim) {
       const scale = maxDim / Math.max(targetW, targetH);
       targetW = Math.round(targetW * scale);
@@ -1288,6 +1391,8 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     warpCanvas.width = targetW;
     warpCanvas.height = targetH;
     const warpCtx = warpCanvas.getContext('2d');
+    warpCtx.imageSmoothingEnabled = true;
+    warpCtx.imageSmoothingQuality = 'high';
     this.warpPerspectiveQuad(img, corners, warpCanvas, warpCtx);
     return warpCanvas;
   },
@@ -1448,6 +1553,8 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     outCanvas.width = srcCanvas.width;
     outCanvas.height = srcCanvas.height;
     const outCtx = outCanvas.getContext('2d');
+    outCtx.imageSmoothingEnabled = true;
+    outCtx.imageSmoothingQuality = 'high';
     outCtx.drawImage(srcCanvas, 0, 0);
 
     if (this.filterMode === 'original') {
@@ -1458,134 +1565,170 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     const H = outCanvas.height;
     const imgData = outCtx.getImageData(0, 0, W, H);
     const data = imgData.data;
-    const len = data.length;
 
-    // Fast Adaptive Background Illumination Map Estimation (CamScanner / Xerox Algorithm)
-    const sw = Math.max(32, Math.round(W / 16));
-    const sh = Math.max(32, Math.round(H / 16));
-    const bgSmall = document.createElement('canvas');
-    bgSmall.width = sw;
-    bgSmall.height = sh;
-    const bgSmallCtx = bgSmall.getContext('2d');
-    bgSmallCtx.drawImage(srcCanvas, 0, 0, sw, sh);
+    // 1. Morphological Max Envelope (Sauvola/CamScanner Algorithm)
+    // Subdivides document into 32x32 blocks and samples max luminance representing TRUE paper background
+    const gridSize = 32;
+    const cols = Math.ceil(W / gridSize);
+    const rows = Math.ceil(H / gridSize);
+    const maxGrid = new Float32Array(cols * rows);
 
-    const bgBlur = document.createElement('canvas');
-    bgBlur.width = sw;
-    bgBlur.height = sh;
-    const bgBlurCtx = bgBlur.getContext('2d');
-    if ('filter' in bgBlurCtx) {
-      bgBlurCtx.filter = 'blur(6px)';
+    for (let gy = 0; gy < rows; gy++) {
+      const y0 = gy * gridSize;
+      const y1 = Math.min(H, y0 + gridSize);
+      for (let gx = 0; gx < cols; gx++) {
+        const x0 = gx * gridSize;
+        const x1 = Math.min(W, x0 + gridSize);
+        let maxL = 0;
+        for (let y = y0; y < y1; y += 3) {
+          const rowOffset = y * W;
+          for (let x = x0; x < x1; x += 3) {
+            const idx = (rowOffset + x) * 4;
+            const l = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+            if (l > maxL) maxL = l;
+          }
+        }
+        maxGrid[gy * cols + gx] = Math.max(60, maxL);
+      }
     }
-    bgBlurCtx.drawImage(bgSmall, 0, 0);
 
-    const bgFull = document.createElement('canvas');
-    bgFull.width = W;
-    bgFull.height = H;
-    const bgFullCtx = bgFull.getContext('2d');
-    bgFullCtx.imageSmoothingEnabled = true;
-    bgFullCtx.drawImage(bgBlur, 0, 0, W, H);
-    const bgData = bgFullCtx.getImageData(0, 0, W, H).data;
-
-    const thresh = this.threshold;
-    // Brightness: controls paper background shadow elimination threshold!
+    const thresh = this.threshold; // default ~140
     const brightOffset = this.brightness * 1.25;
-    const effectivePaperCut = Math.max(30, Math.min(240, thresh - brightOffset));
+    // Normalized threshold scale: paper background cutoff
+    const cutRatio = Math.max(0.60, Math.min(0.96, (thresh - brightOffset) / 200));
 
-    // Contrast factor for text sharpening
     const contrastFactor = (259 * (this.contrast + 255)) / (255 * (259 - this.contrast));
-
-    // Black text boost factor (0.0 to 1.0)
-    const blackFactor = Math.max(0, Math.min(100, (this.blackBoost !== undefined ? this.blackBoost : 60))) / 100;
+    const blackFactor = Math.max(0, Math.min(100, (this.blackBoost !== undefined ? this.blackBoost : 65))) / 100;
     const mode = this.filterMode;
 
-    for (let i = 0; i < len; i += 4) {
-      let r = data[i];
-      let g = data[i + 1];
-      let b = data[i + 2];
+    for (let y = 0; y < H; y++) {
+      const gy = (y / gridSize) - 0.5;
+      const r0 = Math.max(0, Math.min(rows - 1, Math.floor(gy)));
+      const r1 = Math.max(0, Math.min(rows - 1, r0 + 1));
+      const fy = Math.max(0, Math.min(1, gy - r0));
+      const r0Offset = r0 * cols;
+      const r1Offset = r1 * cols;
+      const rowOffset = y * W;
 
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      const bgLum = Math.max(25, 0.299 * bgData[i] + 0.587 * bgData[i + 1] + 0.114 * bgData[i + 2]);
-      const norm = Math.min(255, (lum / bgLum) * 255);
+      for (let x = 0; x < W; x++) {
+        const i = (rowOffset + x) * 4;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
 
-      const maxC = Math.max(r, g, b);
-      const minC = Math.min(r, g, b);
-      const sat = maxC - minC;
+        // Bilinear interpolate true paper luminance from max envelope
+        const gx = (x / gridSize) - 0.5;
+        const c0 = Math.max(0, Math.min(cols - 1, Math.floor(gx)));
+        const c1 = Math.max(0, Math.min(cols - 1, c0 + 1));
+        const fx = Math.max(0, Math.min(1, gx - c0));
 
-      if (mode === 'photocopy') {
-        // High-Definition Pure B&W Xerox: 100% white paper, rich laser-darkened text
-        if (norm >= effectivePaperCut) {
-          data[i] = 255;
-          data[i + 1] = 255;
-          data[i + 2] = 255;
-        } else {
-          const t = norm / Math.max(1, effectivePaperCut);
-          const baseDark = Math.pow(t, 1.45) * 38;
-          const darkVal = Math.max(0, Math.min(255, Math.round(baseDark * (1 - blackFactor * 0.92))));
-          data[i] = darkVal;
-          data[i + 1] = darkVal;
-          data[i + 2] = darkVal;
-        }
-      } else if (mode === 'bw_laser') {
-        // Laser Clean Document (Crisp edge preservation, pure white paper)
-        if (norm >= effectivePaperCut + 8) {
-          data[i] = 255;
-          data[i + 1] = 255;
-          data[i + 2] = 255;
-        } else if (norm < effectivePaperCut - 25) {
-          const t = norm / Math.max(1, effectivePaperCut - 25);
-          const baseDark = Math.pow(t, 1.3) * 36;
-          const darkVal = Math.max(0, Math.min(255, Math.round(baseDark * (1 - blackFactor * 0.9))));
-          data[i] = darkVal;
-          data[i + 1] = darkVal;
-          data[i + 2] = darkVal;
-        } else {
-          const factor = (norm - (effectivePaperCut - 25)) / 33;
-          if (factor > 0.65) {
+        const bgTop = maxGrid[r0Offset + c0] * (1 - fx) + maxGrid[r0Offset + c1] * fx;
+        const bgBot = maxGrid[r1Offset + c0] * (1 - fx) + maxGrid[r1Offset + c1] * fx;
+        const paperWhite = Math.max(40, bgTop * (1 - fy) + bgBot * fy);
+
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const ratio = lum / paperWhite;
+
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const sat = maxC - minC;
+
+        if (mode === 'ultra_clean') {
+          // 100% Crisp White Paper + Solid Jet-Black Laser Toner
+          if (ratio >= cutRatio) {
             data[i] = 255;
             data[i + 1] = 255;
             data[i + 2] = 255;
           } else {
-            const edgeDark = (18 + factor * 50) * (1 - blackFactor * 0.7);
-            const darkVal = Math.max(0, Math.min(255, Math.round(edgeDark)));
-            data[i] = darkVal;
-            data[i + 1] = darkVal;
-            data[i + 2] = darkVal;
+            // Anti-aliased stroke transition band
+            const band = 0.08;
+            if (ratio > (cutRatio - band)) {
+              const t = (ratio - (cutRatio - band)) / band;
+              const v = Math.round(t * 220);
+              data[i] = v;
+              data[i + 1] = v;
+              data[i + 2] = v;
+            } else {
+              data[i] = 0;
+              data[i + 1] = 0;
+              data[i + 2] = 0;
+            }
           }
-        }
-      } else if (mode === 'magic_color') {
-        if (sat > 20) {
-          let adjR = contrastFactor * (r - 128) + 128;
-          let adjG = contrastFactor * (g - 128) + 128;
-          let adjB = contrastFactor * (b - 128) + 128;
-          data[i] = Math.max(0, Math.min(255, Math.round(adjR)));
-          data[i + 1] = Math.max(0, Math.min(255, Math.round(adjG)));
-          data[i + 2] = Math.max(0, Math.min(255, Math.round(adjB)));
-        } else {
-          if (norm > effectivePaperCut) {
+        } else if (mode === 'photocopy') {
+          // Sharp Xerox Copy (Deep black letters, 100% white paper)
+          if (ratio >= cutRatio) {
             data[i] = 255;
             data[i + 1] = 255;
             data[i + 2] = 255;
           } else {
-            const t = norm / Math.max(1, effectivePaperCut);
-            const darkVal = Math.max(0, Math.min(255, Math.round(Math.pow(t, 1.3) * 40 * (1 - blackFactor * 0.85))));
+            const t = ratio / cutRatio;
+            const darkVal = Math.max(0, Math.min(255, Math.round(Math.pow(t, 1.8) * 45 * (1 - blackFactor * 0.95))));
             data[i] = darkVal;
             data[i + 1] = darkVal;
             data[i + 2] = darkVal;
           }
+        } else if (mode === 'bw_laser') {
+          // Laser Clean Document (Smooth character curves, zero gray toner shadows)
+          if (ratio >= (cutRatio + 0.03)) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          } else if (ratio < (cutRatio - 0.12)) {
+            const t = ratio / Math.max(0.01, cutRatio - 0.12);
+            const darkVal = Math.max(0, Math.min(255, Math.round(Math.pow(t, 1.5) * 40 * (1 - blackFactor * 0.9))));
+            data[i] = darkVal;
+            data[i + 1] = darkVal;
+            data[i + 2] = darkVal;
+          } else {
+            const factor = (ratio - (cutRatio - 0.12)) / 0.15;
+            if (factor > 0.8) {
+              data[i] = 255;
+              data[i + 1] = 255;
+              data[i + 2] = 255;
+            } else {
+              const edgeVal = Math.round((20 + factor * 60) * (1 - blackFactor * 0.7));
+              data[i] = edgeVal;
+              data[i + 1] = edgeVal;
+              data[i + 2] = edgeVal;
+            }
+          }
+        } else if (mode === 'magic_color') {
+          // Keeps photo/stamp colors vivid while cleaning paper background to 100% white
+          if (sat > 20) {
+            let adjR = contrastFactor * (r - 128) + 128;
+            let adjG = contrastFactor * (g - 128) + 128;
+            let adjB = contrastFactor * (b - 128) + 128;
+            data[i] = Math.max(0, Math.min(255, Math.round(adjR)));
+            data[i + 1] = Math.max(0, Math.min(255, Math.round(adjG)));
+            data[i + 2] = Math.max(0, Math.min(255, Math.round(adjB)));
+          } else {
+            if (ratio >= cutRatio) {
+              data[i] = 255;
+              data[i + 1] = 255;
+              data[i + 2] = 255;
+            } else {
+              const t = ratio / cutRatio;
+              const darkVal = Math.max(0, Math.min(255, Math.round(Math.pow(t, 1.5) * 45 * (1 - blackFactor * 0.85))));
+              data[i] = darkVal;
+              data[i + 1] = darkVal;
+              data[i + 2] = darkVal;
+            }
+          }
+        } else if (mode === 'grayscale') {
+          let cLum = contrastFactor * ((ratio * 255) - 128) + 128;
+          cLum = Math.max(0, Math.min(255, Math.round(cLum)));
+          if (ratio >= cutRatio) cLum = 255;
+          else cLum = Math.max(0, Math.min(255, Math.round(cLum * (1 - blackFactor * 0.75))));
+          data[i] = cLum;
+          data[i + 1] = cLum;
+          data[i + 2] = cLum;
         }
-      } else if (mode === 'grayscale') {
-        let cLum = contrastFactor * (norm - 128) + 128;
-        cLum = Math.max(0, Math.min(255, Math.round(cLum)));
-        if (cLum > effectivePaperCut) cLum = 255;
-        else cLum = Math.max(0, Math.min(255, Math.round(cLum * (1 - blackFactor * 0.7))));
-        data[i] = cLum;
-        data[i + 1] = cLum;
-        data[i + 2] = cLum;
       }
     }
 
     outCtx.putImageData(imgData, 0, 0);
 
+    // Apply high-pass sharpening on text edges if sharpness > 0
     if (this.sharpness > 0) {
       this.applySharpness(outCanvas, outCtx, this.sharpness / 100);
     }
@@ -1942,7 +2085,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
     this.transform.angleDeg = 0;
     this.transform.flipH = false;
     this.transform.flipV = false;
-    this.transform.lockAspect = true;
+    this.transform.lockAspect = false;
 
     this.twoCopies = false;
     this.updateA4Studio();
@@ -1950,6 +2093,64 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
 
   setStudioViewMode(mode) {
     this.studioViewMode = mode;
+    const warpWs = document.getElementById('waWarpWorkspace');
+    const a4Ws = document.getElementById('waA4PrintWorkspace');
+    const warpControls = document.getElementById('waWarpTopControls');
+    const a4Controls = document.getElementById('waA4TopControls');
+    const tabWarpBtn = document.getElementById('waTabWarpBtn');
+    const tabA4Btn = document.getElementById('waTabA4Btn');
+
+    if (mode === 'warp') {
+      if (warpWs) { warpWs.classList.remove('hidden'); warpWs.style.display = 'flex'; }
+      if (a4Ws) { a4Ws.classList.add('hidden'); a4Ws.style.display = 'none'; }
+      if (warpControls) warpControls.classList.remove('hidden');
+      if (a4Controls) a4Controls.classList.add('hidden');
+
+      if (tabWarpBtn) {
+        tabWarpBtn.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md cursor-pointer';
+      }
+      if (tabA4Btn) {
+        tabA4Btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-white cursor-pointer';
+      }
+
+      if (this.imageLoaded && this.sourceCanvas) {
+        const emptyPrompt = document.getElementById('waWarpEmptyPrompt');
+        if (emptyPrompt) emptyPrompt.classList.add('hidden');
+        this.sourceCanvas.classList.remove('hidden');
+        setTimeout(() => this.renderSourceWithCorners(), 30);
+      }
+    } else {
+      if (a4Ws) { a4Ws.classList.remove('hidden'); a4Ws.style.display = 'flex'; }
+      if (warpWs) { warpWs.classList.add('hidden'); warpWs.style.display = 'none'; }
+      if (a4Controls) a4Controls.classList.remove('hidden');
+      if (warpControls) warpControls.classList.add('hidden');
+
+      if (tabA4Btn) {
+        tabA4Btn.className = 'px-3 py-1.5 text-xs font-black rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md cursor-pointer';
+      }
+      if (tabWarpBtn) {
+        tabWarpBtn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-white cursor-pointer';
+      }
+
+      this.updateA4Studio();
+    }
+  },
+
+  setPaperOrientation(orient) {
+    return this.setA4Orientation(orient);
+  },
+
+  toggleCutBorder() {
+    this.cutBorder = !this.cutBorder;
+    const chk = document.getElementById('waA4CutBorderCheck');
+    if (chk) chk.checked = this.cutBorder;
+    this.updateA4Studio();
+  },
+
+  toggleTwoCopies() {
+    this.twoCopies = !this.twoCopies;
+    const chk = document.getElementById('waA4TwoCopiesCheck');
+    if (chk) chk.checked = this.twoCopies;
     this.updateA4Studio();
   },
 
@@ -2260,13 +2461,31 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       item.style.borderWidth = '1px';
     }
 
+    const placeholder = document.getElementById('waA4DocPlaceholder');
     const frontCanvas = (this.uploadMode === 'dual' && this.resultCanvasFront)
       ? this.resultCanvasFront : this.resultCanvas;
 
-    if (img && frontCanvas) {
+    if (this.imageLoaded && img && frontCanvas) {
+      img.classList.remove('hidden');
+      img.style.display = 'block';
+      if (placeholder) {
+        placeholder.classList.add('hidden');
+        placeholder.style.display = 'none';
+      }
       img.src = frontCanvas.toDataURL('image/jpeg', 0.96);
       img.style.imageRendering = '-webkit-optimize-contrast';
       img.style.objectFit = this.transform.lockAspect ? 'contain' : 'fill';
+      img.style.width = '100%';
+      img.style.height = '100%';
+    } else {
+      if (img) {
+        img.classList.add('hidden');
+        img.style.display = 'none';
+      }
+      if (placeholder) {
+        placeholder.classList.remove('hidden');
+        placeholder.style.display = 'flex';
+      }
     }
 
     if (badgeText) {
@@ -2302,6 +2521,8 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
           img2.src = backCanvas.toDataURL('image/jpeg', 0.96);
           img2.style.imageRendering = '-webkit-optimize-contrast';
           img2.style.objectFit = this.transform.lockAspect ? 'contain' : 'fill';
+          img2.style.width = '100%';
+          img2.style.height = '100%';
         }
       } else {
         item2.classList.add('hidden');
@@ -2437,7 +2658,43 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
   _doPrintA4Studio() {
     const highRes = this.createHighResA4Canvas();
     if (!highRes) return;
-    const dataUrl = highRes.toDataURL('image/jpeg', 0.96);
+    // Lossless PNG at 300 DPI for crystal-clear razor-sharp text
+    const dataUrl = highRes.toDataURL('image/png');
+    const orientation = this.a4Orientation || 'portrait';
+
+    const printStyles = `
+      @page {
+        size: A4 ${orientation};
+        margin: 0mm;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        overflow: hidden;
+      }
+      img.print-sheet {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    `;
+
+    if (window.VUO_PRINT) {
+      window.VUO_PRINT.printHtml('VLE A4 Print - Exact Placement', `<img class="print-sheet" src="${dataUrl}" />`, printStyles);
+      return;
+    }
 
     const printWin = window.open('', '_blank');
     if (!printWin) {
@@ -2445,39 +2702,13 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
       return;
     }
 
-    const orientation = this.a4Orientation;
+    printWin.document.open();
     printWin.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>VLE A4 Print - Exact Placement (Photoshop Ctrl+T)</title>
-        <style>
-          @page {
-            size: A4 ${orientation};
-            margin: 0mm;
-          }
-          * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            overflow: hidden;
-          }
-          img.print-sheet {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-          }
-        </style>
+        <title>VLE A4 Print - Exact Placement</title>
+        <style>${printStyles}</style>
       </head>
       <body>
         <img class="print-sheet" src="${dataUrl}" />
@@ -2488,7 +2719,7 @@ var VUO_WHATSAPP_RESIZER = window.VUO_WHATSAPP_RESIZER = {
               window.close();
             }, 300);
           };
-        <\/script>
+        </script>
       </body>
       </html>
     `);

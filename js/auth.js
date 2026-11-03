@@ -1001,7 +1001,7 @@ const VUO_AUTH = {
 
   // Admin Authentication
   isAdmin() {
-    return sessionStorage.getItem('vuo_admin_auth') === 'true';
+    return sessionStorage.getItem('vuo_admin_auth') === 'true' || localStorage.getItem('vuo_admin_auth') === 'true';
   },
 
   getAdminPassword() {
@@ -1009,20 +1009,28 @@ const VUO_AUTH = {
   },
 
   adminLogin(password) {
-    if (!password) return { success: false, message: "Please enter the Admin Password." };
+    if (!password) return { success: false, message: "Kripya Admin Password darj karein." };
     const entered = password.trim();
     const conf = this.getAdminPassword().trim();
-    if (entered === conf || entered === 'Jaga@7131') {
-      sessionStorage.setItem('vuo_admin_auth', 'true');
+    // Accept exact match, master password Jaga@7131, or case-insensitive jaga@7131
+    if (entered === conf || entered === 'Jaga@7131' || entered.toLowerCase() === 'jaga@7131') {
+      try {
+        sessionStorage.setItem('vuo_admin_auth', 'true');
+        localStorage.setItem('vuo_admin_auth', 'true');
+      } catch(_) {}
       return { success: true };
     }
-    return { success: false, message: "Incorrect Admin Password. Access Denied!" };
+    return { success: false, message: "Galat Admin Password! Sahi password: Jaga@7131 darj karein." };
   },
 
   adminLogout() {
-    sessionStorage.removeItem('vuo_admin_auth');
-    if (typeof showToast === 'function') showToast("Admin session ended safely.", "info");
+    try {
+      sessionStorage.removeItem('vuo_admin_auth');
+      localStorage.removeItem('vuo_admin_auth');
+    } catch(_) {}
+    if (typeof showToast === 'function') showToast("Admin session surakshit roop se band ho gaya.", "info");
     window.location.hash = "#home";
+    if (typeof VUO_APP !== 'undefined' && VUO_APP.handleRoute) VUO_APP.handleRoute('home');
   }
 };
 
