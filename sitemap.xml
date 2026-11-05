@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Homepage / Main Portal -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Live Sarkari Job Alerts & Applications -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#jobalert</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- CSC VLE Hardware Store & Equipment Deals -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#vlestore</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- Passport Photo Maker Studio (8/12/32 Prints) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#passphoto</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Epson PVC ID Card Print Studio (Front & Back) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#pvcprint</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- WhatsApp Document Scanner & Image Resizer -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#whatsappresizer</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- CSC Cash Receipt & Bill Generator -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#billmaker</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- CSC Office Suite & Legal Affidavit Drafter -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#csctools</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- CSC Legal Affidavit Drafter in Odia/English -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#csctools-affidavit</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Client-Side Free PDF Tools & Editor -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#pdftools</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- CSC Image Compressor (20KB / 50KB / 100KB) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#imagetools</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Professional Resume / Bio-Data Maker -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#resumemaker</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- School & Staff ID Card Generator -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#icardmaker</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- CSC Offline Govt Application Forms (PDF) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#forms</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- All Essential CSC & Odisha Govt Portal Bookmarks -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#links</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- CSC VLE Training Video Academy (38+ Masterclasses) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#training</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- VLE Daily Work Calculators (Age, EMI, Margin) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#calculators</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!-- Contact & VLE Help Desk Support -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#contact</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.60</priority>
+  </url>
+
+  <!-- About Us - VLE Union Odisha (V.U.O.) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#about</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Privacy Policy (Google AdSense Required) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#privacy</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Terms of Service (Google AdSense Required) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#terms</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Non-Governmental Disclaimer (Google AdSense Required) -->
+  <url>
+    <loc>https://vuohelpdesk.onrender.com/#disclaimer</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+</urlset>

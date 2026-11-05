@@ -1,0 +1,54 @@
+# robots.txt for VUO CSC HELPDESK (https://vuohelpdesk.onrender.com)
+# Generated for Search Engines & AI Crawlers
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /#admin
+
+# Search Engine Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# AI Crawlers & Search Assistants (ChatGPT Search, Perplexity, Claude, Apple)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# XML Sitemap Location
+Sitemap: https://vuohelpdesk.onrender.com/sitemap.xml

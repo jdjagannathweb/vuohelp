@@ -460,6 +460,12 @@ const VUO_ADMIN = {
       case 'jobalerts':
         try { this.renderJobAlertsAdmin(); } catch (e) { console.warn("renderJobAlertsAdmin error:", e); }
         break;
+      case 'affiliate':
+        try { this.renderAffiliateAdmin(); } catch (e) { console.warn("renderAffiliateAdmin error:", e); }
+        break;
+      case 'seo':
+        try { this.renderSeoAdmin(); } catch (e) { console.warn("renderSeoAdmin error:", e); }
+        break;
       default:
         try { this.renderLeadsTable(); } catch (e) { console.warn("renderLeadsTable error:", e); }
         break;
@@ -3252,6 +3258,85 @@ const VUO_ADMIN = {
     if (input) {
       input.value = 'https://www.freejobalert.com/articles/odisha-police-constable-recruitment-2026-3075546';
       this.autoFillJobFormFromLink();
+    }
+  },
+
+  renderAffiliateAdmin() {
+    const input = document.getElementById('adminAmazonAffiliateTagInput');
+    if (input) {
+      const saved = localStorage.getItem('vuo_amazon_affiliate_tag') || (typeof VUO_STORE !== 'undefined' ? VUO_STORE.defaultTag : 'vuohelp-21');
+      input.value = saved;
+    }
+  },
+
+  saveAffiliateSettings(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const input = document.getElementById('adminAmazonAffiliateTagInput');
+    const val = input ? input.value.trim() : '';
+    if (!val) {
+      if (typeof showToast === 'function') showToast("Kripya valid Amazon Associate Tag daalein (e.g. vuohelp-21)!", "warning");
+      return;
+    }
+    const cleanTag = val.replace(/^tag=/, '').trim();
+    localStorage.setItem('vuo_amazon_affiliate_tag', cleanTag);
+    if (typeof VUO_STORE !== 'undefined') {
+      VUO_STORE.setAffiliateTag(cleanTag);
+      VUO_STORE.renderStore();
+      VUO_STORE.renderContextualBanners();
+    }
+    if (typeof showToast === 'function') {
+      showToast("✅ Amazon Affiliate Tag ସଫଳତାର ସହିତ ସେଭ୍ ହେଲା (All store links updated)!", "success");
+    }
+  },
+
+
+  // 15 Things for SEO - Admin Control Panel
+  renderSeoAdmin() {
+    const googleInput = document.getElementById('adminGoogleVerificationInput');
+    const bingInput = document.getElementById('adminBingVerificationInput');
+    const gaInput = document.getElementById('adminGaMeasurementIdInput');
+
+    if (googleInput) {
+      googleInput.value = localStorage.getItem('vuo_google_site_verification') || '';
+    }
+    if (bingInput) {
+      bingInput.value = localStorage.getItem('vuo_bing_msvalidate') || '';
+    }
+    if (gaInput) {
+      gaInput.value = localStorage.getItem('vuo_ga_measurement_id') || '';
+    }
+  },
+
+  saveSeoSettings(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const googleInput = document.getElementById('adminGoogleVerificationInput');
+    const bingInput = document.getElementById('adminBingVerificationInput');
+    const gaInput = document.getElementById('adminGaMeasurementIdInput');
+
+    const googleCode = googleInput ? googleInput.value.trim() : '';
+    const bingCode = bingInput ? bingInput.value.trim() : '';
+    const gaCode = gaInput ? gaInput.value.trim() : '';
+
+    if (googleCode) localStorage.setItem('vuo_google_site_verification', googleCode);
+    else localStorage.removeItem('vuo_google_site_verification');
+
+    if (bingCode) localStorage.setItem('vuo_bing_msvalidate', bingCode);
+    else localStorage.removeItem('vuo_bing_msvalidate');
+
+    if (gaCode) localStorage.setItem('vuo_ga_measurement_id', gaCode);
+    else localStorage.removeItem('vuo_ga_measurement_id');
+
+    // Update active meta tags in DOM immediately
+    const metaGoogle = document.getElementById('metaGoogleVerification') || document.querySelector('meta[name="google-site-verification"]');
+    if (metaGoogle) metaGoogle.content = googleCode;
+
+    const metaBing = document.getElementById('metaBingVerification') || document.querySelector('meta[name="msvalidate.01"]');
+    if (metaBing) metaBing.content = bingCode;
+
+    if (typeof showToast === 'function') {
+      showToast("✅ SEO & Webmaster Verification Settings Saved Successfully!", "success");
+    } else {
+      alert("✅ SEO & Webmaster Verification Settings Saved Successfully!");
     }
   },
 

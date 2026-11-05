@@ -37,6 +37,13 @@ window.vuoSubmitAdminLogin = function(e) {
       setTimeout(window.vuoRenderAdminFormsTable, 50);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Dynamic SEO update for every page (Step 10: Unique Title & Meta per Page)
+    try {
+      this.updatePageSEO(viewName, subTab);
+    } catch(seoErr) {
+      console.warn("updatePageSEO error:", seoErr);
+    }
     return true;
   } else {
     if (typeof showToast === 'function') {
@@ -1522,6 +1529,16 @@ const VUO_APP = {
     } else if (cleanHash.startsWith('admin-')) {
       viewName = 'admin';
       subTab = cleanHash.replace('admin-', '');
+    } else if (cleanHash === 'vlestore' || cleanHash === 'store' || cleanHash === 'deals' || cleanHash === 'shop') {
+      viewName = 'vlestore';
+    } else if (cleanHash === 'privacy' || cleanHash === 'privacypolicy' || cleanHash === 'privacy-policy') {
+      viewName = 'privacy';
+    } else if (cleanHash === 'terms' || cleanHash === 'termsofservice' || cleanHash === 'terms-of-service') {
+      viewName = 'terms';
+    } else if (cleanHash === 'disclaimer') {
+      viewName = 'disclaimer';
+    } else if (cleanHash === 'about' || cleanHash === 'aboutus' || cleanHash === 'about-us') {
+      viewName = 'about';
     }
 
     // Hide all view containers
@@ -1570,6 +1587,12 @@ const VUO_APP = {
       const targetView = document.getElementById(`view_${viewName}`);
       if (targetView) {
         targetView.classList.remove('hidden');
+        if (viewName === 'vlestore' && typeof VUO_STORE !== 'undefined') {
+          try { VUO_STORE.renderStore(); } catch(e) {}
+        }
+        if (typeof VUO_STORE !== 'undefined') {
+          try { VUO_STORE.renderContextualBanners(); } catch(e) {}
+        }
       } else {
         const homeView = document.getElementById('view_home');
         if (homeView) homeView.classList.remove('hidden');
