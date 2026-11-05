@@ -1,0 +1,4 @@
+GOOGLE SAFE BROWSING COMPLIANCE FIX:
+1. Upload these updated files to GitHub repository.
+2. In Google Search Console -> Security Issues -> Click Request Review.
+3. In Google Safe Browsing False Positive report -> Submit vlehelpdesk.us

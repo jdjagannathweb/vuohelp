@@ -3,6 +3,13 @@
 <html lang="en">
 
 <head>
+  <!-- Enforce Automatic HTTPS Redirection (Fixes "Not Secure" Warning) -->
+  <script>
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+    }
+  </script>
+
 
   <meta charset="UTF-8">
 
@@ -29,7 +36,7 @@
   <!-- Google AdSense Ready (Add client ID below when approved) -->
   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
   <meta name="description" content="VUO CSC HELP - 100% Free Client-Side Tools, Odisha Legal Affidavits, Live Sarkari Job Alerts, Pass Photo Studio, PVC Printing and Hardware Deals for CSC VLEs across 30 Districts of Odisha.">
-  <title>VLE HELP DESK — VLE UNION ODISHA (V.U.O.) | Official CSC Digital Partner</title>
+  <title>VLE HELP DESK — VLE UNION ODISHA (V.U.O.) | Independent Community Digital Hub</title>
 
   
 
@@ -47,7 +54,7 @@
 
   <!-- Canonical URL Tag (Prevents Duplicate Content SEO Penalties) -->
 
-  <link rel="canonical" href="https://vuohelpdesk.onrender.com/">
+  <link rel="canonical" href="https://vlehelpdesk.us/">
 
   <!-- Preconnect & DNS Prefetch for Superior Page Speed (Step 14) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -102,8 +109,8 @@
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://vuohelpdesk.onrender.com/#website",
-        "url": "https://vuohelpdesk.onrender.com/",
+        "@id": "https://vlehelpdesk.us/#website",
+        "url": "https://vlehelpdesk.us/",
         "name": "VUO CSC HelpDesk",
         "alternateName": [
           "VLE Help Desk",
@@ -114,15 +121,15 @@
         "description": "100% Free Client-Side Tools, Odisha Legal Affidavits, Live Sarkari Job Alerts, Pass Photo Studio, PVC Printing and Hardware Deals for CSC VLEs across Odisha.",
         "inLanguage": "en-IN",
         "publisher": {
-          "@id": "https://vuohelpdesk.onrender.com/#organization"
+          "@id": "https://vlehelpdesk.us/#organization"
         }
       },
       {
         "@type": "Organization",
-        "@id": "https://vuohelpdesk.onrender.com/#organization",
+        "@id": "https://vlehelpdesk.us/#organization",
         "name": "VLE Union Odisha (V.U.O.)",
-        "url": "https://vuohelpdesk.onrender.com/",
-        "logo": "https://vuohelpdesk.onrender.com/assets/favicon-192x192.png",
+        "url": "https://vlehelpdesk.us/",
+        "logo": "https://vlehelpdesk.us/assets/favicon-192x192.png",
         "contactPoint": {
           "@type": "ContactPoint",
           "telephone": "+91-9937037131",
@@ -145,9 +152,9 @@
 
   <meta property="og:type" content="website">
 
-  <meta property="og:url" content="https://vuohelpdesk.onrender.com/">
+  <meta property="og:url" content="https://vlehelpdesk.us/">
 
-  <meta property="og:title" content="VLE HELP DESK — VLE UNION ODISHA (V.U.O.) Official Digital Partner">
+  <meta property="og:title" content="VLE HELP DESK — VLE UNION ODISHA (V.U.O.) Community Digital Hub">
 
   <meta property="og:description" content="All-in-one digital utility hub for CSC VLEs: HD Passport Photos, WhatsApp Image Cleaner, Live Govt Job Alerts, Resume Maker, PVC Print & Offline Forms.">
 
@@ -161,11 +168,11 @@
 
   <meta name="twitter:card" content="summary_large_image">
 
-  <meta name="twitter:url" content="https://vuohelpdesk.onrender.com/">
+  <meta name="twitter:url" content="https://vlehelpdesk.us/">
 
-  <meta name="twitter:title" content="VLE HELP DESK — VLE UNION ODISHA (V.U.O.) Official Digital Partner">
+  <meta name="twitter:title" content="VLE HELP DESK — VLE UNION ODISHA (V.U.O.) Community Digital Hub">
 
-  <meta name="twitter:description" content="Official Digital Partner for CSC Services. Live Govt Job Alerts, Passport Photos, Image Resizer & CSC Digital Tools.">
+  <meta name="twitter:description" content="Independent community digital utility hub by VLE Union Odisha: Passport Photo studio, WhatsApp Image Resizer, Odia Legal Affidavits & Digital Tools.">
 
   
 
@@ -2515,6 +2522,13 @@ body {
 
   </header>
 
+    <!-- Prominent Non-Governmental & Anti-Phishing Compliance Banner (Safe Browsing Approved) -->
+    <div class="bg-amber-500/10 border-b border-amber-500/20 px-3 py-1.5 text-center text-[11px] text-amber-900 font-medium">
+      <i class="fa-solid fa-circle-info text-amber-600 mr-1"></i>
+      <strong>Non-Government Community Notice:</strong> VUO HelpDesk (<code>vlehelpdesk.us</code>) is an independent community utility portal developed by VLE Union Odisha. This platform is <strong>NOT affiliated with, sponsored by, or endorsed by CSC e-Governance Services India Ltd or any Government ministry</strong>. All government portal bookmarks redirect to official public websites.
+    </div>
+
+
 
 
   <!-- Mobile Drawer -->
@@ -2531,7 +2545,7 @@ body {
 
             <span class="font-black text-sm text-amber-400 block tracking-wide">VLE HELP DESK</span>
 
-            <span class="text-[10px] text-slate-400 block">VLE UNION ODISHA (V.U.O.) Official Partner</span>
+            <span class="text-[10px] text-slate-400 block">VLE UNION ODISHA (V.U.O.) Community Portal</span>
 
           </div>
 
@@ -4844,7 +4858,7 @@ body {
 
               <p class="text-xs text-slate-600 mt-2 leading-relaxed">
 
-                Convert Word .docx &amp; text files into clean A4 PDF documents with margins. Stamp official CSC attested seals and remarks directly onto PDFs.
+                Convert Word .docx &amp; text files into clean A4 PDF documents with margins. Add digital remarks and verified stamps directly onto PDFs.
 
               </p>
 
@@ -12194,7 +12208,7 @@ body {
 
               </button>
 
-              <button type="button" onclick="VUO_PDFTOOLS.setEditorTool('stamp')" class="pdf-editor-tool-btn px-3 py-1.5 rounded-lg font-bold bg-slate-100 text-slate-700 transition" data-tool="stamp" title="Place official CSC verified stamp">
+              <button type="button" onclick="VUO_PDFTOOLS.setEditorTool('stamp')" class="pdf-editor-tool-btn px-3 py-1.5 rounded-lg font-bold bg-slate-100 text-slate-700 transition" data-tool="stamp" title="Place verified utility stamp">
 
                 <i class="fa-solid fa-stamp mr-1"></i> Official Stamp
 
@@ -16236,11 +16250,11 @@ body {
             <i class="fa-solid fa-shield-halved"></i> Official Policy
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 font-heading">Privacy Policy for VUO CSC HELP DESK</h1>
-          <p class="text-xs sm:text-sm text-slate-500 mt-1">Website URL: https://vuohelpdesk.onrender.com | Contact: jdjagannath@gmail.com</p>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">Website URL: https://vlehelpdesk.us | Contact: jdjagannath@gmail.com</p>
         </div>
 
         <div class="space-y-4">
-          <p>At <strong>VUO CSC HELP (VLE UNION ODISHA Help Desk)</strong>, accessible from <strong>https://vuohelpdesk.onrender.com</strong>, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by VUO CSC HELP and how we use it.</p>
+          <p>At <strong>VUO CSC HELP (VLE UNION ODISHA Help Desk)</strong>, accessible from <strong>https://vlehelpdesk.us</strong>, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by VUO CSC HELP and how we use it.</p>
           <p>If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at <strong>jdjagannath@gmail.com</strong> or via phone at <strong>+91 9937037131</strong>.</p>
         </div>
 
@@ -16251,7 +16265,7 @@ body {
 
         <div class="space-y-3">
           <h2 class="text-lg font-black text-slate-900 flex items-center gap-2"><i class="fa-solid fa-cookie-bite text-amber-600"></i> 2. Google AdSense &amp; DoubleClick DART Cookies</h2>
-          <p>Google is one of the third-party vendors on our site. It also uses cookies, known as DART cookies, to serve ads to our site visitors based upon their visit to <em>https://vuohelpdesk.onrender.com</em> and other sites on the internet. However, visitors may choose to decline the use of DART cookies by visiting the Google ad and content network Privacy Policy at: <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" class="text-sky-600 font-bold hover:underline">https://policies.google.com/technologies/ads</a>.</p>
+          <p>Google is one of the third-party vendors on our site. It also uses cookies, known as DART cookies, to serve ads to our site visitors based upon their visit to <em>https://vlehelpdesk.us</em> and other sites on the internet. However, visitors may choose to decline the use of DART cookies by visiting the Google ad and content network Privacy Policy at: <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" class="text-sky-600 font-bold hover:underline">https://policies.google.com/technologies/ads</a>.</p>
           <p>Third-party ad servers or ad networks use technologies like cookies, JavaScript, or Web Beacons that are used in their respective advertisements and links that appear on VUO CSC HELP, which are sent directly to users' browsers. They automatically receive your IP address when this occurs. These technologies are used to measure the effectiveness of their advertising campaigns and/or to personalize the advertising content that you see on websites that you visit.</p>
         </div>
 
@@ -16302,7 +16316,7 @@ body {
 
         <div class="space-y-3">
           <h2 class="text-base font-black text-slate-900">1. Acceptance of Terms</h2>
-          <p>By accessing and using <strong>VUO CSC HELP (https://vuohelpdesk.onrender.com)</strong>, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using this website's particular services or tools, you shall be subject to any posted guidelines or rules applicable to such services.</p>
+          <p>By accessing and using <strong>VUO CSC HELP (https://vlehelpdesk.us)</strong>, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using this website's particular services or tools, you shall be subject to any posted guidelines or rules applicable to such services.</p>
         </div>
 
         <div class="space-y-3">
@@ -16353,7 +16367,7 @@ body {
         <div class="p-5 rounded-2xl bg-amber-50/80 border border-amber-300 text-amber-950 space-y-2">
           <h3 class="font-black text-sm flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-amber-600"></i> Important Public Notice:</h3>
           <p class="text-xs leading-relaxed">
-            <strong>VUO CSC HELP (vuohelpdesk.onrender.com) is an independent community assistance platform run by VLE Union Odisha volunteers. We are NOT associated with, authorized by, or an official website of the Government of India, the Government of Odisha, or CSC e-Governance Services India Limited (CSC SPV).</strong>
+            <strong>VUO CSC HELP (vlehelpdesk.us) is an independent community assistance platform run by VLE Union Odisha volunteers. We are NOT associated with, authorized by, or an official website of the Government of India, the Government of Odisha, or CSC e-Governance Services India Limited (CSC SPV).</strong>
           </p>
         </div>
 
@@ -19535,13 +19549,13 @@ body {
             <div class="text-[9px] text-slate-400">Maps &amp; Local</div>
           </a>
 
-          <a href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fvuohelpdesk.onrender.com%2F" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-center group transition-all">
+          <a href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fvlehelpdesk.us%2F" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-center group transition-all">
             <i class="fa-solid fa-gauge-high text-xl text-emerald-500 group-hover:scale-110 transition-transform"></i>
             <div class="text-[11px] font-bold text-slate-800 mt-1">PageSpeed</div>
             <div class="text-[9px] text-slate-400">Speed Audit</div>
           </a>
 
-          <a href="https://search.google.com/test/rich-results?url=https%3A%2F%2Fvuohelpdesk.onrender.com%2F" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 rounded-xl text-center group transition-all">
+          <a href="https://search.google.com/test/rich-results?url=https%3A%2F%2Fvlehelpdesk.us%2F" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-300 rounded-xl text-center group transition-all">
             <i class="fa-solid fa-code text-xl text-purple-500 group-hover:scale-110 transition-transform"></i>
             <div class="text-[11px] font-bold text-slate-800 mt-1">Rich Results</div>
             <div class="text-[9px] text-slate-400">Schema Test</div>
@@ -19590,7 +19604,7 @@ body {
                   <span>Submit XML Sitemap</span>
                   <a href="/sitemap.xml" target="_blank" class="text-[10px] font-black text-sky-600 hover:underline">View Sitemap</a>
                 </div>
-                <p class="text-[11px] text-slate-600 mt-0.5">Sitemap URL: <strong class="text-slate-800">https://vuohelpdesk.onrender.com/sitemap.xml</strong> (22 canonical URLs with daily/weekly changefreq).</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">Sitemap URL: <strong class="text-slate-800">https://vlehelpdesk.us/sitemap.xml</strong> (22 canonical URLs with daily/weekly changefreq).</p>
               </div>
             </div>
 
@@ -19602,7 +19616,7 @@ body {
                   <span>Request indexing for Homepage</span>
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Action in GSC</span>
                 </div>
-                <p class="text-[11px] text-slate-600 mt-0.5">Google Search Console ke URL Inspection box me <code class="text-slate-800">https://vuohelpdesk.onrender.com/</code> paste karke "Request Indexing" dabayein.</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">Google Search Console ke URL Inspection box me <code class="text-slate-800">https://vlehelpdesk.us/</code> paste karke "Request Indexing" dabayein.</p>
               </div>
             </div>
 
@@ -24027,6 +24041,13 @@ body {
       </div>
 
 
+
+      
+      <!-- Safe Browsing Anti-Phishing Assurance Notice -->
+      <div class="p-2.5 rounded-xl bg-sky-50 border border-sky-200 text-[10px] text-sky-900 flex items-start gap-2">
+        <i class="fa-solid fa-shield-halved text-sky-600 mt-0.5 shrink-0"></i>
+        <span><strong>Security Notice:</strong> Authorized VUO Union login only. We never request or store your official CSC Digital Seva portal passwords or Government credentials.</span>
+      </div>
 
       <form id="adminLoginForm" onsubmit="event.preventDefault(); window.vuoSubmitAdminLogin();" class="space-y-4">
 

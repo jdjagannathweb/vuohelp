@@ -1,4 +1,4 @@
-# robots.txt for VUO CSC HELPDESK (https://vuohelpdesk.onrender.com)
+# robots.txt for VUO CSC HELPDESK (https://vlehelpdesk.us)
 # Generated for Search Engines & AI Crawlers
 
 User-agent: *
@@ -51,4 +51,4 @@ User-agent: CCBot
 Allow: /
 
 # XML Sitemap Location
-Sitemap: https://vuohelpdesk.onrender.com/sitemap.xml
+Sitemap: https://vlehelpdesk.us/sitemap.xml
