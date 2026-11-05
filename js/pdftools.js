@@ -649,10 +649,14 @@ const VUO_PDFTOOLS = {
   signatureDataUrl: null,
   isDrawingSig: false,
   editorTextItems: [],
+  editorPdfPassword: '',
+  editorPendingFile: null,
 
-  async loadPdfForEditor(file) {
+  async loadPdfForEditor(file, password = '') {
     if (!file) return;
     this.editorPdfFile = file;
+    this.editorPendingFile = file;
+    this.editorPdfPassword = password || '';
 
     try {
       const rawBuf = await file.arrayBuffer();
@@ -670,20 +674,27 @@ const VUO_PDFTOOLS = {
       const cMapBase = isFileProto ? 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/' : './vendor/pdfjs/cmaps/';
       const fontBase = isFileProto ? 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/' : './vendor/pdfjs/standard_fonts/';
 
-      // Pass a cloned slice so the worker never detaches this.editorPdfBytes
-      const loadingTask = pdfjsLib.getDocument({
+      // Pass a cloned slice and optional password so password-protected e-Aadhaar PDFs decrypt seamlessly
+      const docOptions = {
         data: new Uint8Array(this.editorPdfBytes.slice(0)),
         cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
         cMapPacked: true,
         standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
         useSystemFonts: false
-      });
+      };
+      if (this.editorPdfPassword) {
+        docOptions.password = this.editorPdfPassword;
+      }
+
+      const loadingTask = pdfjsLib.getDocument(docOptions);
       this.editorPdfDoc = await loadingTask.promise;
       this.editorTotalPages = this.editorPdfDoc.numPages;
       this.editorCurrentPage = 1;
       this.editorPageRotation = 0;
       this.editorScale = 1.0;
       this.editorAnnotations = [];
+
+      this.closeEditorPasswordModal();
 
       this.updateEditorPageNav();
       this.updateZoomDisplay();
@@ -717,11 +728,81 @@ const VUO_PDFTOOLS = {
       // Ensure Pi7 edit tool is active by default
       this.setEditorTool('edit_text');
 
-      showToast(`Loaded PDF: ${file.name} (${this.editorTotalPages} pages) - Click any word or line to edit!`, 'success');
+      if (this.editorPdfPassword) {
+        showToast(`Document Unlocked: ${file.name} (${this.editorTotalPages} pages) - Click any word to edit!`, 'success');
+      } else {
+        showToast(`Loaded PDF: ${file.name} (${this.editorTotalPages} pages) - Click any word or line to edit!`, 'success');
+      }
     } catch (err) {
+      if (err.name === 'PasswordException' || err.code === 1 || err.code === 2 || (err.message && err.message.toLowerCase().includes('password'))) {
+        const isWrong = (this.editorPdfPassword && this.editorPdfPassword.length > 0) || err.code === 2;
+        this.openEditorPasswordModal(isWrong ? 'Incorrect password! For e-Aadhaar: First 4 letters of Name (CAPITALS) + Birth Year (e.g. JAGA1995).' : '');
+        return;
+      }
       console.error(err);
       showToast('Error reading PDF: ' + err.message, 'error');
     }
+  },
+
+
+  openEditorPasswordModal(errorMsg = '') {
+    const modal = document.getElementById('pdfEditorPasswordModal');
+    const errText = document.getElementById('pdfEditorPasswordErrorText');
+    const input = document.getElementById('pdfEditorPasswordInput');
+
+    if (errText) {
+      errText.textContent = errorMsg;
+      if (errorMsg) errText.classList.remove('hidden');
+      else errText.classList.add('hidden');
+    }
+
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  },
+
+  closeEditorPasswordModal() {
+    const modal = document.getElementById('pdfEditorPasswordModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  toggleEditorPasswordVisibility() {
+    const input = document.getElementById('pdfEditorPasswordInput');
+    const icon = document.getElementById('pdfEditorPasswordEyeIcon');
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (icon) icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      if (icon) icon.className = 'fa-solid fa-eye';
+    }
+  },
+
+  submitEditorPassword(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const input = document.getElementById('pdfEditorPasswordInput');
+    const pwd = input ? input.value.trim() : '';
+    if (!pwd) {
+      showToast('Kripya password enter karein!', 'warning');
+      if (input) input.focus();
+      return;
+    }
+    if (!this.editorPendingFile && !this.editorPdfFile) {
+      showToast('No PDF file selected.', 'error');
+      this.closeEditorPasswordModal();
+      return;
+    }
+    showToast('Decrypting and unlocking document...', 'info');
+    this.loadPdfForEditor(this.editorPendingFile || this.editorPdfFile, pwd);
   },
 
   editorScale: 1.0,
@@ -2323,7 +2404,48 @@ const VUO_PDFTOOLS = {
     showToast('Saving edited PDF document...', 'info');
 
     try {
-      const pdfDoc = await PDFLib.PDFDocument.load(bytesToLoad);
+      let pdfDoc = null;
+      let isEncrypted = false;
+
+      try {
+        pdfDoc = await PDFLib.PDFDocument.load(bytesToLoad);
+      } catch (loadErr) {
+        console.warn('PDFLib.load failed (document encrypted/protected):', loadErr.message);
+        if (this.editorPdfDoc) {
+          isEncrypted = true;
+        } else {
+          throw loadErr;
+        }
+      }
+
+      if (isEncrypted) {
+        // High-resolution clean export for decrypted e-Aadhaar & password-protected PDFs
+        pdfDoc = await PDFLib.PDFDocument.create();
+        for (let pNum = 1; pNum <= this.editorTotalPages; pNum++) {
+          const pageProxy = await this.editorPdfDoc.getPage(pNum);
+          const scale = 2.0; // 144-150 DPI print-ready quality
+          const viewport = pageProxy.getViewport({ scale });
+          const renderCanvas = document.createElement('canvas');
+          renderCanvas.width = viewport.width;
+          renderCanvas.height = viewport.height;
+          const renderCtx = renderCanvas.getContext('2d');
+          await pageProxy.render({ canvasContext: renderCtx, viewport }).promise;
+
+          const imgDataUrl = renderCanvas.toDataURL('image/jpeg', 0.95);
+          const embeddedImg = await pdfDoc.embedJpg(imgDataUrl);
+
+          const origW = viewport.width / scale;
+          const origH = viewport.height / scale;
+          const newPage = pdfDoc.addPage([origW, origH]);
+          newPage.drawImage(embeddedImg, {
+            x: 0,
+            y: 0,
+            width: origW,
+            height: origH
+          });
+        }
+      }
+
       const fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
       const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
       const pages = pdfDoc.getPages();

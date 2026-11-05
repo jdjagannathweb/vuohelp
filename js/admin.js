@@ -3267,6 +3267,179 @@ const VUO_ADMIN = {
       const saved = localStorage.getItem('vuo_amazon_affiliate_tag') || (typeof VUO_STORE !== 'undefined' ? VUO_STORE.defaultTag : 'vuohelp-21');
       input.value = saved;
     }
+    this.renderStoreProductsAdmin();
+  },
+
+  handlePlatformChange(plat) {
+    const directUrlBox = document.getElementById('adminProductDirectUrlWrapper');
+    const asinBox = document.getElementById('adminProductAsinWrapper');
+    const searchLabel = document.getElementById('adminProductSearchLabel');
+    const directUrlInput = document.getElementById('adminProductDirectUrl');
+
+    if (!directUrlInput) return;
+
+    if (plat === 'meesho') {
+      directUrlInput.placeholder = 'https://www.meesho.com/... ya Meesho app share link';
+      if (searchLabel) searchLabel.textContent = 'Meesho Search Keywords (Optional)';
+      if (asinBox) asinBox.style.display = 'none';
+      if (directUrlBox) directUrlBox.classList.add('ring-2', 'ring-pink-400');
+    } else if (plat === 'flipkart') {
+      directUrlInput.placeholder = 'https://dl.flipkart.com/... ya Flipkart affiliate link';
+      if (searchLabel) searchLabel.textContent = 'Flipkart Search Keywords';
+      if (asinBox) asinBox.style.display = 'none';
+      if (directUrlBox) directUrlBox.classList.remove('ring-pink-400');
+    } else {
+      directUrlInput.placeholder = 'https://www.amazon.in/... ya direct affiliate short link';
+      if (searchLabel) searchLabel.textContent = 'Amazon Search Keywords *';
+      if (asinBox) asinBox.style.display = 'block';
+      if (directUrlBox) directUrlBox.classList.remove('ring-pink-400');
+    }
+  },
+
+  renderStoreProductsAdmin() {
+    const tbody = document.getElementById('adminStoreProductsTbody');
+    const countBadge = document.getElementById('adminTotalStoreProductsCount');
+    if (!tbody || typeof VUO_STORE === 'undefined') return;
+
+    const products = VUO_STORE.getAllProducts();
+    if (countBadge) countBadge.textContent = products.length + ' Products';
+
+    if (!products || products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-box-open text-2xl mb-2 block"></i>No active products found in store.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = products.map((p, idx) => {
+      const url = VUO_STORE.getProductUrl(p);
+      const platInfo = VUO_STORE.getPlatformInfo(p);
+      const catLabel = p.category === 'biometric' ? 'Biometric' :
+                       p.category === 'printers' ? 'Printers & Trays' :
+                       p.category === 'paper' ? 'Lamination & Paper' : 'Accessories';
+      const isCustom = p.isCustom;
+      return `
+        <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+          <td class="py-3 px-3 text-xs font-mono text-slate-400 font-bold">${idx + 1}</td>
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0 text-sm">
+                <i class="fa-solid ${p.icon || 'fa-box'}"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-black text-slate-900 truncate max-w-xs flex items-center gap-1.5 flex-wrap">
+                  ${p.title}
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border ${platInfo.badgeClass}">
+                    <i class="${platInfo.icon} text-[8px] mr-0.5"></i> ${platInfo.name}
+                  </span>
+                  ${isCustom ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-100 text-emerald-800 font-bold">Custom</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-500 truncate max-w-xs">${p.tagline || p.desc || ''}</div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+              ${catLabel}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-xs font-black text-slate-900">
+            ${p.priceApprox}
+          </td>
+          <td class="py-3 px-3 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              <a href="${url}" target="_blank" rel="noopener noreferrer" class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg text-xs" title="Preview Product Link">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+              <button onclick="VUO_ADMIN.deleteStoreProduct('${p.id}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs cursor-pointer" title="Delete Product">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  handleAddStoreProduct(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (typeof VUO_STORE === 'undefined') return;
+
+    const titleInput = document.getElementById('adminProductTitle');
+    const platInput = document.getElementById('adminProductPlatform');
+    const directUrlInput = document.getElementById('adminProductDirectUrl');
+    const catInput = document.getElementById('adminProductCategory');
+    const priceInput = document.getElementById('adminProductPrice');
+    const asinInput = document.getElementById('adminProductAsin');
+    const searchInput = document.getElementById('adminProductSearch');
+    const badgeInput = document.getElementById('adminProductBadge');
+    const taglineInput = document.getElementById('adminProductTagline');
+    const descInput = document.getElementById('adminProductDesc');
+
+    const title = titleInput ? titleInput.value.trim() : '';
+    if (!title) {
+      if (typeof showToast === 'function') showToast('Kripya Product Title / Name daalein!', 'warning');
+      return;
+    }
+
+    const platform = platInput ? platInput.value : 'amazon';
+    const directUrl = directUrlInput ? directUrlInput.value.trim() : '';
+    const category = catInput ? catInput.value : 'accessories';
+    const priceApprox = priceInput && priceInput.value.trim() ? priceInput.value.trim() : '₹999';
+    const directAsin = asinInput ? asinInput.value.trim() : '';
+    const amazonSearchQuery = searchInput && searchInput.value.trim() ? searchInput.value.trim() : title;
+    const badge = badgeInput && badgeInput.value.trim() ? badgeInput.value.trim() : (platform === 'meesho' ? 'Meesho Deal' : platform === 'flipkart' ? 'Flipkart Deal' : 'CSC Essential');
+    const tagline = taglineInput && taglineInput.value.trim() ? taglineInput.value.trim() : 'Quality Hardware';
+    const desc = descInput && descInput.value.trim() ? descInput.value.trim() : '';
+
+    const newProd = VUO_STORE.addProduct({
+      title,
+      platform,
+      directUrl,
+      category,
+      priceApprox,
+      directAsin,
+      amazonSearchQuery,
+      badge,
+      tagline,
+      desc
+    });
+
+    if (newProd) {
+      if (titleInput) titleInput.value = '';
+      if (directUrlInput) directUrlInput.value = '';
+      if (priceInput) priceInput.value = '';
+      if (asinInput) asinInput.value = '';
+      if (searchInput) searchInput.value = '';
+      if (badgeInput) badgeInput.value = '';
+      if (taglineInput) taglineInput.value = '';
+      if (descInput) descInput.value = '';
+
+      this.renderStoreProductsAdmin();
+      if (typeof showToast === 'function') {
+        const platUpper = platform.charAt(0).toUpperCase() + platform.slice(1);
+        showToast('✅ ' + platUpper + ' Product successfully Deals store me add ho gaya!', 'success');
+      }
+    }
+  },
+
+  deleteStoreProduct(id) {
+    if (!id || typeof VUO_STORE === 'undefined') return;
+    if (!confirm('Kya aap sach me is product ko Deals store se hatana chahte hain?')) return;
+
+    VUO_STORE.deleteProduct(id);
+    this.renderStoreProductsAdmin();
+    if (typeof showToast === 'function') {
+      showToast('🗑️ Product store se remove kar diya gaya!', 'info');
+    }
+  },
+
+  restoreDefaultStoreProducts() {
+    if (typeof VUO_STORE === 'undefined') return;
+    if (!confirm('Sabhi default products ko restore karna chahte hain?')) return;
+    VUO_STORE.resetDefaultProducts();
+    this.renderStoreProductsAdmin();
+    if (typeof showToast === 'function') {
+      showToast('🔄 Default products restore ho gaye!', 'success');
+    }
   },
 
   saveAffiliateSettings(e) {

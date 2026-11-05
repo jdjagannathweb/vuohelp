@@ -413,8 +413,8 @@ const VUO_SEARCH = {
     if (!resultsContainer) return;
     const tools = [
       { name: "Gemini AI Passport Photo Studio", nameOdia: "ଜେମିନି AI ପାସପୋର୍ଟ ଷ୍ଟୁଡିଓ", hash: "#passphoto", type: "Tool", icon: "✨", desc: "Professional 35x45mm passport photo maker with Gemini AI prompt & A4 print sheet" },
-      { name: "Image Compressor", nameOdia: "ଫଟୋ କମ୍ପ୍ରେସ୍", hash: "#imagetools", type: "Tool", icon: "🖼️", desc: "Compress image file size for portal limits" },
-      { name: "Signature Resizer", nameOdia: "ସାଇନ (Signature) ରିସାଇଜ୍", hash: "#imagetools", type: "Tool", icon: "✍️", desc: "PAN and government portal signature optimizer" },
+      { name: "Govt Job Photo & Sign Studio", nameOdia: "ସରକାରୀ ଚାକିରି ଫଟୋ ଓ ଦସ୍ତଖତ", hash: "#imagetools-govtjob", type: "Tool", icon: "🎯", desc: "Exact pixel & KB match for SSC, OSSC, UPSC & Govt exam portals" },
+      { name: "Photo Compress & Resizer", nameOdia: "ଫଟୋ କମ୍ପ୍ରେସର ଓ ରିସାଇଜର", hash: "#imagetools-compressor", type: "Tool", icon: "⚡", desc: "KB to KB file size & PX to PX dimension scaling" },
       { name: "CSC Bill Maker", nameOdia: "CSC ବିଲ୍ ମେକର", hash: "#billmaker", type: "Tool", icon: "🧾", desc: "Generate professional customer receipts with shop details" },
       { name: "PDF Tools Suite", nameOdia: "PDF ଟୁଲ୍ସ ସୁଇଟ୍", hash: "#pdftools", type: "Tool", icon: "📄", desc: "JPG to PDF, merge, split, and watermark documents" },
       { name: "Resume Maker", nameOdia: "ରେଜ୍ୟୁମେ / ବାୟୋଡାଟା ମେକର", hash: "#resumemaker", type: "Tool", icon: "📋", desc: "Modern job resume and bio-data builder" },
@@ -1624,9 +1624,8 @@ const VUO_APP = {
       }
     } else if (viewName === 'imagetools') {
       VUO_IMAGETOOLS.init();
-      if (subTab) {
-        VUO_IMAGETOOLS.switchTab(subTab);
-      }
+      const targetTab = (subTab === 'govtjob') ? 'govtjob' : 'compressor';
+      VUO_IMAGETOOLS.switchTab(targetTab);
     } else if (viewName === 'billmaker') {
       VUO_BILLMAKER.init();
     } else if (viewName === 'pdftools') {

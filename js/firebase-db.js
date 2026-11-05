@@ -42,14 +42,21 @@ const VUO_DB = {
         }
         this.isInitialized = true;
         console.log("✅ VUO Firebase Firestore & Storage Cloud DB connected successfully!");
-        this.setupRealtimeListeners();
+        // Defer realtime listeners to allow immediate UI render and prevent network thread blocking
+        const startListeners = () => {
+          this.setupRealtimeListeners();
+          this.fetchCloudMembersDirectly();
+          this.fetchCloudJobAlertsDirectly();
+          this.syncLocalCustomJobsToCloud();
+        };
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          requestIdleCallback(startListeners, { timeout: 2000 });
+        } else {
+          setTimeout(startListeners, 1500);
+        }
       } else {
         console.log("ℹ️ VUO running in LocalStorage mode (Direct REST fallback active).");
       }
-      // Always trigger direct cloud members fetch in background to guarantee zero missing members
-      this.fetchCloudMembersDirectly();
-      this.fetchCloudJobAlertsDirectly();
-      this.syncLocalCustomJobsToCloud();
     } catch (e) {
       console.warn("Firebase initialization warning (falling back to local storage):", e);
       this.isInitialized = false;

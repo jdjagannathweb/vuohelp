@@ -6,6 +6,7 @@
 
 const VUO_STORE = {
   currentCategory: 'all',
+  currentPlatform: 'all',
   searchQuery: '',
   defaultTag: 'vuohelp-21',
   customTag: null,
@@ -284,12 +285,169 @@ const VUO_STORE = {
     }
   ],
 
+  getCustomProducts() {
+    try {
+      const saved = localStorage.getItem('vuo_custom_products');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  },
+
+  getDeletedProductIds() {
+    try {
+      const saved = localStorage.getItem('vuo_deleted_products');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  },
+
+  getAllProducts() {
+    const deletedIds = new Set(this.getDeletedProductIds());
+    const defaults = (this.products || []).filter(p => !deletedIds.has(p.id));
+    const custom = this.getCustomProducts().filter(p => !deletedIds.has(p.id));
+    return [...custom, ...defaults];
+  },
+
+  addProduct(data) {
+    if (!data || !data.title) return null;
+    const custom = this.getCustomProducts();
+    const cat = data.category || 'accessories';
+    const plat = (data.platform || 'amazon').toLowerCase();
+    const icon = cat === 'biometric' ? 'fa-fingerprint' :
+                 cat === 'printers' ? 'fa-print' :
+                 cat === 'paper' ? 'fa-layer-group' : 'fa-box-open';
+    const accent = plat === 'flipkart' ? 'blue' :
+                   plat === 'meesho' ? 'pink' :
+                   cat === 'biometric' ? 'emerald' :
+                   cat === 'printers' ? 'amber' :
+                   cat === 'paper' ? 'sky' : 'indigo';
+    const badgeCls = plat === 'flipkart' ? 'bg-blue-100 text-blue-900 border-blue-300' :
+                     plat === 'meesho' ? 'bg-pink-100 text-pink-900 border-pink-300' :
+                     cat === 'biometric' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                     cat === 'printers' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                     cat === 'paper' ? 'bg-sky-100 text-sky-800 border-sky-300' :
+                     'bg-indigo-100 text-indigo-800 border-indigo-300';
+
+    let price = (data.priceApprox || '').trim();
+    if (!price) price = '₹999';
+    if (!price.startsWith('₹')) price = '₹' + price;
+
+    const defaultBadge = plat === 'meesho' ? 'Meesho Deal' : plat === 'flipkart' ? 'Flipkart Deal' : 'CSC Essential';
+
+    const newProd = {
+      id: 'prod-custom-' + Date.now(),
+      title: data.title.trim(),
+      platform: plat,
+      directUrl: (data.directUrl || '').trim(),
+      category: cat,
+      badge: data.badge ? data.badge.trim() : defaultBadge,
+      badgeClass: badgeCls,
+      tagline: data.tagline ? data.tagline.trim() : 'Verified Deal',
+      desc: data.desc ? data.desc.trim() : '',
+      rating: '4.8',
+      reviews: '500+ Orders',
+      priceApprox: price,
+      amazonSearchQuery: data.amazonSearchQuery ? data.amazonSearchQuery.trim() : data.title.trim(),
+      directAsin: (data.directAsin || '').trim().toUpperCase(),
+      icon: icon,
+      accentColor: accent,
+      isCustom: true,
+      createdAt: Date.now()
+    };
+    custom.unshift(newProd);
+    localStorage.setItem('vuo_custom_products', JSON.stringify(custom));
+    this.renderStore();
+    return newProd;
+  },
+
+  deleteProduct(id) {
+    if (!id) return;
+    let custom = this.getCustomProducts();
+    const hasCustom = custom.some(p => p.id === id);
+    if (hasCustom) {
+      custom = custom.filter(p => p.id !== id);
+      localStorage.setItem('vuo_custom_products', JSON.stringify(custom));
+    }
+    const deleted = this.getDeletedProductIds();
+    if (!deleted.includes(id)) {
+      deleted.push(id);
+      localStorage.setItem('vuo_deleted_products', JSON.stringify(deleted));
+    }
+    this.renderStore();
+  },
+
+  resetDefaultProducts() {
+    localStorage.removeItem('vuo_deleted_products');
+    this.renderStore();
+  },
+
   getProductUrl(product) {
+    if (product.directUrl && product.directUrl.trim()) {
+      return product.directUrl.trim();
+    }
+    const platform = (product.platform || 'amazon').toLowerCase();
+    if (platform === 'flipkart') {
+      return `https://www.flipkart.com/search?q=${encodeURIComponent(product.amazonSearchQuery || product.title)}`;
+    }
+    if (platform === 'meesho') {
+      return `https://www.meesho.com/search?q=${encodeURIComponent(product.amazonSearchQuery || product.title)}`;
+    }
     const tag = this.getAffiliateTag();
     if (product.directAsin) {
       return `https://www.amazon.in/dp/${product.directAsin}?tag=${encodeURIComponent(tag)}`;
     }
-    return `https://www.amazon.in/s?k=${encodeURIComponent(product.amazonSearchQuery)}&tag=${encodeURIComponent(tag)}`;
+    return `https://www.amazon.in/s?k=${encodeURIComponent(product.amazonSearchQuery || product.title)}&tag=${encodeURIComponent(tag)}`;
+  },
+
+  setPlatform(plat) {
+    this.currentPlatform = plat || 'all';
+    document.querySelectorAll('.vle-store-plat-btn').forEach(btn => {
+      const bPlat = btn.getAttribute('data-plat') || 'all';
+      if (bPlat === this.currentPlatform) {
+        btn.className = 'vle-store-plat-btn px-3 py-1.5 text-xs font-black rounded-xl bg-slate-900 text-white shadow-sm cursor-pointer whitespace-nowrap transition-all';
+      } else {
+        btn.className = 'vle-store-plat-btn px-3 py-1.5 text-xs font-bold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer whitespace-nowrap transition-all';
+      }
+    });
+    this.renderStore();
+  },
+
+  getPlatformInfo(product) {
+    const plat = (product && product.platform ? product.platform : 'amazon').toLowerCase();
+    if (plat === 'flipkart') {
+      return {
+        name: 'Flipkart',
+        badgeClass: 'bg-blue-100 text-blue-900 border-blue-300',
+        btnClass: 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20',
+        icon: 'fa-solid fa-bag-shopping',
+        label: 'Buy on Flipkart'
+      };
+    }
+    if (plat === 'meesho') {
+      return {
+        name: 'Meesho',
+        badgeClass: 'bg-pink-100 text-pink-900 border-pink-300',
+        btnClass: 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white shadow-pink-500/20',
+        icon: 'fa-solid fa-tag',
+        label: 'Buy on Meesho'
+      };
+    }
+    if (plat === 'custom') {
+      return {
+        name: 'Direct Store',
+        badgeClass: 'bg-slate-100 text-slate-900 border-slate-300',
+        btnClass: 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20',
+        icon: 'fa-solid fa-cart-shopping',
+        label: 'Buy Deal Now'
+      };
+    }
+    return {
+      name: 'Amazon',
+      badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+      btnClass: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-orange-500/20',
+      icon: 'fa-brands fa-amazon',
+      label: 'Buy on Amazon'
+    };
   },
 
   setCategory(cat) {
@@ -315,10 +473,14 @@ const VUO_STORE = {
     const countEl = document.getElementById('vleStoreProductCount');
     if (!container) return;
 
-    let filtered = this.products;
+    let filtered = this.getAllProducts();
 
     if (this.currentCategory !== 'all') {
       filtered = filtered.filter(p => p.category === this.currentCategory);
+    }
+
+    if (this.currentPlatform && this.currentPlatform !== 'all') {
+      filtered = filtered.filter(p => (p.platform || 'amazon').toLowerCase() === this.currentPlatform);
     }
 
     if (this.searchQuery) {
@@ -344,6 +506,7 @@ const VUO_STORE = {
 
     container.innerHTML = filtered.map(p => {
       const url = this.getProductUrl(p);
+      const platInfo = this.getPlatformInfo(p);
       return `
         <div class="bg-white rounded-2xl border border-slate-200 hover:border-amber-400 p-5 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
           <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/0 rounded-bl-full pointer-events-none"></div>
@@ -351,9 +514,14 @@ const VUO_STORE = {
           <div>
             <!-- Top Badges & Category -->
             <div class="flex items-center justify-between gap-2 mb-3">
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${p.badgeClass}">
-                <i class="fa-solid ${p.icon}"></i> ${p.badge}
-              </span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${platInfo.badgeClass}">
+                  <i class="${platInfo.icon}"></i> ${platInfo.name}
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${p.badgeClass}">
+                  <i class="fa-solid ${p.icon}"></i> ${p.badge}
+                </span>
+              </div>
               <span class="text-[11px] font-bold text-amber-600 flex items-center gap-1">
                 <i class="fa-solid fa-star text-amber-400 text-xs"></i> ${p.rating}
                 <span class="text-[10px] text-slate-400">(${p.reviews})</span>
@@ -381,9 +549,9 @@ const VUO_STORE = {
               <div class="text-base font-black text-slate-900">${p.priceApprox}*</div>
             </div>
 
-            <a href="${url}" target="_blank" rel="noopener noreferrer nofollow" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-orange-500/20 inline-flex items-center gap-1.5 transition-all transform hover:scale-[1.03] active:scale-95 cursor-pointer">
-              <i class="fa-brands fa-amazon text-sm text-slate-950"></i>
-              <span>Buy on Amazon</span>
+            <a href="${url}" target="_blank" rel="noopener noreferrer nofollow" class="px-4 py-2.5 rounded-xl ${platInfo.btnClass} font-black text-xs shadow-md inline-flex items-center gap-1.5 transition-all transform hover:scale-[1.03] active:scale-95 cursor-pointer">
+              <i class="${platInfo.icon} text-sm"></i>
+              <span>${platInfo.label}</span>
               <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-0.5 opacity-80"></i>
             </a>
           </div>

@@ -428,8 +428,8 @@ const VUO_TRAINING = {
 
       localStorage.setItem('vuo_training', JSON.stringify(sanitized));
 
-      // Push to backend server if accessible
-      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+      // Push to backend server if accessible on localhost
+      if (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
         fetch('api/save-training-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

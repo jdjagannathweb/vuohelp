@@ -71,20 +71,23 @@ const VUO_IMAGETOOLS = {
   },
 
   switchTab(tabName) {
-    this.activeTab = tabName;
+    this.activeTab = (tabName === 'govtjob') ? 'govtjob' : 'compressor';
     document.querySelectorAll('.img-tool-tab').forEach(btn => {
-      if (btn.getAttribute('data-tool-tab') === tabName) {
-        btn.className = 'img-tool-tab flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold bg-sky-600 text-white shadow-sm';
+      const bTab = btn.getAttribute('data-tool-tab');
+      if (bTab === this.activeTab) {
+        btn.className = 'img-tool-tab flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md cursor-pointer transition-all transform scale-[1.02]';
       } else {
-        btn.className = 'img-tool-tab flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100';
+        btn.className = 'img-tool-tab flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs cursor-pointer transition-all';
       }
     });
 
     document.querySelectorAll('.img-tool-pane').forEach(pane => {
-      if (pane.id === `pane_${tabName}`) {
+      if (pane.id === `pane_${this.activeTab}`) {
         pane.classList.remove('hidden');
+        pane.style.display = 'block';
       } else {
         pane.classList.add('hidden');
+        pane.style.display = 'none';
       }
     });
   },

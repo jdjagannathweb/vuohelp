@@ -256,6 +256,10 @@ const VUO_FORMS = {
   },
 
   async syncFromGoogleDrive(notify = false) {
+    // Only attempt on localhost / dev server with backend api
+    if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return;
+    }
     const syncStatusEl = document.getElementById('driveSyncStatusText');
     if (syncStatusEl) syncStatusEl.textContent = 'Syncing Drive Forms...';
     try {
