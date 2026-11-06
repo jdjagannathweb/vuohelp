@@ -49,7 +49,7 @@ body {
   .lg\:inline-flex { display: inline-flex !important; }
   .lg\:hidden { display: none !important; }
   .vuo-header-nav { display: flex !important; }
-  .vuo-header-cta { display: flex !important; }
+  .vuo-header-cta { display: flex !important; flex-shrink: 0 !important; margin-left: auto; }
   .vuo-mobile-toggle { display: none !important; }
 }
 

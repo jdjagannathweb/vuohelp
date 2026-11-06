@@ -3757,13 +3757,13 @@ const VUO_ADMIN = {
     const category = document.getElementById('adminEditProductCategory').value;
     const priceApprox = document.getElementById('adminEditProductPrice').value.trim();
     const badge = document.getElementById('adminEditProductBadge').value.trim();
+    const directUrl = document.getElementById('adminEditProductDirectUrl').value.trim();
+    const tagline = document.getElementById('adminEditProductTagline').value.trim();
+    const desc = document.getElementById('adminEditProductDesc').value.trim();
     let image = document.getElementById('adminEditProductImage').value.trim();
     if (!image && typeof VUO_STORE !== 'undefined' && typeof VUO_STORE.getFallbackImage === 'function') {
       image = VUO_STORE.getFallbackImage({ category, title, desc, tagline });
     }
-    const directUrl = document.getElementById('adminEditProductDirectUrl').value.trim();
-    const tagline = document.getElementById('adminEditProductTagline').value.trim();
-    const desc = document.getElementById('adminEditProductDesc').value.trim();
 
     const updated = VUO_STORE.updateProduct(id, {
       title,

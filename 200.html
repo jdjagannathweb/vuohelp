@@ -1511,6 +1511,10 @@ body {
 
         display: flex !important;
 
+        flex-shrink: 0 !important;
+
+        margin-left: auto;
+
       }
 
       .vuo-mobile-toggle {
@@ -1629,9 +1633,9 @@ body {
 
     <!-- Main Navigation Bar -->
 
-    <div class="w-full max-w-[1440px] mx-auto px-2 sm:px-3 lg:px-2 xl:px-3 2xl:px-6">
+    <div class="w-full max-w-[1680px] mx-auto px-2 sm:px-3 lg:px-2 xl:px-3 2xl:px-6">
 
-      <div class="flex justify-between items-center h-16 sm:h-20 lg:h-16 xl:h-20 py-1 gap-2 lg:gap-3 xl:gap-4 flex-nowrap w-full">
+      <div class="flex justify-between items-center h-16 sm:h-20 lg:h-16 xl:h-20 py-1 gap-1.5 xl:gap-2.5 2xl:gap-4 flex-nowrap w-full">
 
         
 
@@ -1653,9 +1657,9 @@ body {
 
         <!-- Desktop Navigation Links (Unified Deep Slate Navy theme: Home, Image Tools, PDF Tools, Office & CSC Tools, CSC Services, Contact) -->
 
-        <nav class="vuo-header-nav flex items-center gap-1 xl:gap-1 2xl:gap-1.5 text-[10px] xl:text-[11px] 2xl:text-xs font-bold shrink-0">
+        <nav class="vuo-header-nav flex items-center gap-0.5 xl:gap-1 2xl:gap-1.5 text-[9.5px] lg:text-[10px] xl:text-[11px] 2xl:text-xs font-bold shrink min-w-0">
 
-          <a href="#home" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+          <a href="#home" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
             <i class="fa-solid fa-house text-sky-400 text-xs"></i>
 
@@ -1669,7 +1673,7 @@ body {
 
           <div class="nav-dropdown-wrapper relative group" id="navImageToolsDropdownWrapper">
 
-            <button id="navImageToolsDropdownBtn" onclick="window.toggleNavImageToolsDropdown(event)" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+            <button id="navImageToolsDropdownBtn" onclick="window.toggleNavImageToolsDropdown(event)" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
               <i class="fa-solid fa-image text-sky-400 text-xs"></i>
 
@@ -1825,7 +1829,7 @@ body {
 
           <div class="nav-dropdown-wrapper relative group" id="navPdfToolsDropdownWrapper">
 
-            <button id="navPdfToolsDropdownBtn" onclick="window.toggleNavPdfToolsDropdown(event)" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+            <button id="navPdfToolsDropdownBtn" onclick="window.toggleNavPdfToolsDropdown(event)" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
               <i class="fa-solid fa-file-pdf text-rose-400 text-xs"></i>
 
@@ -1981,7 +1985,7 @@ body {
 
           <div class="nav-dropdown-wrapper relative group" id="navOfficeToolsDropdownWrapper">
 
-            <button id="navOfficeToolsDropdownBtn" onclick="window.toggleNavOfficeToolsDropdown(event)" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+            <button id="navOfficeToolsDropdownBtn" onclick="window.toggleNavOfficeToolsDropdown(event)" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
               <i class="fa-solid fa-briefcase text-emerald-400 text-xs"></i>
 
@@ -2249,13 +2253,13 @@ body {
 
           <div class="nav-dropdown-wrapper relative group" id="navServicesDropdownWrapper">
 
-            <button id="navServicesDropdownBtn" onclick="window.toggleNavServicesDropdown(event)" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+            <button id="navServicesDropdownBtn" onclick="window.toggleNavServicesDropdown(event)" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 cursor-pointer font-bold shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
               <i class="fa-solid fa-layer-group text-amber-400 text-xs"></i>
 
               <span>CSC Services</span>
 
-              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs"><span class="hidden xl:inline">5 Core Desks</span><span class="xl:hidden">5</span></span>
+              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs"><span class="hidden 2xl:inline">5 Desks</span><span class="2xl:hidden">5</span></span>
 
               <i id="navServicesChevron" class="fa-solid fa-chevron-down text-[9px] text-slate-400 nav-chevron transition-transform duration-200"></i>
 
@@ -2411,7 +2415,7 @@ body {
 
           </div>
 
-          <a href="#contact" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+          <a href="#contact" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
             <i class="fa-solid fa-headset text-teal-400 text-xs"></i>
 
@@ -2420,10 +2424,10 @@ body {
           </a>
 
         
-          <a href="#vlestore" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap group">
+          <a href="#vlestore" class="nav-link px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 2xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap group">
             <i class="fa-solid fa-cart-shopping text-amber-400 text-xs"></i>
             <span>CSC Deals</span>
-            <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[9px] px-1.5 py-0.2 rounded-full">STORE</span>
+            <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[9px] px-1.5 py-0.2 rounded-full hidden 2xl:inline">STORE</span>
           </a>
         </nav>
 
@@ -2435,7 +2439,7 @@ body {
 
           <!-- When NOT Logged In: Login / Signup Button -->
 
-          <button id="headerLoginCta" onclick="VUO_AUTH_MODAL.openLogin()" class="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 text-[11px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white shadow-md shadow-blue-500/20 border border-sky-400/40 transition-all cursor-pointer whitespace-nowrap">
+          <button id="headerLoginCta" onclick="VUO_AUTH_MODAL.openLogin()" class="inline-flex items-center gap-1 px-2.5 py-1.5 xl:px-3 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white shadow-md shadow-blue-500/20 border border-sky-400/40 transition-all cursor-pointer whitespace-nowrap shrink-0">
 
             <i class="fa-solid fa-lock text-sky-200 text-xs"></i>
 
@@ -2465,13 +2469,13 @@ body {
 
           <a id="headerWhatsappBtn" href="https://chat.whatsapp.com/DaaKvtlF2NN3baGvdRnfiE" target="_blank" rel="noopener noreferrer" 
 
-            class="inline-flex items-center gap-1 px-2.5 py-1.5 xl:px-3 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-950/20 border border-emerald-400/40 transition-all transform hover:-translate-y-0.5 cursor-pointer shrink-0"
+            class="inline-flex items-center gap-1 px-2 py-1.5 xl:px-2.5 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-950/20 border border-emerald-400/40 transition-all cursor-pointer shrink-0" 
 
             title="Join Odisha CSC VLE WhatsApp Community">
 
-            <i class="fa-brands fa-whatsapp text-emerald-200 text-xs sm:text-sm"></i>
+            <i class="fa-brands fa-whatsapp text-emerald-200 text-sm"></i>
 
-            <span class="hidden 2xl:inline">WHATSAPP GROUP</span><span class="2xl:hidden">WHATSAPP</span>
+            <span class="hidden 2xl:inline">WHATSAPP</span>
 
           </a>
 
@@ -2481,11 +2485,13 @@ body {
 
           <a href="https://vleunionodisha.in" target="_blank" rel="noopener noreferrer" 
 
-            class="inline-flex items-center gap-1 px-2.5 py-1.5 xl:px-3 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-500/20 border border-emerald-400/40 transition-all whitespace-nowrap shrink-0">
+            class="inline-flex items-center gap-1 px-2 py-1.5 xl:px-2.5 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-500/20 border border-emerald-400/40 transition-all whitespace-nowrap shrink-0" 
+
+            title="Join VLE Union Odisha">
 
             <i class="fa-solid fa-arrow-up-right-from-square text-emerald-200 text-xs"></i>
 
-            <span>JOIN VLE</span>
+            <span class="hidden xl:inline 2xl:inline">JOIN VLE</span><span class="xl:hidden">JOIN</span>
 
           </a>
 
@@ -29606,12 +29612,12 @@ window.vuoResolveDriveFormUrl = function(form) {
 
   <script src="js/csctools.js?v=30.0"></script>
 
-  <script src="js/admin.js?v=31.7"></script>
+  <script src="js/admin.js?v=31.8"></script>
 
   <script src="js/jobalert.js?v=31.4"></script>
-  <script src="js/vlestore.js?v=31.7"></script>
+  <script src="js/vlestore.js?v=31.8"></script>
 
-  <script src="js/app.js?v=31.4"></script>
+  <script src="js/app.js?v=31.8"></script>
 
 
 
