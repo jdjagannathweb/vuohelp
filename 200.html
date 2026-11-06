@@ -2415,9 +2415,10 @@ body {
           </a>
 
         
-          <a href="#vlestore" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
+          <a href="#vlestore" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap group">
             <i class="fa-solid fa-cart-shopping text-amber-400 text-xs"></i>
-            <span>Deals</span>
+            <span>Affiliate Deals</span>
+            <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[9px] px-1.5 py-0.2 rounded-full">STORE</span>
           </a>
         </nav>
 
@@ -2600,6 +2601,12 @@ body {
 
           <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">NEW &amp; LIVE</span>
 
+        </a>
+
+        <!-- Affiliate Deals & Store in Mobile Drawer -->
+        <a href="#vlestore" onclick="const d=document.getElementById('mobileDrawer'); d.style.display='none'; d.classList.add('hidden');" class="mobile-nav-link py-2.5 px-3 rounded-xl border border-amber-400/80 bg-gradient-to-r from-amber-900/90 via-orange-950/90 to-yellow-950/90 text-amber-100 flex items-center justify-between shadow-md font-black">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-amber-400 text-base"></i> Affiliate Deals &amp; VLE Store</span>
+          <span class="bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">NEW &amp; DEALS</span>
         </a>
 
         <a href="#links" onclick="const d=document.getElementById('mobileDrawer'); d.style.display='none'; d.classList.add('hidden');" class="mobile-nav-link py-2.5 px-3 rounded-xl border border-sky-800/50 bg-sky-950/40 text-sky-200 flex items-center justify-between" data-i18n="nav_links">
@@ -5961,16 +5968,11 @@ body {
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
 
-                  <a href="forms/subhadra-yojana-application-form.pdf" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5">
-
-                    <i class="fa-solid fa-eye text-sky-600"></i> Preview
-
+                  <a href="https://subhadra.odisha.gov.in/" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-sky-600"></i> Official Portal
                   </a>
-
-                  <a href="forms/subhadra-yojana-application-form.pdf" download="Subhadra_Yojana_Application_Form.pdf" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5">
-
-                    <i class="fa-solid fa-download"></i> Download
-
+                  <a href="https://subhadra.odisha.gov.in/" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Apply / Form
                   </a>
 
                 </div>
@@ -16032,6 +16034,13 @@ body {
 
         </button>
 
+        <!-- ⭐ TOP PRIORITY: Affiliate & Store Deals Tab -->
+        <button type="button" onclick="VUO_ADMIN.switchTab('affiliate')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-black bg-amber-50 hover:bg-amber-100/90 text-amber-950 border-2 border-amber-400 shadow-xs cursor-pointer transition-all shrink-0" data-admin-tab="affiliate">
+          <i class="fa-solid fa-sack-dollar text-amber-600 text-base"></i>
+          <span>Affiliate &amp; Hardware Store</span>
+          <span class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-2xs uppercase tracking-wider">Deals</span>
+        </button>
+
         <button type="button" onclick="VUO_ADMIN.switchTab('members')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="members">
 
           <i class="fa-solid fa-users text-emerald-600"></i> Registered Members (<span id="adminTotalMembersCount">0</span>)
@@ -16111,9 +16120,7 @@ body {
         </button>
 
       
-        <button type="button" onclick="VUO_ADMIN.switchTab('affiliate')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-amber-50/70 text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-amber-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="affiliate">
-          <i class="fa-solid fa-sack-dollar text-amber-600"></i> Affiliate &amp; Store Tag
-        </button>
+
       
         <button type="button" onclick="VUO_ADMIN.switchTab('seo')" class="admin-nav-btn flex items-center gap-2 px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-950 border border-slate-200 hover:border-emerald-300 shadow-2xs cursor-pointer transition-all" data-admin-tab="seo">
           <i class="fa-solid fa-chart-line text-emerald-600"></i> SEO &amp; Webmaster (15 Steps)
