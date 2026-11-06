@@ -3384,10 +3384,10 @@ const VUO_ADMIN = {
     const statusEl = document.getElementById('adminProductPhotoStatus');
     if (!preview) return;
     if (url && url.trim()) {
-      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
-      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold">✓ Active Photo Ready</span>';
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain drop-shadow-xs" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'flex flex-col items-center justify-center p-1 text-center text-rose-500\'><i class=\'fa-solid fa-triangle-exclamation text-base\'></i><span class=\'text-[9px] font-bold mt-0.5\'>Load Error</span></div>'; if(document.getElementById('adminProductPhotoStatus')) document.getElementById('adminProductPhotoStatus').innerHTML='<span class=\'text-rose-600 font-bold\'>⚠️ Photo Error</span>';" />`;
+      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-extrabold inline-flex items-center gap-1">✓ Active Photo Ready</span>';
     } else {
-      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`;
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-2xl sm:text-3xl"></i>`;
       if (statusEl) statusEl.textContent = 'Koi photo select nahi';
     }
   },
@@ -3397,10 +3397,10 @@ const VUO_ADMIN = {
     const statusEl = document.getElementById('adminEditProductPhotoStatus');
     if (!preview) return;
     if (url && url.trim()) {
-      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
-      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold">✓ Active Photo Ready</span>';
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain drop-shadow-xs" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'flex flex-col items-center justify-center p-1 text-center text-rose-500\'><i class=\'fa-solid fa-triangle-exclamation text-base\'></i><span class=\'text-[9px] font-bold mt-0.5\'>Load Error</span></div>'; if(document.getElementById('adminEditProductPhotoStatus')) document.getElementById('adminEditProductPhotoStatus').innerHTML='<span class=\'text-rose-600 font-bold\'>⚠️ Photo Error</span>';" />`;
+      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-extrabold inline-flex items-center gap-1">✓ Active Photo Ready</span>';
     } else {
-      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`;
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-2xl sm:text-3xl"></i>`;
       if (statusEl) statusEl.textContent = 'Koi photo select nahi';
     }
   },
@@ -3578,6 +3578,15 @@ const VUO_ADMIN = {
     };
   },
 
+    _productUrlPasteTimer: null,
+  handleProductUrlPaste(url) {
+    if (!url || typeof url !== 'string' || !url.trim()) return;
+    clearTimeout(this._productUrlPasteTimer);
+    this._productUrlPasteTimer = setTimeout(() => {
+      this.autoFillProductFormFromLink();
+    }, 450);
+  },
+
   async autoFillProductFormFromLink() {
     const autoInput = document.getElementById('adminAutoFillProductUrl');
     const directInput = document.getElementById('adminProductDirectUrl');
@@ -3748,7 +3757,10 @@ const VUO_ADMIN = {
     const category = document.getElementById('adminEditProductCategory').value;
     const priceApprox = document.getElementById('adminEditProductPrice').value.trim();
     const badge = document.getElementById('adminEditProductBadge').value.trim();
-    const image = document.getElementById('adminEditProductImage').value.trim();
+    let image = document.getElementById('adminEditProductImage').value.trim();
+    if (!image && typeof VUO_STORE !== 'undefined' && typeof VUO_STORE.getFallbackImage === 'function') {
+      image = VUO_STORE.getFallbackImage({ category, title, desc, tagline });
+    }
     const directUrl = document.getElementById('adminEditProductDirectUrl').value.trim();
     const tagline = document.getElementById('adminEditProductTagline').value.trim();
     const desc = document.getElementById('adminEditProductDesc').value.trim();
@@ -4014,7 +4026,10 @@ const VUO_ADMIN = {
     const tagline = taglineInput && taglineInput.value.trim() ? taglineInput.value.trim() : 'Quality Hardware';
     const desc = descInput && descInput.value.trim() ? descInput.value.trim() : '';
 
-    const image = imageInput ? imageInput.value.trim() : '';
+    let image = imageInput ? imageInput.value.trim() : '';
+    if (!image && typeof VUO_STORE !== 'undefined' && typeof VUO_STORE.getFallbackImage === 'function') {
+      image = VUO_STORE.getFallbackImage({ category, title, desc, tagline });
+    }
 
     const newProd = VUO_STORE.addProduct({
       title,

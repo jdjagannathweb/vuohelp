@@ -18913,13 +18913,35 @@ body {
                 <span class="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">Instant Photo &amp; Details</span>
               </label>
               <div class="flex flex-col sm:flex-row items-center gap-2">
-                <input type="url" id="adminAutoFillProductUrl" oninput="VUO_ADMIN.handleProductUrlPaste(this.value)" placeholder="Link paste karein (e.g. Amazon dp link, Flipkart ya Meesho share link)" class="w-full sm:flex-1 px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500 shadow-xs" />
+                <input type="url" id="adminAutoFillProductUrl" oninput="VUO_ADMIN.handleProductUrlPaste(this.value)" placeholder="Amazon / Flipkart / Meesho product link paste karein..." class="w-full sm:flex-1 px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500 shadow-xs" />
                 <button type="button" id="adminAutoFillProductBtn" onclick="VUO_ADMIN.autoFillProductFormFromLink()" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 transition-all">
                   <i class="fa-solid fa-bolt"></i> <span>Auto-Fill Details &amp; Photo</span>
                 </button>
               </div>
+
+              <!-- Prominent Manual Photo Upload Option Right Under Auto-Fill -->
+              <div class="pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white/90 p-3 rounded-xl border border-amber-200 shadow-2xs">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-slate-950 flex items-center justify-center text-base font-black shrink-0 shadow-xs">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                      <span>Link se photo nahi aayi? Manual Photo Upload karein:</span>
+                      <span class="px-1.5 py-0.2 rounded text-[9px] bg-emerald-100 text-emerald-800 font-extrabold uppercase border border-emerald-200">Device Gallery</span>
+                    </p>
+                    <p class="text-[11px] text-slate-600">Apne Computer ya Mobile Gallery se koi bhi JPG/PNG photo direct attach karein (Auto-HD compressed):</p>
+                  </div>
+                </div>
+                <label class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow cursor-pointer flex items-center justify-center gap-2 transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]">
+                  <i class="fa-solid fa-folder-open text-sm"></i>
+                  <span>📂 Manual Photo Upload (PC / Mobile)</span>
+                  <input type="file" id="adminProductManualUploadInputTop" accept="image/*" class="hidden" onchange="VUO_ADMIN.handleProductImageUpload(this, false)" />
+                </label>
+              </div>
+
               <p class="text-[11px] text-amber-800">
-                💡 Bas link paste karke <strong>"Auto-Fill Details &amp; Photo"</strong> dabayein — Product Photo, Title, Category, Platform aur Keywords <strong>apne aap bhar jayenge</strong>! Aapko bas neeche "Add Product" click karna hoga.
+                💡 Bas link paste karke <strong>"Auto-Fill Details &amp; Photo"</strong> dabayein — Product Photo, Title, Category, Platform aur Keywords <strong>apne aap bhar jayenge</strong>! Agar link me photo na mile toh upar wale green button se phone/PC se direct photo upload karein.
               </p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -18971,15 +18993,15 @@ body {
                   </div>
 
                   <!-- Live Preview Box -->
-                  <div class="md:col-span-5 flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
-                    <div id="adminProductImagePreview" class="w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
-                      <i class="fa-solid fa-image text-slate-300 text-xl"></i>
+                  <div class="md:col-span-5 flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <div id="adminProductImagePreview" class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-dashed border-amber-300 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0 p-1 shadow-inner">
+                      <i class="fa-solid fa-image text-slate-300 text-2xl sm:text-3xl"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-[11px] font-black text-slate-900">Photo Live Preview</p>
-                      <p id="adminProductPhotoStatus" class="text-[10px] text-slate-500">Koi photo select nahi</p>
-                      <button type="button" onclick="VUO_ADMIN.clearProductPhoto(false)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-block">
-                        <i class="fa-solid fa-xmark mr-0.5"></i> Clear Photo
+                      <p class="text-xs font-black text-slate-900">Photo Live Preview</p>
+                      <p id="adminProductPhotoStatus" class="text-[11px] text-slate-500 my-0.5">Koi photo select nahi</p>
+                      <button type="button" onclick="VUO_ADMIN.clearProductPhoto(false)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i> Clear Photo
                       </button>
                     </div>
                   </div>
@@ -19205,15 +19227,15 @@ body {
                     </div>
 
                     <!-- Live Preview Box -->
-                    <div class="md:col-span-5 flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
-                      <div id="adminEditProductImagePreview" class="w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-image text-slate-300 text-xl"></i>
+                    <div class="md:col-span-5 flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div id="adminEditProductImagePreview" class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-dashed border-amber-300 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0 p-1 shadow-inner">
+                        <i class="fa-solid fa-image text-slate-300 text-2xl sm:text-3xl"></i>
                       </div>
                       <div class="flex-1 min-w-0">
-                        <p class="text-[11px] font-black text-slate-900">Current Photo</p>
-                        <p id="adminEditProductPhotoStatus" class="text-[10px] text-slate-500">Photo loaded</p>
-                        <button type="button" onclick="VUO_ADMIN.clearProductPhoto(true)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-block">
-                          <i class="fa-solid fa-xmark mr-0.5"></i> Clear Photo
+                        <p class="text-xs font-black text-slate-900">Current Photo</p>
+                        <p id="adminEditProductPhotoStatus" class="text-[11px] text-slate-500 my-0.5">Photo loaded</p>
+                        <button type="button" onclick="VUO_ADMIN.clearProductPhoto(true)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-flex items-center gap-1">
+                          <i class="fa-solid fa-trash-can text-[10px]"></i> Clear Photo
                         </button>
                       </div>
                     </div>
@@ -29572,10 +29594,10 @@ window.vuoResolveDriveFormUrl = function(form) {
 
   <script src="js/csctools.js?v=30.0"></script>
 
-  <script src="js/admin.js?v=31.4"></script>
+  <script src="js/admin.js?v=31.5"></script>
 
   <script src="js/jobalert.js?v=31.4"></script>
-  <script src="js/vlestore.js?v=31.4"></script>
+  <script src="js/vlestore.js?v=31.5"></script>
 
   <script src="js/app.js?v=31.4"></script>
 

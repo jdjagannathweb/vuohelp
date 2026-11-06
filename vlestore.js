@@ -315,12 +315,21 @@ const VUO_STORE = {
     return [];
   },
 
+  getProductImage(product) {
+    if (!product) return this.getFallbackImage(null);
+    let img = (product.image || product.imageUrl || '').trim();
+    if (!img || img === 'null' || img === 'undefined' || img.includes('images-na.ssl-images-amazon.com/images/P/')) {
+      return this.getFallbackImage(product);
+    }
+    return img;
+  },
+
   getFallbackImage(product) {
     if (!product) return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg';
-    const t = ((product.title || '') + ' ' + (product.desc || '')).toLowerCase();
+    const t = ((product.title || '') + ' ' + (product.desc || '') + ' ' + (product.tagline || '')).toLowerCase();
     const cat = product.category || 'accessories';
 
-    if (t.includes('l8050') || t.includes('l805') || t.includes('photo printer')) {
+    if (t.includes('l8050') || t.includes('l805') || t.includes('photo printer') || (t.includes('ecotank') && (t.includes('pvc') || t.includes('photo')))) {
       return 'https://m.media-amazon.com/images/I/5114ld0Vy4L._SL1500_.jpg'; // Epson L8050
     } else if (t.includes('l3210') || t.includes('l3150') || t.includes('printer') || cat === 'printers') {
       return 'https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg'; // Epson L3210
@@ -340,7 +349,7 @@ const VUO_STORE = {
       return 'https://m.media-amazon.com/images/I/61jbc6w5XPL._SL1500_.jpg'; // Logitech Webcam
     } else if (t.includes('cutter') || t.includes('die cutter')) {
       return 'https://m.media-amazon.com/images/I/415QoYfW51L._SL1000_.jpg'; // Die cutter
-    } else if (t.includes('biometric') || t.includes('fingerprint') || t.includes('mantra') || cat === 'biometric') {
+    } else if (t.includes('biometric') || t.includes('fingerprint') || t.includes('secuirty') || t.includes('security') || t.includes('scanning') || t.includes('mantra') || cat === 'biometric') {
       return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg'; // Mantra MFS100
     }
     return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg';
@@ -349,10 +358,11 @@ const VUO_STORE = {
   handleDummyImage(imgEl, category, title) {
     if (!imgEl) return;
     const fallback = this.getFallbackImage({ category, title });
+    imgEl.onload = null;
+    imgEl.onerror = null;
     if (imgEl.src !== fallback) {
       imgEl.src = fallback;
     }
-    imgEl.onerror = null;
     if (imgEl.parentElement) {
       imgEl.parentElement.style.display = 'flex';
     }
@@ -695,9 +705,9 @@ const VUO_STORE = {
 
             <!-- Product Photo (Always Guaranteed High Resolution) -->
             <div class="w-full h-44 mb-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center justify-center overflow-hidden p-2 group-hover:scale-[1.02] transition-transform">
-              <img src="${p.image || p.imageUrl || this.getFallbackImage(p)}" alt="${p.title}" class="max-h-full max-w-full object-contain drop-shadow-xs"
-                   onload="if(this.naturalWidth<=1||this.naturalHeight<=1){ VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/'/g, '')}'); }"
-                   onerror="VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/'/g, '')}');" />
+              <img src="${this.getProductImage(p)}" alt="${(p.title || '').replace(/['"]/g, '')}" class="max-h-full max-w-full object-contain drop-shadow-xs"
+                   onload="if(this.naturalWidth<=1||this.naturalHeight<=1){ VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/['"]/g, '')}'); }"
+                   onerror="VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/['"]/g, '')}');" />
             </div>
 
             <!-- Title & Tagline -->
