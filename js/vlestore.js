@@ -338,7 +338,7 @@ const VUO_STORE = {
                      'bg-indigo-100 text-indigo-800 border-indigo-300';
 
     let price = (updatedData.priceApprox !== undefined ? updatedData.priceApprox : original.priceApprox || '').trim();
-    if (price && !price.startsWith('₹') && !price.toLowerCase().startsWith('rs')) price = '₹' + price;
+    if (price && !price.startsWith('₹') && !price.toLowerCase().startsWith('rs')) price = '₹' + price.replace(/^[^\d₹Rs]+/i, '');
 
     const updated = {
       ...original,
@@ -396,7 +396,7 @@ const VUO_STORE = {
 
     let price = (data.priceApprox || '').trim();
     if (!price) price = '₹999';
-    if (!price.startsWith('₹')) price = '₹' + price;
+    if (!price.startsWith('₹') && !price.toLowerCase().startsWith('rs')) price = '₹' + price.replace(/^[^\d₹Rs]+/i, '');
 
     const defaultBadge = plat === 'meesho' ? 'Meesho Deal' : plat === 'flipkart' ? 'Flipkart Deal' : 'CSC Essential';
 

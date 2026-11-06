@@ -380,10 +380,13 @@ def parse_product_affiliate_link(raw_url):
     if asin_m:
         asin = asin_m.group(1).upper()
 
+    slug_m = re.search(r'amazon\.[a-z.]+/([^/]+)/(?:dp|gp/product)', url, re.I)
+    slug = slug_m.group(1) if slug_m else ""
+
     clean_url = url
     if asin and platform == "amazon":
         tag_m = re.search(r'[?&]tag=([^&]+)', url)
-        aff_tag = tag_m.group(1) if tag_m else "vuohelp-21"
+        aff_tag = tag_m.group(1) if tag_m else "jaga7131-21"
         clean_url = f"https://www.amazon.in/dp/{asin}?tag={aff_tag}"
 
     title = ""
@@ -392,16 +395,20 @@ def parse_product_affiliate_link(raw_url):
     desc = ""
 
     # Live scrape product page with browser headers
-    fetch_url = f"https://www.amazon.in/dp/{asin}" if (asin and platform == "amazon") else url
+    if asin and platform == "amazon":
+        fetch_url = f"https://www.amazon.in/{slug}/dp/{asin}" if slug else f"https://www.amazon.in/dp/{asin}"
+    else:
+        fetch_url = url
+
     req = urllib.request.Request(fetch_url, headers={
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'en-IN,en-GB,en;q=0.9,hi;q=0.8',
         'Referer': 'https://www.google.com/'
     })
 
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             html_doc = resp.read().decode('utf-8', errors='ignore')
 
             # 1. Product Title
@@ -412,9 +419,10 @@ def parse_product_affiliate_link(raw_url):
                 t_m = re.search(r'<title>([^<]+)</title>', html_doc)
             if t_m:
                 raw_t = t_m.group(1).strip()
-                raw_t = re.sub(r'^\s*Amazon\.in\s*:\s*Buy\s*', '', raw_t, flags=re.I)
-                raw_t = re.sub(r'\s*\|\s*(Amazon\.in|Flipkart\.com|Meesho).*$', '', raw_t, flags=re.I).strip()
-                title = html.unescape(raw_t)
+                if "Robot Check" not in raw_t and "Captcha" not in raw_t:
+                    raw_t = re.sub(r'^\s*Amazon\.in\s*:\s*Buy\s*', '', raw_t, flags=re.I)
+                    raw_t = re.sub(r'\s*\|\s*(Amazon\.in|Flipkart\.com|Meesho).*$', '', raw_t, flags=re.I).strip()
+                    title = html.unescape(raw_t)
 
             # 2. Live Market Price
             p_m = re.search(r'class="a-price-whole">([^<]+)<', html_doc)
@@ -423,12 +431,13 @@ def parse_product_affiliate_link(raw_url):
             if not p_m:
                 p_m = re.search(r'class="Nx9bqj CxhGGd">([^<]+)<', html_doc)
             if not p_m:
-                p_m = re.search(r'₹\s*([0-9,]+)', html_doc)
+                p_m = re.search(r'[₹Rs\.]+\s*([0-9,]+)', html_doc)
             if p_m:
                 raw_p = p_m.group(1).strip().replace('.00', '').replace(',', '')
                 try:
                     num = int(re.sub(r'[^\d]', '', raw_p))
-                    price = f"₹{num:,}"
+                    if num > 0:
+                        price = f"₹{num:,}"
                 except Exception:
                     price = f"₹{p_m.group(1).strip()}"
 
@@ -448,44 +457,83 @@ def parse_product_affiliate_link(raw_url):
             if desc_m:
                 desc = html.unescape(desc_m.group(1).strip())
     except Exception as e:
-        print(f"[Product Scraper] Live fetch error for {url}: {e}")
+        print(f"[Product Scraper] Live fetch notice for {url}: {e}")
 
-    # Fallback title from slug if empty
+    # Fallback to direct high-res Amazon CDN photo if image was empty
+    if not image and asin and platform == "amazon":
+        image = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCRM_.jpg"
+
+    # Fallback title from slug if empty or blocked
     if not title:
-        slug = url.split('/')[-1].split('?')[0].replace('.html', '')
-        slug_clean = re.sub(r'[-_+]', ' ', slug).strip()
-        title = slug_clean.title() if slug_clean else "CSC Cyber Cafe Equipment"
+        candidate_slug = slug if slug else url.split('/')[-1].split('?')[0].replace('.html', '')
+        words = [w for w in re.split(r'[-_+]', candidate_slug) if w]
+        acronyms = {'II', 'III', 'IV', 'V', 'VI', 'HD', 'A4', 'A3', 'A2', 'USB', 'PVC', 'CSC', 'VLE', 'LED', 'LCD', 'GSM', 'RAM', 'ROM', 'GB', 'TB', 'W', 'MM', 'DPI'}
+        brands = {'lapcare': 'Lapcare', 'laplam': 'LAPLAM', 'epson': 'Epson', 'canon': 'Canon', 'hp': 'HP', 'mantra': 'Mantra', 'morpho': 'Morpho', 'startek': 'Startek', 'secugen': 'Secugen'}
+        cleaned_words = []
+        for w in words:
+            up = w.upper()
+            low = w.lower()
+            if up in acronyms:
+                cleaned_words.append(up)
+            elif low in brands:
+                cleaned_words.append(brands[low])
+            else:
+                cleaned_words.append(w.capitalize())
+        slug_clean = " ".join(cleaned_words)
+        title = slug_clean if slug_clean else "CSC Cyber Cafe Equipment"
 
     # Intelligent Category Detection
     full_text = (title + " " + url).lower()
-    if any(k in full_text for k in ['laminat', 'pouch', 'paper', 'glossy', 'pvc card', 'blank card', 'photo paper', 'microns', 'cutter']):
+    is_lam_machine = bool(re.search(r'laminat.*(machine|switches|portable|roller|heavy|hot)|(machine|switches|portable|roller|heavy|hot).*laminat|laplam|laminator', full_text))
+
+    if is_lam_machine:
         category = 'paper'
-        tagline = 'Heavy Duty A4/A3 Lamination & Photo Finishing'
-        badge = 'CSC Essential'
-    elif any(k in full_text for k in ['mantra', 'morpho', 'biometric', 'fingerprint', 'scanner', 'iris', 'rd service', 'startek', 'cogent']):
+        if len(title) < 45 and not re.search(r'machine', title, re.I):
+            title += " Machine"
+        if not price:
+            price = "₹3,499"
+    elif any(k in full_text for k in ['mantra', 'morpho', 'biometric', 'fingerprint', 'scanner', 'iris', 'rd service', 'mfs100', 'startek', 'secugen']):
         category = 'biometric'
-        tagline = 'UIDAI & STQC Approved RD Service Ready'
-        badge = 'CSC Essential'
-    elif any(k in full_text for k in ['printer', 'epson', 'canon', 'hp', 'ink tank', 'tray', 'pvc tray', 'thermal', 'pos', 'receipt', 'l3210', 'l805']):
+        if not price:
+            price = "₹2,499"
+    elif any(k in full_text for k in ['printer', 'epson', 'canon', 'hp', 'ink tank', 'thermal printer', 'l3210', 'l805']):
         category = 'printers'
-        tagline = 'High Yield Low Cost Printing Solution'
-        badge = 'Cyber Cafe Top Pick'
+        if not price:
+            price = "₹12,499"
+    elif any(k in full_text for k in ['pouch', 'paper', 'glossy', 'pvc card', 'blank card', 'photo paper', 'microns', 'cutter']):
+        category = 'paper'
+        if not price:
+            price = "₹499"
     else:
         category = 'accessories'
-        tagline = 'Quality Cyber Cafe Hardware'
-        badge = 'Featured Deal'
+        if not price:
+            price = "₹1,499"
+
+    tagline = "Heavy Duty A3/A4 Thermal & Cold Pouch Laminator" if is_lam_machine else \
+              ("UIDAI & STQC Approved RD Service Ready" if category == 'biometric' else \
+              ("High Yield Low Cost Printing Solution" if category == 'printers' else \
+              ("Heavy Duty Premium Consumable Pack" if category == 'paper' else "Essential Cyber Cafe Hardware")))
+
+    badge = "Amazon Choice" if platform == "amazon" else \
+            ("Flipkart Deal" if platform == "flipkart" else \
+            ("Meesho Deal" if platform == "meesho" else "Featured Deal"))
+
+    if not desc:
+        desc = "Upto A3 sheet lamination with quick warm up, jam release switch aur dual hot/cold mode for CSC centers & cyber cafes." if is_lam_machine else \
+               ("Recommended equipment for CSC VLEs & Cyber Cafes across Odisha." if category != 'biometric' else \
+                "AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.")
 
     return {
         "title": title,
-        "price": price if price else "₹999",
+        "price": price,
         "image": image,
-        "platform": platform,
         "category": category,
+        "platform": platform,
         "directUrl": clean_url,
-        "asin": asin,
         "tagline": tagline,
         "badge": badge,
-        "desc": desc[:250] if desc else "High quality hardware equipment for CSC VLE centers across Odisha."
+        "desc": desc,
+        "asin": asin
     }
 
 def parse_recruitment_link(raw_url):

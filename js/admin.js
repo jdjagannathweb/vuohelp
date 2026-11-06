@@ -3281,9 +3281,22 @@ const VUO_ADMIN = {
   },
 
   handleProductUrlPaste(url) {
+    if (!url) return;
     const directInput = document.getElementById('adminProductDirectUrl');
+    const autoInput = document.getElementById('adminAutoFillProductUrl');
     if (directInput && !directInput.value.trim() && url) {
       directInput.value = url.trim();
+    }
+    if (autoInput && !autoInput.value.trim() && url) {
+      autoInput.value = url.trim();
+    }
+    // If a full Amazon/Flipkart/Meesho URL is pasted, provide instant auto-preview
+    const trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const p = this.parseProductDetailsFromUrl(trimmed);
+      if (p && p.image) {
+        this.previewProductImage(p.image);
+      }
     }
   },
 
@@ -3294,11 +3307,12 @@ const VUO_ADMIN = {
     let asin = '';
     let titleSlug = '';
     let category = 'accessories';
-    let priceApprox = '₹999';
+    let priceApprox = '₹1,999';
     let badge = 'Featured Deal';
     let tagline = 'Quality VLE Equipment';
     let desc = 'Recommended equipment for CSC VLEs & Cyber Cafes across Odisha.';
     let image = '';
+    let directUrl = url;
 
     // 1. Detect Platform & Clean Slugs
     const lower = url.toLowerCase();
@@ -3310,59 +3324,98 @@ const VUO_ADMIN = {
 
       const slugMatch = url.match(/amazon\.[a-z.]+\/([^/]+)\/(?:dp|gp\/product)/i);
       if (slugMatch && slugMatch[1]) {
-        titleSlug = slugMatch[1].replace(/[-_+]/g, ' ');
+        titleSlug = slugMatch[1];
+      }
+
+      // Preserve or set user's affiliate tag
+      const tagMatch = url.match(/[?&]tag=([^&]+)/);
+      const affTag = tagMatch ? tagMatch[1] : 'jaga7131-21';
+      if (asin) {
+        directUrl = `https://www.amazon.in/dp/${asin}?tag=${affTag}`;
+        // Official high-resolution Amazon Product Photo via CDN (1500x1500px)
+        image = `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.MAIN._SCRM_.jpg`;
       }
     } else if (lower.includes('flipkart.') || lower.includes('fkrt.it')) {
       platform = 'flipkart';
       badge = 'Flipkart Deal';
       const fkMatch = url.match(/flipkart\.com\/([^/]+)\/p\//i);
-      if (fkMatch && fkMatch[1]) {
-        titleSlug = fkMatch[1].replace(/[-_+]/g, ' ');
-      }
+      if (fkMatch && fkMatch[1]) titleSlug = fkMatch[1];
     } else if (lower.includes('meesho.')) {
       platform = 'meesho';
       badge = 'Meesho Best Price';
       const mMatch = url.match(/meesho\.com\/([^/]+)\/p\//i);
-      if (mMatch && mMatch[1]) {
-        titleSlug = mMatch[1].replace(/[-_+]/g, ' ');
-      }
+      if (mMatch && mMatch[1]) titleSlug = mMatch[1];
     }
 
-    let cleanTitle = titleSlug ? titleSlug.replace(/\b\w/g, c => c.toUpperCase()).trim() : '';
+    // Smart Title Formatting
+    let cleanTitle = '';
+    if (titleSlug) {
+      const acronyms = new Set(['II', 'III', 'IV', 'V', 'VI', 'HD', 'A4', 'A3', 'A2', 'USB', 'PVC', 'CSC', 'VLE', 'LED', 'LCD', 'GSM', 'RAM', 'ROM', 'GB', 'TB', 'W', 'MM', 'DPI']);
+      const brandMap = {
+        'lapcare': 'Lapcare', 'laplam': 'LAPLAM', 'epson': 'Epson', 'canon': 'Canon', 'hp': 'HP',
+        'mantra': 'Mantra', 'morpho': 'Morpho', 'startek': 'Startek', 'secugen': 'Secugen',
+        'brother': 'Brother', 'tvs': 'TVS', 'laminator': 'Laminator'
+      };
+      const parts = titleSlug.split(/[-_+]+/).filter(Boolean);
+      const formattedWords = parts.map(w => {
+        const up = w.toUpperCase();
+        const low = w.toLowerCase();
+        if (acronyms.has(up)) return up;
+        if (brandMap[low]) return brandMap[low];
+        if (/^[A-Za-z]+[0-9]+$/i.test(w)) return up;
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      });
+      cleanTitle = formattedWords.join(' ');
+    }
 
-    // 2. Intelligent Category Detection
+    // 2. Intelligent Category, Price & Machine Detection
     const textToCheck = (cleanTitle + ' ' + url).toLowerCase();
-    if (textToCheck.match(/mantra|morpho|biometric|fingerprint|scanner|iris|rd\s*service|startek|cogent|secugen/)) {
+
+    // A. Lamination Machines (Distinguish Machine vs Pouches/Paper)
+    if (textToCheck.match(/laminat.*(machine|switches|portable|roller|heavy|hot)|(machine|switches|portable|roller|heavy|hot).*laminat|laplam|laminator/)) {
+      category = 'paper';
+      if (cleanTitle.length < 45 && !cleanTitle.toLowerCase().includes('machine')) {
+        cleanTitle += ' Machine';
+      }
+      tagline = 'Heavy Duty A3/A4 Thermal & Cold Pouch Laminator';
+      badge = 'CSC Top Choice';
+      priceApprox = '₹3,499';
+      desc = 'Upto A3 sheet lamination with quick warm up, jam release switch aur dual hot/cold mode for CSC centers & cyber cafes.';
+    }
+    // B. Biometric & Iris
+    else if (textToCheck.match(/mantra|morpho|biometric|fingerprint|scanner|iris|rd\s*service|startek|cogent|secugen|mfs100|mso1300/)) {
       category = 'biometric';
       tagline = 'UIDAI & STQC Approved RD Service Ready';
-      badge = platform === 'meesho' ? 'Meesho Biometric Deal' : 'CSC Essential';
+      badge = platform === 'meesho' ? 'Meesho Deal' : 'CSC Essential';
       priceApprox = '₹2,499';
       desc = 'AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.';
-      image = '';
-    } else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|tray|pvc\s*tray|thermal|pos|receipt|l3210|l805/)) {
+    }
+    // C. Printers
+    else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|tray|pvc\s*tray|thermal|pos|receipt|l3210|l805|g3010/)) {
       category = 'printers';
       tagline = 'High Yield Low Cost Printing Solution';
       badge = 'Cyber Cafe Top Pick';
       priceApprox = '₹12,499';
       desc = 'CSC VLE Daily certificate print, Ayushman card color print, aur citizen bill receipt nikaalne ke liye bharosemand.';
-      image = '';
-    } else if (textToCheck.match(/lamination|laminat|pouch|paper|glossy|pvc\s*card|blank\s*card|photo\s*paper|210\s*gsm/)) {
+    }
+    // D. Lamination Pouches & Photo Paper
+    else if (textToCheck.match(/lamination|pouch|paper|glossy|pvc\s*card|blank\s*card|photo\s*paper|210\s*gsm/)) {
       category = 'paper';
       tagline = 'Heavy Duty Premium Consumable Pack';
       badge = 'Essential Supply';
       priceApprox = '₹499';
       desc = 'Waterproof lamination sheets, high quality photo paper aur durable blank PVC cards citizen printing ke liye.';
-      image = '';
-    } else {
+    }
+    else {
       category = 'accessories';
       tagline = 'Essential Cyber Cafe Hardware';
-      priceApprox = '₹899';
+      priceApprox = '₹1,499';
     }
 
     if (!cleanTitle) {
       cleanTitle = category === 'biometric' ? 'High Speed Biometric Fingerprint Scanner' :
                    category === 'printers' ? 'All-in-One High Speed Color Tank Printer' :
-                   category === 'paper' ? 'A4 Premium Lamination & Photo Paper Pack' :
+                   category === 'paper' ? (textToCheck.includes('machine') ? 'A3 Heavy Duty Lamination Machine' : 'A4 Premium Lamination & Photo Paper Pack') :
                    'CSC Cyber Cafe Hardware Accessory';
     }
 
@@ -3375,21 +3428,27 @@ const VUO_ADMIN = {
       badge,
       tagline,
       desc,
-      directUrl: url,
+      directUrl,
       image
     };
   },
 
   async autoFillProductFormFromLink() {
-    const input = document.getElementById('adminAutoFillProductUrl') || document.getElementById('adminProductDirectUrl');
+    const autoInput = document.getElementById('adminAutoFillProductUrl');
+    const directInput = document.getElementById('adminProductDirectUrl');
+    const raw = (autoInput && autoInput.value.trim()) || (directInput && directInput.value.trim()) || '';
     const btn = document.getElementById('adminAutoFillProductBtn');
-    const raw = input ? input.value.trim() : '';
 
     if (!raw) {
       if (typeof showToast === 'function') showToast('Kripya pehle product ka affiliate link paste karein!', 'warning');
-      if (input) input.focus();
+      if (autoInput) autoInput.focus();
+      else if (directInput) directInput.focus();
       return;
     }
+
+    // Keep both input fields in sync
+    if (autoInput && !autoInput.value.trim()) autoInput.value = raw;
+    if (directInput && !directInput.value.trim()) directInput.value = raw;
 
     let origBtnHtml = '';
     if (btn) {
@@ -3402,63 +3461,43 @@ const VUO_ADMIN = {
       showToast("Product photo aur details fetch ho rahe hain...", "info");
     }
 
-    // 1. Instant intelligent extraction from URL as baseline
+    // 1. Instant intelligent extraction from URL as baseline (Zero-latency)
     let product = this.parseProductDetailsFromUrl(raw);
 
-    // 2. Try high-precision server scraper endpoint first
+    // 2. Try high-precision backend scraper endpoints (relative or local port 8080)
+    const candidateEndpoints = [
+      `/api/extract-product-details?url=${encodeURIComponent(raw)}`,
+      `http://localhost:8080/api/extract-product-details?url=${encodeURIComponent(raw)}`,
+      `http://127.0.0.1:8080/api/extract-product-details?url=${encodeURIComponent(raw)}`
+    ];
+
     let serverSuccess = false;
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 7000);
-      const res = await fetch(`/api/extract-product-details?url=${encodeURIComponent(raw)}`, { signal: ctrl.signal });
-      clearTimeout(tid);
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.status === 'success' && json.product) {
-          const p = json.product;
-          if (p.title) product.title = p.title;
-          if (p.price) product.priceApprox = p.price;
-          if (p.image) product.image = p.image;
-          if (p.category) product.category = p.category;
-          if (p.platform) product.platform = p.platform;
-          if (p.directUrl) product.directUrl = p.directUrl;
-          if (p.tagline) product.tagline = p.tagline;
-          if (p.badge) product.badge = p.badge;
-          if (p.desc) product.desc = p.desc;
-          serverSuccess = true;
-        }
-      }
-    } catch (sErr) {
-      console.warn("Backend product scraper unavailable, falling back:", sErr.message);
-    }
-
-    // 3. Fallback to public Open Graph proxy if backend was not reached
-    if (!serverSuccess) {
+    for (const ep of candidateEndpoints) {
       try {
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 4500);
-        const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(raw)}`;
-        const res = await fetch(apiUrl, { signal: ctrl.signal });
+        const tid = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(ep, { signal: ctrl.signal });
         clearTimeout(tid);
 
         if (res.ok) {
           const json = await res.json();
-          if (json && json.status === 'success' && json.data) {
-            const d = json.data;
-            if (d.title && d.title.length > 5 && !d.title.toLowerCase().includes('page not found') && !d.title.toLowerCase().includes('access denied')) {
-              product.title = d.title.replace(/\s*[:|-]\s*(Amazon\.in|Flipkart\.com|Meesho).*$/i, '').trim();
-            }
-            if (d.image && d.image.url && !d.image.url.includes('logo') && !d.image.url.includes('favicon')) {
-              product.image = d.image.url;
-            }
-            if (d.description && d.description.length > 15) {
-              product.desc = d.description.slice(0, 220);
-            }
+          if (json && json.status === 'success' && json.product) {
+            const p = json.product;
+            if (p.title) product.title = p.title;
+            if (p.price) product.priceApprox = p.price;
+            if (p.image) product.image = p.image;
+            if (p.category) product.category = p.category;
+            if (p.platform) product.platform = p.platform;
+            if (p.directUrl) product.directUrl = p.directUrl;
+            if (p.tagline) product.tagline = p.tagline;
+            if (p.badge) product.badge = p.badge;
+            if (p.desc) product.desc = p.desc;
+            serverSuccess = true;
+            break;
           }
         }
-      } catch (apiErr) {
-        console.warn("Microlink fallback error:", apiErr.message);
+      } catch (sErr) {
+        // Continue to next endpoint
       }
     }
 
@@ -3602,43 +3641,55 @@ const VUO_ADMIN = {
       showToast(`Checking live market price for "${p.title.slice(0, 25)}..."`, "info");
     }
 
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 7000);
-      const res = await fetch(`/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`, { signal: ctrl.signal });
-      clearTimeout(tid);
+    const candidateEndpoints = [
+      `/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`,
+      `http://localhost:8080/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`,
+      `http://127.0.0.1:8080/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`
+    ];
 
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.status === 'success' && json.product) {
-          const newPrice = json.product.price;
-          const newImage = json.product.image;
-          const oldPrice = p.priceApprox;
+    let serverSuccess = false;
+    for (const ep of candidateEndpoints) {
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 4500);
+        const res = await fetch(ep, { signal: ctrl.signal });
+        clearTimeout(tid);
 
-          const updatePayload = {};
-          if (newPrice) updatePayload.priceApprox = newPrice;
-          if (newImage && (!p.image || p.image.includes('placeholder'))) updatePayload.image = newImage;
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.status === 'success' && json.product) {
+            const newPrice = json.product.price;
+            const newImage = json.product.image;
+            const oldPrice = p.priceApprox;
 
-          if (Object.keys(updatePayload).length > 0) {
-            VUO_STORE.updateProduct(id, updatePayload);
-            this.renderStoreProductsAdmin();
-            if (typeof showToast === 'function') {
-              if (oldPrice !== newPrice) {
-                showToast(`Live Rate Updated: ${oldPrice} -> ${newPrice}!`, "success");
-              } else {
-                showToast(`Rate verified! Currently active live deal: ${newPrice}`, "success");
+            const updatePayload = {};
+            if (newPrice) updatePayload.priceApprox = newPrice;
+            if (newImage && (!p.image || p.image.includes('placeholder'))) updatePayload.image = newImage;
+
+            if (Object.keys(updatePayload).length > 0) {
+              VUO_STORE.updateProduct(id, updatePayload);
+              this.renderStoreProductsAdmin();
+              if (typeof showToast === 'function') {
+                if (oldPrice !== newPrice) {
+                  showToast(`Live Rate Updated: ${oldPrice} -> ${newPrice}!`, "success");
+                } else {
+                  showToast(`Rate verified! Currently active live deal: ${newPrice}`, "success");
+                }
               }
+              serverSuccess = true;
+              return;
             }
-            return;
           }
         }
+      } catch (e) {
+        // Try next endpoint
       }
+    }
+
+    if (!serverSuccess) {
       if (typeof showToast === 'function') {
-        showToast('Live rate verify karne ke liye product page open kiya ja raha hai.', 'info');
+        showToast('Live market page open ho raha hai, wahan se current price dekhkar Edit button se update karein.', 'info');
       }
-      window.open(targetUrl, '_blank');
-    } catch (e) {
-      console.warn("Rate sync error:", e);
       window.open(targetUrl, '_blank');
     }
   },
