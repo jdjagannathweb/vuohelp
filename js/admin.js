@@ -3270,33 +3270,138 @@ const VUO_ADMIN = {
     this.renderStoreProductsAdmin();
   },
 
-  previewProductImage(url) {
-    const preview = document.getElementById('adminProductImagePreview');
-    if (!preview) return;
-    if (url && url.trim()) {
-      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
-    } else {
-      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-sm"></i>`;
+  setProductImagePreset(url) {
+    const input = document.getElementById('adminProductImage');
+    if (input) {
+      input.value = url;
+      this.previewProductImage(url);
+      const statusEl = document.getElementById('adminProductPhotoStatus');
+      if (statusEl) statusEl.textContent = 'Preset photo selected';
+      if (typeof showToast === 'function') showToast('Preset photo select ho gayi!', 'success');
     }
   },
 
-  handleProductUrlPaste(url) {
-    if (!url) return;
-    const directInput = document.getElementById('adminProductDirectUrl');
-    const autoInput = document.getElementById('adminAutoFillProductUrl');
-    if (directInput && !directInput.value.trim() && url) {
-      directInput.value = url.trim();
+  setEditProductImagePreset(url) {
+    const input = document.getElementById('adminEditProductImage');
+    if (input) {
+      input.value = url;
+      this.previewEditProductImage(url);
+      const statusEl = document.getElementById('adminEditProductPhotoStatus');
+      if (statusEl) statusEl.textContent = 'Preset photo selected';
+      if (typeof showToast === 'function') showToast('Preset photo select ho gayi!', 'success');
     }
-    if (autoInput && !autoInput.value.trim() && url) {
-      autoInput.value = url.trim();
+  },
+
+  clearProductPhoto(isEdit = false) {
+    if (isEdit) {
+      const input = document.getElementById('adminEditProductImage');
+      if (input) input.value = '';
+      const fileInput = document.getElementById('adminEditProductManualUploadInput');
+      if (fileInput) fileInput.value = '';
+      const fileNameEl = document.getElementById('adminEditProductUploadFileName');
+      if (fileNameEl) fileNameEl.textContent = 'Nayi photo select karein (Auto-HD compressed)';
+      this.previewEditProductImage('');
+    } else {
+      const input = document.getElementById('adminProductImage');
+      if (input) input.value = '';
+      const fileInput = document.getElementById('adminProductManualUploadInput');
+      if (fileInput) fileInput.value = '';
+      const fileNameEl = document.getElementById('adminProductUploadFileName');
+      if (fileNameEl) fileNameEl.textContent = 'Computer / Phone se photo select karein (Auto-HD compressed)';
+      this.previewProductImage('');
     }
-    // If a full Amazon/Flipkart/Meesho URL is pasted, provide instant auto-preview
-    const trimmed = url.trim();
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      const p = this.parseProductDetailsFromUrl(trimmed);
-      if (p && p.image) {
-        this.previewProductImage(p.image);
-      }
+    if (typeof showToast === 'function') showToast('Photo hata di gayi.', 'info');
+  },
+
+  handleProductImageUpload(inputEl, isEdit = false) {
+    if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+    const file = inputEl.files[0];
+    if (!file.type.startsWith('image/')) {
+      if (typeof showToast === 'function') showToast('Kripya valid image file (JPG, PNG, WebP) select karein!', 'warning');
+      return;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('Photo process ho rahi hai...', 'info');
+    }
+
+    // Auto-compress to clean HD JPEG using HTML5 canvas
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 800; // Sharp Retina resolution for store cards
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+        const sizeKb = Math.round((dataUrl.length * 3 / 4) / 1024);
+
+        if (isEdit) {
+          const target = document.getElementById('adminEditProductImage');
+          if (target) target.value = dataUrl;
+          const fileNameEl = document.getElementById('adminEditProductUploadFileName');
+          if (fileNameEl) fileNameEl.textContent = `✓ ${file.name} (${sizeKb} KB)`;
+          this.previewEditProductImage(dataUrl);
+        } else {
+          const target = document.getElementById('adminProductImage');
+          if (target) target.value = dataUrl;
+          const fileNameEl = document.getElementById('adminProductUploadFileName');
+          if (fileNameEl) fileNameEl.textContent = `✓ ${file.name} (${sizeKb} KB)`;
+          this.previewProductImage(dataUrl);
+        }
+
+        if (typeof showToast === 'function') {
+          showToast(`✓ Photo successfully upload ho gayi! (${sizeKb} KB HD)`, 'success');
+        }
+      };
+      img.onerror = () => {
+        if (typeof showToast === 'function') showToast('Photo load karne me problem hui!', 'error');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  },
+
+  previewProductImage(url) {
+    const preview = document.getElementById('adminProductImagePreview');
+    const statusEl = document.getElementById('adminProductPhotoStatus');
+    if (!preview) return;
+    if (url && url.trim()) {
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
+      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold">✓ Active Photo Ready</span>';
+    } else {
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`;
+      if (statusEl) statusEl.textContent = 'Koi photo select nahi';
+    }
+  },
+
+  previewEditProductImage(url) {
+    const preview = document.getElementById('adminEditProductImagePreview');
+    const statusEl = document.getElementById('adminEditProductPhotoStatus');
+    if (!preview) return;
+    if (url && url.trim()) {
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
+      if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold">✓ Active Photo Ready</span>';
+    } else {
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`;
+      if (statusEl) statusEl.textContent = 'Koi photo select nahi';
     }
   },
 
@@ -3327,13 +3432,10 @@ const VUO_ADMIN = {
         titleSlug = slugMatch[1];
       }
 
-      // Preserve or set user's affiliate tag
       const tagMatch = url.match(/[?&]tag=([^&]+)/);
       const affTag = tagMatch ? tagMatch[1] : 'jaga7131-21';
       if (asin) {
         directUrl = `https://www.amazon.in/dp/${asin}?tag=${affTag}`;
-        // Official high-resolution Amazon Product Photo via CDN (1500x1500px)
-        image = `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.MAIN._SCRM_.jpg`;
       }
     } else if (lower.includes('flipkart.') || lower.includes('fkrt.it')) {
       platform = 'flipkart';
@@ -3368,10 +3470,10 @@ const VUO_ADMIN = {
       cleanTitle = formattedWords.join(' ');
     }
 
-    // 2. Intelligent Category, Price & Machine Detection
+    // 2. Intelligent Category, Machine & High-Res Image Detection
     const textToCheck = (cleanTitle + ' ' + url).toLowerCase();
 
-    // A. Lamination Machines (Distinguish Machine vs Pouches/Paper)
+    // A. Lamination Machines (A3 / A4 Heavy Duty)
     if (textToCheck.match(/laminat.*(machine|switches|portable|roller|heavy|hot)|(machine|switches|portable|roller|heavy|hot).*laminat|laplam|laminator/)) {
       category = 'paper';
       if (cleanTitle.length < 45 && !cleanTitle.toLowerCase().includes('machine')) {
@@ -3381,39 +3483,82 @@ const VUO_ADMIN = {
       badge = 'CSC Top Choice';
       priceApprox = '₹3,499';
       desc = 'Upto A3 sheet lamination with quick warm up, jam release switch aur dual hot/cold mode for CSC centers & cyber cafes.';
+      image = 'https://m.media-amazon.com/images/I/51VibYEYXTL._SL1500_.jpg'; // Verified Lapcare Laminator HD
     }
-    // B. Biometric & Iris
-    else if (textToCheck.match(/mantra|morpho|biometric|fingerprint|scanner|iris|rd\s*service|startek|cogent|secugen|mfs100|mso1300/)) {
-      category = 'biometric';
-      tagline = 'UIDAI & STQC Approved RD Service Ready';
-      badge = platform === 'meesho' ? 'Meesho Deal' : 'CSC Essential';
-      priceApprox = '₹2,499';
-      desc = 'AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.';
+    // B. Epson EcoTank L8050 / L805 Photo & PVC Printers
+    else if (textToCheck.match(/l8050|l805\b|photo\s*printer|6\s*color/)) {
+      category = 'printers';
+      if (!cleanTitle) cleanTitle = 'Epson EcoTank L8050 6-Color Wireless Photo & PVC Printer';
+      tagline = 'Professional 6-Color Direct PVC ID & Photo Printer';
+      badge = 'Cyber Cafe Top Pick';
+      priceApprox = '₹26,999';
+      desc = 'High-end 6-color dye ink tank printer for borderless A4 photo prints, direct PVC identity card and CD/DVD printing with Wi-Fi.';
+      image = 'https://m.media-amazon.com/images/I/5114ld0Vy4L._SL1500_.jpg'; // Verified Epson L8050 HD
     }
-    // C. Printers
-    else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|tray|pvc\s*tray|thermal|pos|receipt|l3210|l805|g3010/)) {
+    // C. All-in-One InkTank Printers (L3210 / L3150 / Canon / HP)
+    else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|l3210|l3150|g3010/)) {
       category = 'printers';
       tagline = 'High Yield Low Cost Printing Solution';
       badge = 'Cyber Cafe Top Pick';
       priceApprox = '₹12,499';
       desc = 'CSC VLE Daily certificate print, Ayushman card color print, aur citizen bill receipt nikaalne ke liye bharosemand.';
+      image = 'https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg'; // Verified Epson L3210 HD
     }
-    // D. Lamination Pouches & Photo Paper
-    else if (textToCheck.match(/lamination|pouch|paper|glossy|pvc\s*card|blank\s*card|photo\s*paper|210\s*gsm/)) {
+    // D. Biometric & Fingerprint Scanners (Mantra / Morpho / Startek / SecuGen)
+    else if (textToCheck.match(/mantra|morpho|biometric|fingerprint|scanner|iris|rd\s*service|startek|cogent|secugen|mfs100|mfs110|mso1300/)) {
+      category = 'biometric';
+      tagline = 'UIDAI & STQC Approved RD Service Ready';
+      badge = platform === 'meesho' ? 'Meesho Deal' : 'CSC Essential';
+      priceApprox = '₹2,499';
+      desc = 'AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.';
+      if (textToCheck.includes('morpho')) {
+        image = 'https://m.media-amazon.com/images/I/61V0dJWpYwL._SL1500_.jpg'; // Morpho MSO 1300
+      } else if (textToCheck.includes('startek')) {
+        image = 'https://m.media-amazon.com/images/I/71Wqjf4zoYL._SL1500_.jpg'; // Startek FM220U
+      } else if (textToCheck.includes('iris')) {
+        image = 'https://m.media-amazon.com/images/I/61GmwBbD4ML._SL1500_.jpg'; // Iris scanner
+      } else {
+        image = 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg'; // Mantra MFS100 HD
+      }
+    }
+    // E. PVC ID Card Trays
+    else if (textToCheck.match(/pvc\s*tray|tray|id\s*tray/)) {
+      category = 'printers';
+      tagline = 'Direct Dual PVC Card Printing Tray for Epson';
+      badge = 'Instant PVC Print';
+      priceApprox = '₹499';
+      desc = 'Convert your Epson photo printer into a full PVC ID card printing machine. Print 2 PVC cards simultaneously.';
+      image = 'https://m.media-amazon.com/images/I/412PAZkCy4L._SL1500_.jpg'; // PVC Tray HD
+    }
+    // F. Blank PVC Identity Cards
+    else if (textToCheck.match(/pvc\s*card|blank\s*card|plastic\s*card/)) {
+      category = 'paper';
+      tagline = 'Inkjet Printable Blank PVC Cards Pack';
+      badge = 'Essential Supply';
+      priceApprox = '₹499';
+      desc = 'High glossy printable PVC identity cards for Ayushman, PAN, Voter ID and Aadhaar card printing.';
+      image = 'https://m.media-amazon.com/images/I/41UvIpy63fL._SL1500_.jpg'; // Blank PVC Cards HD
+    }
+    // G. Lamination Pouches & Photo Paper
+    else if (textToCheck.match(/lamination|pouch|paper|glossy|photo\s*paper|210\s*gsm/)) {
       category = 'paper';
       tagline = 'Heavy Duty Premium Consumable Pack';
       badge = 'Essential Supply';
       priceApprox = '₹499';
-      desc = 'Waterproof lamination sheets, high quality photo paper aur durable blank PVC cards citizen printing ke liye.';
+      desc = 'Waterproof lamination sheets aur high quality photo paper citizen printing ke liye.';
+      image = (textToCheck.includes('glossy') || textToCheck.includes('photo paper')) ?
+              'https://m.media-amazon.com/images/I/61duxZ-4D1L._SL1500_.jpg' :
+              'https://m.media-amazon.com/images/I/412m26QlBfL._SL1500_.jpg';
     }
     else {
       category = 'accessories';
       tagline = 'Essential Cyber Cafe Hardware';
       priceApprox = '₹1,499';
+      image = 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg';
     }
 
     if (!cleanTitle) {
-      cleanTitle = category === 'biometric' ? 'High Speed Biometric Fingerprint Scanner' :
+      cleanTitle = category === 'biometric' ? 'Mantra MFS100 Biometric Fingerprint Scanner' :
                    category === 'printers' ? 'All-in-One High Speed Color Tank Printer' :
                    category === 'paper' ? (textToCheck.includes('machine') ? 'A3 Heavy Duty Lamination Machine' : 'A4 Premium Lamination & Photo Paper Pack') :
                    'CSC Cyber Cafe Hardware Accessory';
@@ -3897,6 +4042,10 @@ const VUO_ADMIN = {
       if (imageInput) {
         imageInput.value = '';
         this.previewProductImage('');
+        const fnEl = document.getElementById('adminProductUploadFileName');
+        if (fnEl) fnEl.textContent = 'Computer / Phone se photo select karein (Auto-HD compressed)';
+        const fInput = document.getElementById('adminProductManualUploadInput');
+        if (fInput) fInput.value = '';
       }
       const autoFillInput = document.getElementById('adminAutoFillProductUrl');
       if (autoFillInput) autoFillInput.value = '';

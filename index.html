@@ -18940,14 +18940,68 @@ body {
                 <input type="text" id="adminProductTitle" required placeholder="e.g. Mantra MFS110 L1 Optical Biometric Scanner" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500" />
               </div>
 
-              <!-- Product Image (Photo URL) -->
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-bold text-slate-700 mb-1">Product Photo URL (Image Link)</label>
-                <div class="flex items-center gap-2">
-                  <input type="url" id="adminProductImage" oninput="VUO_ADMIN.previewProductImage(this.value)" placeholder="https://... photo link (Auto-filled on link paste)" class="flex-1 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500" />
-                  <div id="adminProductImagePreview" class="w-10 h-10 rounded-xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
-                    <i class="fa-solid fa-image text-slate-300 text-sm"></i>
+              <!-- Product Image Section (Manual Upload + URL + Presets) -->
+              <div class="sm:col-span-2 p-3.5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-3">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-camera text-amber-600"></i>
+                    <span>Product Photo (Choose Any Method)</span>
+                  </label>
+                  <span class="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">Manual Upload or Link</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                  <!-- Method 1: Dedicated Manual File Upload Dropzone -->
+                  <div class="md:col-span-7">
+                    <label class="border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-xl p-3 text-center bg-white hover:bg-amber-50/50 transition-all cursor-pointer block relative group shadow-2xs">
+                      <input type="file" id="adminProductManualUploadInput" accept="image/*" class="hidden" onchange="VUO_ADMIN.handleProductImageUpload(this, false)" />
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 group-hover:bg-amber-500 text-amber-800 group-hover:text-slate-950 flex items-center justify-center text-lg font-bold transition-all shrink-0">
+                          <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div class="text-left flex-1 min-w-0">
+                          <p class="text-xs font-black text-slate-900 flex items-center gap-1">
+                            <span>Manual Photo Upload Karein</span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-slate-950 font-black uppercase">Browse</span>
+                          </p>
+                          <p id="adminProductUploadFileName" class="text-[10px] text-slate-500 truncate">Computer / Phone se photo select karein (Auto-HD compressed)</p>
+                        </div>
+                      </div>
+                    </label>
                   </div>
+
+                  <!-- Live Preview Box -->
+                  <div class="md:col-span-5 flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                    <div id="adminProductImagePreview" class="w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                      <i class="fa-solid fa-image text-slate-300 text-xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[11px] font-black text-slate-900">Photo Live Preview</p>
+                      <p id="adminProductPhotoStatus" class="text-[10px] text-slate-500">Koi photo select nahi</p>
+                      <button type="button" onclick="VUO_ADMIN.clearProductPhoto(false)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-block">
+                        <i class="fa-solid fa-xmark mr-0.5"></i> Clear Photo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Method 2: Direct Image URL -->
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-slate-500 shrink-0">Ya Direct URL:</span>
+                    <input type="url" id="adminProductImage" oninput="VUO_ADMIN.previewProductImage(this.value)" placeholder="https://... photo link (Auto-filled on link paste)" class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500" />
+                  </div>
+                </div>
+
+                <!-- Method 3: 1-Click Equipment Presets -->
+                <div class="flex items-center gap-1.5 flex-wrap pt-1 border-t border-amber-200/60">
+                  <span class="text-[10px] font-bold text-slate-500">1-Click Presets:</span>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-fingerprint text-[9px] mr-0.5 text-emerald-600"></i> Mantra</button>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/61V0dJWpYwL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-fingerprint text-[9px] mr-0.5 text-sky-600"></i> Morpho</button>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/5114ld0Vy4L._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-print text-[9px] mr-0.5 text-amber-600"></i> L8050</button>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-print text-[9px] mr-0.5 text-amber-600"></i> L3210</button>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/51VibYEYXTL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-layer-group text-[9px] mr-0.5 text-indigo-600"></i> Laminator</button>
+                  <button type="button" onclick="VUO_ADMIN.setProductImagePreset('https://m.media-amazon.com/images/I/412PAZkCy4L._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-id-card text-[9px] mr-0.5 text-teal-600"></i> PVC Tray</button>
                 </div>
               </div>
 
@@ -19120,17 +19174,68 @@ body {
                   <input type="text" id="adminEditProductBadge" placeholder="e.g. Top Deal, CSC Essential" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
                 </div>
 
-                <!-- Product Photo URL with Live Preview -->
-                <div class="sm:col-span-2">
-                  <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                    <span>Product Photo URL (Image Link)</span>
-                    <span class="text-[10px] text-slate-500 font-normal">Amazon/Flipkart photo par Right-Click &rarr; "Copy image address"</span>
-                  </label>
-                  <div class="flex items-center gap-3">
-                    <input type="url" id="adminEditProductImage" oninput="VUO_ADMIN.previewEditProductImage(this.value)" placeholder="https://... direct image link" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
-                    <div id="adminEditProductImagePreview" class="w-12 h-12 rounded-xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
-                      <i class="fa-solid fa-image text-slate-300 text-base"></i>
+                <!-- Edit Modal Product Photo Section (Manual Upload + URL + Presets) -->
+                <div class="sm:col-span-2 p-3.5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                      <i class="fa-solid fa-camera text-amber-600"></i>
+                      <span>Edit Product Photo</span>
+                    </label>
+                    <span class="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">Manual Upload or Link</span>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <!-- Method 1: Manual File Upload Dropzone -->
+                    <div class="md:col-span-7">
+                      <label class="border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-xl p-3 text-center bg-white hover:bg-amber-50/50 transition-all cursor-pointer block relative group shadow-2xs">
+                        <input type="file" id="adminEditProductManualUploadInput" accept="image/*" class="hidden" onchange="VUO_ADMIN.handleProductImageUpload(this, true)" />
+                        <div class="flex items-center gap-3">
+                          <div class="w-10 h-10 rounded-xl bg-amber-100 group-hover:bg-amber-500 text-amber-800 group-hover:text-slate-950 flex items-center justify-center text-lg font-bold transition-all shrink-0">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                          </div>
+                          <div class="text-left flex-1 min-w-0">
+                            <p class="text-xs font-black text-slate-900 flex items-center gap-1">
+                              <span>Manual Photo Upload Karein</span>
+                              <span class="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-slate-950 font-black uppercase">Browse</span>
+                            </p>
+                            <p id="adminEditProductUploadFileName" class="text-[10px] text-slate-500 truncate">Nayi photo select karein (Auto-HD compressed)</p>
+                          </div>
+                        </div>
+                      </label>
                     </div>
+
+                    <!-- Live Preview Box -->
+                    <div class="md:col-span-5 flex items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                      <div id="adminEditProductImagePreview" class="w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-image text-slate-300 text-xl"></i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-[11px] font-black text-slate-900">Current Photo</p>
+                        <p id="adminEditProductPhotoStatus" class="text-[10px] text-slate-500">Photo loaded</p>
+                        <button type="button" onclick="VUO_ADMIN.clearProductPhoto(true)" class="text-[10px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer mt-0.5 inline-block">
+                          <i class="fa-solid fa-xmark mr-0.5"></i> Clear Photo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Method 2: Direct Image URL -->
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-500 shrink-0">Ya Direct URL:</span>
+                      <input type="url" id="adminEditProductImage" oninput="VUO_ADMIN.previewEditProductImage(this.value)" placeholder="https://... direct image link" class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500" />
+                    </div>
+                  </div>
+
+                  <!-- Method 3: 1-Click Equipment Presets -->
+                  <div class="flex items-center gap-1.5 flex-wrap pt-1 border-t border-amber-200/60">
+                    <span class="text-[10px] font-bold text-slate-500">1-Click Presets:</span>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-fingerprint text-[9px] mr-0.5 text-emerald-600"></i> Mantra</button>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/61V0dJWpYwL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-fingerprint text-[9px] mr-0.5 text-sky-600"></i> Morpho</button>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/5114ld0Vy4L._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-print text-[9px] mr-0.5 text-amber-600"></i> L8050</button>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-print text-[9px] mr-0.5 text-amber-600"></i> L3210</button>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/51VibYEYXTL._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-layer-group text-[9px] mr-0.5 text-indigo-600"></i> Laminator</button>
+                    <button type="button" onclick="VUO_ADMIN.setEditProductImagePreset('https://m.media-amazon.com/images/I/412PAZkCy4L._SL1500_.jpg')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"><i class="fa-solid fa-id-card text-[9px] mr-0.5 text-teal-600"></i> PVC Tray</button>
                   </div>
                 </div>
 

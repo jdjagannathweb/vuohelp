@@ -39,6 +39,7 @@ const VUO_STORE = {
     // ---------------- 1. BIOMETRIC SCANNERS (AEPS, PM-KISAN, SUBHADRA) ----------------
     {
       id: 'prod-mantra-mfs100',
+      image: 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg',
       title: 'Mantra MFS100 Optical Fingerprint Scanner',
       category: 'biometric',
       badge: 'CSC Essential',
@@ -71,6 +72,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-morpho-1300',
+      image: 'https://m.media-amazon.com/images/I/61V0dJWpYwL._SL1500_.jpg',
       title: 'Morpho MSO 1300 E3 Fingerprint Scanner',
       category: 'biometric',
       badge: 'Heavy Duty',
@@ -87,6 +89,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-mantra-iris',
+      image: 'https://m.media-amazon.com/images/I/61GmwBbD4ML._SL1500_.jpg',
       title: 'Mantra MIS100V2 Dual Eye Iris Scanner',
       category: 'biometric',
       badge: 'Senior Citizens',
@@ -105,6 +108,7 @@ const VUO_STORE = {
     // ---------------- 2. PRINTERS & PVC CARD TRAYS ----------------
     {
       id: 'prod-epson-l3210',
+      image: 'https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg',
       title: 'Epson EcoTank L3210 All-in-One Ink Tank Color Printer',
       category: 'printers',
       badge: 'Most Popular',
@@ -121,6 +125,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-pvc-tray-l805',
+      image: 'https://m.media-amazon.com/images/I/412PAZkCy4L._SL1500_.jpg',
       title: 'Epson L805 / L8050 / L850 PVC ID Card Tray',
       category: 'printers',
       badge: 'Instant PVC Print',
@@ -137,6 +142,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-thermal-printer-58mm',
+      image: 'https://m.media-amazon.com/images/I/510R9s4Y-OL._SL1200_.jpg',
       title: '58mm USB / Bluetooth Thermal Receipt Printer',
       category: 'printers',
       badge: 'Customer Slip Print',
@@ -155,6 +161,7 @@ const VUO_STORE = {
     // ---------------- 3. LAMINATION & CONSUMABLES ----------------
     {
       id: 'prod-lamination-machine-a4',
+      image: 'https://m.media-amazon.com/images/I/51VibYEYXTL._SL1500_.jpg',
       title: 'Heavy Duty A4 Photo & Document Lamination Machine',
       category: 'paper',
       badge: 'Essential Tool',
@@ -171,6 +178,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-printable-pvc-cards',
+      image: 'https://m.media-amazon.com/images/I/41UvIpy63fL._SL1500_.jpg',
       title: 'Inkjet Printable Blank PVC Cards (Pack of 100 Cards)',
       category: 'paper',
       badge: 'CR80 Standard',
@@ -187,6 +195,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-lamination-pouches-a4',
+      image: 'https://m.media-amazon.com/images/I/412m26QlBfL._SL1500_.jpg',
       title: 'A4 Lamination Pouches (125 Micron, Pack of 100 Sheets)',
       category: 'paper',
       badge: 'Top Seller',
@@ -203,6 +212,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-glossy-photo-paper-4x6',
+      image: 'https://m.media-amazon.com/images/I/61duxZ-4D1L._SL1500_.jpg',
       title: 'Premium Glossy Photo Paper 4x6 / A4 (210 GSM)',
       category: 'paper',
       badge: 'Studio Quality',
@@ -221,6 +231,7 @@ const VUO_STORE = {
     // ---------------- 4. CYBER CAFE & SHOP ACCESSORIES ----------------
     {
       id: 'prod-logitech-c270-webcam',
+      image: 'https://m.media-amazon.com/images/I/61jbc6w5XPL._SL1500_.jpg',
       title: 'Logitech C270 HD Web Camera (with Mic)',
       category: 'accessories',
       badge: 'KYC & Photo',
@@ -237,6 +248,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-passport-die-cutter',
+      image: 'https://m.media-amazon.com/images/I/415QoYfW51L._SL1000_.jpg',
       title: 'Heavy Duty Passport Photo Die Cutter Punch (25x35mm / 35x45mm)',
       category: 'accessories',
       badge: 'Time Saver',
@@ -253,6 +265,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-thermal-paper-rolls',
+      image: 'https://m.media-amazon.com/images/I/5122v4p4ZJL._SL1000_.jpg',
       title: '58mm (2 Inch) Thermal Paper Rolls (Pack of 20 Rolls)',
       category: 'accessories',
       badge: 'Bulk Value',
@@ -269,6 +282,7 @@ const VUO_STORE = {
     },
     {
       id: 'prod-usb-hub-powered',
+      image: 'https://m.media-amazon.com/images/I/61w7N-b6YjL._SL1500_.jpg',
       title: '4-Port USB 3.0 Hub with Individual Power Switches',
       category: 'accessories',
       badge: 'Multi-Device',
@@ -299,6 +313,49 @@ const VUO_STORE = {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [];
+  },
+
+  getFallbackImage(product) {
+    if (!product) return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg';
+    const t = ((product.title || '') + ' ' + (product.desc || '')).toLowerCase();
+    const cat = product.category || 'accessories';
+
+    if (t.includes('l8050') || t.includes('l805') || t.includes('photo printer')) {
+      return 'https://m.media-amazon.com/images/I/5114ld0Vy4L._SL1500_.jpg'; // Epson L8050
+    } else if (t.includes('l3210') || t.includes('l3150') || t.includes('printer') || cat === 'printers') {
+      return 'https://m.media-amazon.com/images/I/41XCQHOtfLL._SL1500_.jpg'; // Epson L3210
+    } else if (t.includes('laminat') || t.includes('laplam') || t.includes('lamination machine')) {
+      return 'https://m.media-amazon.com/images/I/51VibYEYXTL._SL1500_.jpg'; // Lapcare Laminator
+    } else if (t.includes('pvc tray') || t.includes('card tray')) {
+      return 'https://m.media-amazon.com/images/I/412PAZkCy4L._SL1500_.jpg'; // PVC Tray
+    } else if (t.includes('pvc card') || t.includes('blank card')) {
+      return 'https://m.media-amazon.com/images/I/41UvIpy63fL._SL1500_.jpg'; // Blank PVC Cards
+    } else if (t.includes('pouch') || t.includes('glossy') || t.includes('photo paper') || cat === 'paper') {
+      return 'https://m.media-amazon.com/images/I/412m26QlBfL._SL1500_.jpg'; // Lamination Pouches
+    } else if (t.includes('morpho')) {
+      return 'https://m.media-amazon.com/images/I/61V0dJWpYwL._SL1500_.jpg'; // Morpho 1300
+    } else if (t.includes('iris')) {
+      return 'https://m.media-amazon.com/images/I/61GmwBbD4ML._SL1500_.jpg'; // Iris Scanner
+    } else if (t.includes('webcam') || t.includes('c270')) {
+      return 'https://m.media-amazon.com/images/I/61jbc6w5XPL._SL1500_.jpg'; // Logitech Webcam
+    } else if (t.includes('cutter') || t.includes('die cutter')) {
+      return 'https://m.media-amazon.com/images/I/415QoYfW51L._SL1000_.jpg'; // Die cutter
+    } else if (t.includes('biometric') || t.includes('fingerprint') || t.includes('mantra') || cat === 'biometric') {
+      return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg'; // Mantra MFS100
+    }
+    return 'https://m.media-amazon.com/images/I/61XJUWqg4TL._SL1500_.jpg';
+  },
+
+  handleDummyImage(imgEl, category, title) {
+    if (!imgEl) return;
+    const fallback = this.getFallbackImage({ category, title });
+    if (imgEl.src !== fallback) {
+      imgEl.src = fallback;
+    }
+    imgEl.onerror = null;
+    if (imgEl.parentElement) {
+      imgEl.parentElement.style.display = 'flex';
+    }
   },
 
   getAllProducts() {
@@ -636,11 +693,12 @@ const VUO_STORE = {
               </span>
             </div>
 
-            <!-- Product Photo (if available) -->
-            ${(p.image || p.imageUrl) ? `
-            <div class="w-full h-44 mb-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden p-2 group-hover:scale-[1.02] transition-transform">
-              <img src="${p.image || p.imageUrl}" alt="${p.title}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.parentElement.style.display='none';" />
-            </div>` : ''}
+            <!-- Product Photo (Always Guaranteed High Resolution) -->
+            <div class="w-full h-44 mb-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center justify-center overflow-hidden p-2 group-hover:scale-[1.02] transition-transform">
+              <img src="${p.image || p.imageUrl || this.getFallbackImage(p)}" alt="${p.title}" class="max-h-full max-w-full object-contain drop-shadow-xs"
+                   onload="if(this.naturalWidth<=1||this.naturalHeight<=1){ VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/'/g, '')}'); }"
+                   onerror="VUO_STORE.handleDummyImage(this, '${p.category}', '${(p.title || '').replace(/'/g, '')}');" />
+            </div>
 
             <!-- Title & Tagline -->
             <h3 class="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors leading-snug">
