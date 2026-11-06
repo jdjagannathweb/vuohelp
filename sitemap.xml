@@ -4,180 +4,180 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-  <!-- Homepage / Main Portal -->
+  <!-- 1. Homepage / Main Portal -->
   <url>
     <loc>https://vlehelpdesk.us/</loc>
-    <lastmod>2026-11-05</lastmod>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- Live Sarkari Job Alerts & Applications -->
+  <!-- 2. Live Sarkari Job Alerts & Applications -->
   <url>
-    <loc>https://vlehelpdesk.us/#jobalert</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/sarkari-job-alerts</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
 
-  <!-- CSC VLE Hardware Store & Equipment Deals -->
+  <!-- 3. Passport Size Photo Print Maker Studio (8/12/16/32 Prints) -->
   <url>
-    <loc>https://vlehelpdesk.us/#vlestore</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/passport-photo-maker</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- 4. Epson PVC ID Card Print Studio (CR-80 Front & Back) -->
+  <url>
+    <loc>https://vlehelpdesk.us/pvc-id-card-print</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
-  <!-- Passport Photo Maker Studio (8/12/32 Prints) -->
+  <!-- 5. CSC Deals — Tested Hardware Store for VLEs & Cyber Cafes -->
   <url>
-    <loc>https://vlehelpdesk.us/#passphoto</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/csc-deals</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- 6. CSC Customer Cash Receipt & Electricity Bill Maker -->
+  <url>
+    <loc>https://vlehelpdesk.us/csc-bill-maker</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- Epson PVC ID Card Print Studio (Front & Back) -->
+  <!-- 7. WhatsApp Document Scanner & Image Resizer -->
   <url>
-    <loc>https://vlehelpdesk.us/#pvcprint</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/whatsapp-resizer</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- WhatsApp Document Scanner & Image Resizer -->
+  <!-- 8. Odisha Legal Affidavit & Declaration Generator -->
   <url>
-    <loc>https://vlehelpdesk.us/#whatsappresizer</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/odisha-affidavit-maker</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- CSC Cash Receipt & Bill Generator -->
+  <!-- 9. Instant Marriage Bio-Data & Job Resume Maker -->
   <url>
-    <loc>https://vlehelpdesk.us/#billmaker</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/biodata-maker</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
-  <!-- CSC Office Suite & Legal Affidavit Drafter -->
+  <!-- 10. CSC VLE Digital Membership Identity Card Maker -->
   <url>
-    <loc>https://vlehelpdesk.us/#csctools</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/vle-icard-maker</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
-  <!-- CSC Legal Affidavit Drafter in Odia/English -->
+  <!-- 11. All-in-One Client-Side PDF Tools Hub -->
   <url>
-    <loc>https://vlehelpdesk.us/#csctools-affidavit</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/pdf-tools</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
-  <!-- Client-Side Free PDF Tools & Editor -->
+  <!-- 12. Client-Side Image Tools Studio Hub -->
   <url>
-    <loc>https://vlehelpdesk.us/#pdftools</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/image-tools</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- 13. CSC Office & Daily Utility Tools -->
+  <url>
+    <loc>https://vlehelpdesk.us/csctools</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- 14. Odisha Govt & CSC Offline PDF Application Forms -->
+  <url>
+    <loc>https://vlehelpdesk.us/offline-forms</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
 
-  <!-- CSC Image Compressor (20KB / 50KB / 100KB) -->
+  <!-- 15. Official Odisha Govt & CSC Services Portal Links (60+ Desks) -->
   <url>
-    <loc>https://vlehelpdesk.us/#imagetools</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/important-links</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
 
-  <!-- Professional Resume / Bio-Data Maker -->
+  <!-- 16. CSC VLE Training & DigiPay Video Tutorials -->
   <url>
-    <loc>https://vlehelpdesk.us/#resumemaker</loc>
-    <lastmod>2026-11-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-
-  <!-- School & Staff ID Card Generator -->
-  <url>
-    <loc>https://vlehelpdesk.us/#icardmaker</loc>
-    <lastmod>2026-11-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-
-  <!-- CSC Offline Govt Application Forms (PDF) -->
-  <url>
-    <loc>https://vlehelpdesk.us/#forms</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/training-videos</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
 
-  <!-- All Essential CSC & Odisha Govt Portal Bookmarks -->
+  <!-- 17. CSC VLE Business & Margin Calculators -->
   <url>
-    <loc>https://vlehelpdesk.us/#links</loc>
-    <lastmod>2026-11-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-
-  <!-- CSC VLE Training Video Academy (38+ Masterclasses) -->
-  <url>
-    <loc>https://vlehelpdesk.us/#training</loc>
-    <lastmod>2026-11-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>
-
-  <!-- VLE Daily Work Calculators (Age, EMI, Margin) -->
-  <url>
-    <loc>https://vlehelpdesk.us/#calculators</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/vle-calculators</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.65</priority>
+    <priority>0.70</priority>
   </url>
 
-  <!-- Contact & VLE Help Desk Support -->
+  <!-- 18. About VLE Union Odisha (V.U.O.) & Help Desk Mission -->
   <url>
-    <loc>https://vlehelpdesk.us/#contact</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/about</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
 
-  <!-- About Us - VLE Union Odisha (V.U.O.) -->
+  <!-- 19. Privacy Policy — In-Browser Client-Side Guarantee -->
   <url>
-    <loc>https://vlehelpdesk.us/#about</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/privacy</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.50</priority>
   </url>
 
-  <!-- Privacy Policy (Google AdSense Required) -->
+  <!-- 20. Terms of Service -->
   <url>
-    <loc>https://vlehelpdesk.us/#privacy</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/terms</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.50</priority>
   </url>
 
-  <!-- Terms of Service (Google AdSense Required) -->
+  <!-- 21. Community & Non-Affiliation Disclaimer -->
   <url>
-    <loc>https://vlehelpdesk.us/#terms</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/disclaimer</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.50</priority>
   </url>
 
-  <!-- Non-Governmental Disclaimer (Google AdSense Required) -->
+  <!-- 22. Contact & Community Helpdesk Support -->
   <url>
-    <loc>https://vlehelpdesk.us/#disclaimer</loc>
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://vlehelpdesk.us/contact</loc>
+    <lastmod>2026-11-06</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.50</priority>
+    <priority>0.60</priority>
   </url>
 
 </urlset>

@@ -1098,6 +1098,7 @@ const VUO_APP = {
     this.bindGlobalEvents();
     this.handleRoute();
     window.addEventListener('hashchange', () => this.handleRoute());
+    window.addEventListener('popstate', () => this.handleRoute());
 
     // Initialize Submodules
     if (typeof VUO_DB !== 'undefined') {
@@ -1471,12 +1472,67 @@ const VUO_APP = {
     if (this._isRouting) return;
     this._isRouting = true;
     try {
-    const rawHash = forceView ? `#${forceView}` : (window.location.hash || '#home');
-    const cleanHash = rawHash.replace('#', '').trim() || 'home';
+    let cleanHash = '';
+    if (forceView) {
+      cleanHash = String(forceView).replace(/^#/, '').trim();
+    } else if (window.location.hash && window.location.hash !== '#home' && window.location.hash !== '#') {
+      cleanHash = window.location.hash.replace(/^#/, '').trim();
+    } else {
+      const cleanPath = (window.location.pathname || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+      if (cleanPath && cleanPath !== 'index.html' && cleanPath !== '200.html') {
+        cleanHash = cleanPath;
+      } else {
+        cleanHash = 'home';
+      }
+    }
     
     // Parse main view and sub-tool tab (e.g. imagetools-enhancer -> viewName: imagetools, subTab: enhancer)
     let viewName = cleanHash;
     let subTab = '';
+
+    // Route alias mapping for clean SEO URLs
+    if (cleanHash === 'passport-photo-maker' || cleanHash === 'passphoto' || cleanHash === 'geminipassport' || cleanHash === 'gemini') {
+      viewName = 'passphoto';
+    } else if (cleanHash === 'pvc-id-card-print' || cleanHash === 'pvcprint' || cleanHash.startsWith('pvcprint-')) {
+      viewName = 'pvcprint';
+      subTab = cleanHash.startsWith('pvcprint-') ? cleanHash.replace('pvcprint-', '') : '';
+    } else if (cleanHash === 'sarkari-job-alerts' || cleanHash === 'job-alerts' || cleanHash === 'jobalert' || cleanHash === 'jobalerts' || cleanHash === 'jobs' || cleanHash.startsWith('jobalert-')) {
+      viewName = 'jobalert';
+      subTab = cleanHash.startsWith('jobalert-') ? cleanHash.replace('jobalert-', '') : '';
+    } else if (cleanHash === 'csc-deals' || cleanHash === 'vlestore' || cleanHash === 'store' || cleanHash === 'deals' || cleanHash === 'shop') {
+      viewName = 'vlestore';
+    } else if (cleanHash === 'csc-bill-maker' || cleanHash === 'billmaker') {
+      viewName = 'csctools';
+      subTab = 'billMaker';
+    } else if (cleanHash === 'whatsapp-resizer' || cleanHash === 'whatsappresizer' || cleanHash === 'whatsapp') {
+      viewName = 'whatsappresizer';
+    } else if (cleanHash === 'odisha-affidavit-maker' || cleanHash === 'affidavit') {
+      viewName = 'csctools';
+      subTab = 'affidavit';
+    } else if (cleanHash === 'biodata-maker' || cleanHash === 'resumemaker') {
+      viewName = 'csctools';
+      subTab = 'biodataMaker';
+    } else if (cleanHash === 'vle-icard-maker' || cleanHash === 'icardmaker') {
+      viewName = 'csctools';
+      subTab = 'icardMaker';
+    } else if (cleanHash === 'offline-forms' || cleanHash === 'forms' || cleanHash.startsWith('forms-')) {
+      viewName = 'forms';
+      subTab = cleanHash.startsWith('forms-') ? cleanHash.replace('forms-', '') : '';
+    } else if (cleanHash === 'important-links' || cleanHash === 'links' || cleanHash.startsWith('links-')) {
+      viewName = 'links';
+      subTab = cleanHash.startsWith('links-') ? cleanHash.replace('links-', '') : '';
+    } else if (cleanHash === 'training-videos' || cleanHash === 'training' || cleanHash.startsWith('training-')) {
+      viewName = 'training';
+      subTab = cleanHash.startsWith('training-') ? cleanHash.replace('training-', '') : '';
+    } else if (cleanHash === 'vle-calculators' || cleanHash === 'calculators' || cleanHash.startsWith('calculators-')) {
+      viewName = 'calculators';
+      subTab = cleanHash.startsWith('calculators-') ? cleanHash.replace('calculators-', '') : '';
+    } else if (cleanHash === 'pdf-tools' || cleanHash === 'pdftools' || cleanHash.startsWith('pdftools-')) {
+      viewName = 'pdftools';
+      subTab = cleanHash.startsWith('pdftools-') ? cleanHash.replace('pdftools-', '') : '';
+    } else if (cleanHash === 'image-tools' || cleanHash === 'imagetools' || cleanHash.startsWith('imagetools-')) {
+      viewName = 'imagetools';
+      subTab = cleanHash.startsWith('imagetools-') ? cleanHash.replace('imagetools-', '') : '';
 
     if (cleanHash.startsWith('imagetools-')) {
       viewName = 'imagetools';
@@ -1596,6 +1652,45 @@ const VUO_APP = {
       } else {
         const homeView = document.getElementById('view_home');
         if (homeView) homeView.classList.remove('hidden');
+      }
+    }
+
+    // Dynamic SEO Title & Canonical Tag Update for Clean Routes
+    const seoMetaMap = {
+      'home': { title: 'VLE HELP DESK — VLE Union Odisha | Digital Tools & Community Portal for CSC VLEs', path: '/' },
+      'passphoto': { title: 'Passport Photo Print Maker (8/12/16/32 Prints) — Free CSC VLE Studio | VLE Help Desk', path: '/passport-photo-maker' },
+      'pvcprint': { title: 'Epson PVC ID Card Front & Back Print Studio (CR-80) | VLE Help Desk', path: '/pvc-id-card-print' },
+      'jobalert': { title: 'Live Odisha Sarkari Job Alerts & Application Links for CSC VLEs | VLE Help Desk', path: '/sarkari-job-alerts' },
+      'vlestore': { title: 'CSC Deals — Tested Hardware Store for Cyber Cafes & VLEs | VLE Help Desk', path: '/csc-deals' },
+      'whatsappresizer': { title: 'WhatsApp Image Cleaner, Document Scanner & Signature Resizer | VLE Help Desk', path: '/whatsapp-resizer' },
+      'csctools': {
+        title: subTab === 'billMaker' ? 'CSC Customer Cash Receipt & Electricity Bill Maker | VLE Help Desk' :
+               subTab === 'affidavit' ? 'Odisha Legal Affidavit & Declaration Generator (A4 Ready) | VLE Help Desk' :
+               subTab === 'biodataMaker' ? 'Instant Bio-Data & Marriage Resume Maker Online | VLE Help Desk' :
+               subTab === 'icardMaker' ? 'CSC VLE Digital Membership Identity Card Maker | VLE Help Desk' :
+               'CSC Office & Daily Utilities Suite | VLE Help Desk',
+        path: subTab === 'billMaker' ? '/csc-bill-maker' :
+              subTab === 'affidavit' ? '/odisha-affidavit-maker' :
+              subTab === 'biodataMaker' ? '/biodata-maker' :
+              subTab === 'icardMaker' ? '/vle-icard-maker' : '/csctools'
+      },
+      'pdftools': { title: 'All-in-One Client-Side PDF Tools: Merge, Compress & Sign | VLE Help Desk', path: '/pdf-tools' },
+      'imagetools': { title: 'Instant Photo & Image Tools: KB Resizer, Compressor & DPI | VLE Help Desk', path: '/image-tools' },
+      'forms': { title: 'Odisha Govt & CSC Offline PDF Application Forms Directory | VLE Help Desk', path: '/offline-forms' },
+      'links': { title: 'Official Odisha Govt & CSC Services Portal Links (60+ Desks) | VLE Help Desk', path: '/important-links' },
+      'training': { title: 'CSC VLE Live Video Tutorials, DigiPay Setup & Scheme Guides | VLE Help Desk', path: '/training-videos' },
+      'calculators': { title: 'CSC Business Calculators: AEPS Commission & Margin Calc | VLE Help Desk', path: '/vle-calculators' },
+      'about': { title: 'About VLE Union Odisha (V.U.O.) & VLE Help Desk Mission', path: '/about' },
+      'privacy': { title: 'Privacy Policy — 100% In-Browser Privacy Guarantee | VLE Help Desk', path: '/privacy' },
+      'terms': { title: 'Terms of Service & Usage Guidelines | VLE Help Desk', path: '/terms' },
+      'disclaimer': { title: 'Community & Non-Affiliation Notice | VLE Help Desk', path: '/disclaimer' }
+    };
+
+    if (seoMetaMap[viewName]) {
+      document.title = seoMetaMap[viewName].title;
+      let canonicalEl = document.querySelector('link[rel="canonical"]');
+      if (canonicalEl) {
+        canonicalEl.href = 'https://vlehelpdesk.us' + seoMetaMap[viewName].path;
       }
     }
 
