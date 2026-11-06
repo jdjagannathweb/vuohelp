@@ -303,9 +303,75 @@ const VUO_STORE = {
 
   getAllProducts() {
     const deletedIds = new Set(this.getDeletedProductIds());
-    const defaults = (this.products || []).filter(p => !deletedIds.has(p.id));
     const custom = this.getCustomProducts().filter(p => !deletedIds.has(p.id));
+    const customIds = new Set(custom.map(p => p.id));
+    const defaults = (this.products || []).filter(p => !deletedIds.has(p.id) && !customIds.has(p.id));
     return [...custom, ...defaults];
+  },
+
+  getProductById(id) {
+    if (!id) return null;
+    return this.getAllProducts().find(p => p.id === id) || null;
+  },
+
+  updateProduct(id, updatedData) {
+    if (!id || !updatedData) return null;
+    let custom = this.getCustomProducts();
+    const existingIdx = custom.findIndex(p => p.id === id);
+    const original = this.getProductById(id) || {};
+
+    const cat = updatedData.category || original.category || 'accessories';
+    const plat = (updatedData.platform || original.platform || 'amazon').toLowerCase();
+    const icon = cat === 'biometric' ? 'fa-fingerprint' :
+                 cat === 'printers' ? 'fa-print' :
+                 cat === 'paper' ? 'fa-layer-group' : 'fa-box-open';
+    const accent = plat === 'flipkart' ? 'blue' :
+                   plat === 'meesho' ? 'pink' :
+                   cat === 'biometric' ? 'emerald' :
+                   cat === 'printers' ? 'amber' :
+                   cat === 'paper' ? 'sky' : 'indigo';
+    const badgeCls = plat === 'flipkart' ? 'bg-blue-100 text-blue-900 border-blue-300' :
+                     plat === 'meesho' ? 'bg-pink-100 text-pink-900 border-pink-300' :
+                     cat === 'biometric' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                     cat === 'printers' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                     cat === 'paper' ? 'bg-sky-100 text-sky-800 border-sky-300' :
+                     'bg-indigo-100 text-indigo-800 border-indigo-300';
+
+    let price = (updatedData.priceApprox !== undefined ? updatedData.priceApprox : original.priceApprox || '').trim();
+    if (price && !price.startsWith('₹') && !price.toLowerCase().startsWith('rs')) price = '₹' + price;
+
+    const updated = {
+      ...original,
+      ...updatedData,
+      id: id,
+      title: (updatedData.title !== undefined ? updatedData.title : (original.title || '')).trim(),
+      platform: plat,
+      directUrl: (updatedData.directUrl !== undefined ? updatedData.directUrl : (original.directUrl || '')).trim(),
+      category: cat,
+      badge: (updatedData.badge !== undefined ? updatedData.badge : (original.badge || 'Verified Deal')).trim(),
+      badgeClass: badgeCls,
+      tagline: (updatedData.tagline !== undefined ? updatedData.tagline : (original.tagline || 'Verified Deal')).trim(),
+      desc: (updatedData.desc !== undefined ? updatedData.desc : (original.desc || '')).trim(),
+      priceApprox: price || original.priceApprox || '₹999',
+      amazonSearchQuery: (updatedData.amazonSearchQuery || original.amazonSearchQuery || updatedData.title || original.title || '').trim(),
+      directAsin: (updatedData.directAsin !== undefined ? updatedData.directAsin : (original.directAsin || '')).trim().toUpperCase(),
+      icon: icon,
+      accentColor: accent,
+      image: (updatedData.image !== undefined ? updatedData.image : (original.image || '')).trim(),
+      isCustom: true,
+      updatedAt: Date.now()
+    };
+
+    if (existingIdx !== -1) {
+      custom[existingIdx] = updated;
+    } else {
+      custom.unshift(updated);
+    }
+
+    localStorage.setItem('vuo_custom_products', JSON.stringify(custom));
+    this.syncStoreToCloud();
+    this.renderStore();
+    return updated;
   },
 
   addProduct(data) {

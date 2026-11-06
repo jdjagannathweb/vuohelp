@@ -3338,21 +3338,21 @@ const VUO_ADMIN = {
       badge = platform === 'meesho' ? 'Meesho Biometric Deal' : 'CSC Essential';
       priceApprox = '₹2,499';
       desc = 'AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.';
-      image = 'https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&w=600&q=80';
+      image = '';
     } else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|tray|pvc\s*tray|thermal|pos|receipt|l3210|l805/)) {
       category = 'printers';
       tagline = 'High Yield Low Cost Printing Solution';
       badge = 'Cyber Cafe Top Pick';
       priceApprox = '₹12,499';
       desc = 'CSC VLE Daily certificate print, Ayushman card color print, aur citizen bill receipt nikaalne ke liye bharosemand.';
-      image = 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=600&q=80';
+      image = '';
     } else if (textToCheck.match(/lamination|laminat|pouch|paper|glossy|pvc\s*card|blank\s*card|photo\s*paper|210\s*gsm/)) {
       category = 'paper';
       tagline = 'Heavy Duty Premium Consumable Pack';
       badge = 'Essential Supply';
       priceApprox = '₹499';
       desc = 'Waterproof lamination sheets, high quality photo paper aur durable blank PVC cards citizen printing ke liye.';
-      image = 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80';
+      image = '';
     } else {
       category = 'accessories';
       tagline = 'Essential Cyber Cafe Hardware';
@@ -3473,6 +3473,93 @@ const VUO_ADMIN = {
     }
   },
 
+  openEditStoreProductModal(id) {
+    if (!id || typeof VUO_STORE === 'undefined') return;
+    const p = VUO_STORE.getProductById(id);
+    if (!p) {
+      if (typeof showToast === 'function') showToast('Product nahi mila!', 'error');
+      return;
+    }
+
+    const modal = document.getElementById('adminEditStoreProductModal');
+    if (!modal) return;
+
+    document.getElementById('adminEditProductId').value = p.id;
+    document.getElementById('adminEditProductTitle').value = p.title || '';
+    document.getElementById('adminEditProductPlatform').value = (p.platform || 'amazon').toLowerCase();
+    document.getElementById('adminEditProductCategory').value = p.category || 'accessories';
+    document.getElementById('adminEditProductPrice').value = p.priceApprox || '';
+    document.getElementById('adminEditProductBadge').value = p.badge || '';
+    document.getElementById('adminEditProductImage').value = p.image || p.imageUrl || '';
+    document.getElementById('adminEditProductDirectUrl').value = p.directUrl || VUO_STORE.getProductUrl(p) || '';
+    document.getElementById('adminEditProductTagline').value = p.tagline || '';
+    document.getElementById('adminEditProductDesc').value = p.desc || '';
+
+    this.previewEditProductImage(p.image || p.imageUrl || '');
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  },
+
+  closeEditStoreProductModal() {
+    const modal = document.getElementById('adminEditStoreProductModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  },
+
+  previewEditProductImage(url) {
+    const preview = document.getElementById('adminEditProductImagePreview');
+    if (!preview) return;
+    if (url && url.trim()) {
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
+    } else {
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-base"></i>`;
+    }
+  },
+
+  handleSaveEditStoreProduct(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (typeof VUO_STORE === 'undefined') return;
+
+    const id = document.getElementById('adminEditProductId').value;
+    const title = document.getElementById('adminEditProductTitle').value.trim();
+    if (!title) {
+      if (typeof showToast === 'function') showToast('Product Title khali nahi ho sakta!', 'warning');
+      return;
+    }
+
+    const platform = document.getElementById('adminEditProductPlatform').value;
+    const category = document.getElementById('adminEditProductCategory').value;
+    const priceApprox = document.getElementById('adminEditProductPrice').value.trim();
+    const badge = document.getElementById('adminEditProductBadge').value.trim();
+    const image = document.getElementById('adminEditProductImage').value.trim();
+    const directUrl = document.getElementById('adminEditProductDirectUrl').value.trim();
+    const tagline = document.getElementById('adminEditProductTagline').value.trim();
+    const desc = document.getElementById('adminEditProductDesc').value.trim();
+
+    const updated = VUO_STORE.updateProduct(id, {
+      title,
+      platform,
+      category,
+      priceApprox,
+      badge,
+      image,
+      directUrl,
+      tagline,
+      desc
+    });
+
+    if (updated) {
+      this.closeEditStoreProductModal();
+      this.renderStoreProductsAdmin();
+      if (typeof showToast === 'function') {
+        showToast('✅ Product photo, rate aur details successfully update ho gaye!', 'success');
+      }
+    }
+  },
+
   handlePlatformChange(plat) {
     const directUrlBox = document.getElementById('adminProductDirectUrlWrapper');
     const asinBox = document.getElementById('adminProductAsinWrapper');
@@ -3549,10 +3636,14 @@ const VUO_ADMIN = {
           </td>
           <td class="py-3 px-3 text-right">
             <div class="flex items-center justify-end gap-1.5">
+              <button onclick="VUO_ADMIN.openEditStoreProductModal('${p.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all" title="Edit Photo, Rate &amp; Details">
+                <i class="fa-solid fa-pen-to-square text-amber-600"></i>
+                <span>Edit</span>
+              </button>
               <a href="${url}" target="_blank" rel="noopener noreferrer" class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg text-xs" title="Preview Product Link">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
               </a>
-              <button onclick="VUO_ADMIN.deleteStoreProduct('${p.id}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs cursor-pointer" title="Delete Product">
+              <button onclick="VUO_ADMIN.deleteStoreProduct('${p.id}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-xs cursor-pointer" title="Delete Product Permanently">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>

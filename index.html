@@ -19047,6 +19047,121 @@ body {
           </div>
         </div>
 
+        <!-- Edit Store Product Modal (Edit Photo, Rate, Link & Details) -->
+        <div id="adminEditStoreProductModal" style="display: none;" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in duration-200 my-8">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold shadow-2xs">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <div>
+                  <h3 class="text-base font-black text-slate-900 font-heading">
+                    Edit Product Deal &amp; Market Rate
+                  </h3>
+                  <p class="text-xs text-slate-500">Photo, MSP/Rate, Affiliate link aur details update karein</p>
+                </div>
+              </div>
+              <button type="button" onclick="VUO_ADMIN.closeEditStoreProductModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm transition-colors cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form id="adminEditStoreProductForm" onsubmit="VUO_ADMIN.handleSaveEditStoreProduct(event)" class="space-y-4">
+              <input type="hidden" id="adminEditProductId" />
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Platform -->
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Platform / Store *</label>
+                  <select id="adminEditProductPlatform" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white">
+                    <option value="amazon">Amazon India</option>
+                    <option value="flipkart">Flipkart</option>
+                    <option value="meesho">Meesho</option>
+                    <option value="custom">Other / Direct Deal</option>
+                  </select>
+                </div>
+
+                <!-- Category -->
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Category *</label>
+                  <select id="adminEditProductCategory" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white">
+                    <option value="biometric">Biometric Scanners (AEPS/KYC)</option>
+                    <option value="printers">Printers &amp; PVC Trays</option>
+                    <option value="paper">Lamination &amp; Photo Paper</option>
+                    <option value="accessories">Shop &amp; Cyber Cafe Accessories</option>
+                  </select>
+                </div>
+
+                <!-- Title -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Product Title / Name *</label>
+                  <input type="text" id="adminEditProductTitle" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                </div>
+
+                <!-- Rate / Price (MSP / Deal) -->
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">
+                    Deal Rate / Price (₹) *
+                  </label>
+                  <input type="text" id="adminEditProductPrice" placeholder="e.g. ₹2,499" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                  <p class="text-[10px] text-slate-500 mt-0.5">Market me rate badhne ya ghatne par yahan naya rate dalein.</p>
+                </div>
+
+                <!-- Badge -->
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Badge / Tag</label>
+                  <input type="text" id="adminEditProductBadge" placeholder="e.g. Top Deal, CSC Essential" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                </div>
+
+                <!-- Product Photo URL with Live Preview -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Product Photo URL (Image Link)</span>
+                    <span class="text-[10px] text-slate-500 font-normal">Amazon/Flipkart photo par Right-Click &rarr; "Copy image address"</span>
+                  </label>
+                  <div class="flex items-center gap-3">
+                    <input type="url" id="adminEditProductImage" oninput="VUO_ADMIN.previewEditProductImage(this.value)" placeholder="https://... direct image link" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                    <div id="adminEditProductImagePreview" class="w-12 h-12 rounded-xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                      <i class="fa-solid fa-image text-slate-300 text-base"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Direct Product URL / Affiliate Link -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Affiliate Link / Direct Product URL *</label>
+                  <input type="url" id="adminEditProductDirectUrl" required placeholder="https://..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                </div>
+
+                <!-- Tagline -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Key Highlight / Tagline</label>
+                  <input type="text" id="adminEditProductTagline" placeholder="e.g. UIDAI &amp; STQC Approved RD Service Ready" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white" />
+                </div>
+
+                <!-- Short Description -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Short Description</label>
+                  <textarea id="adminEditProductDesc" rows="2" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"></textarea>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button type="button" onclick="VUO_ADMIN.closeEditStoreProductModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold cursor-pointer transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer transition-all">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Save Changes (अपडेट करें)</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+
       </div>
 
       <!-- 14. SEO, Search Console & Analytics Pane (15 Things for SEO Checklist) -->
