@@ -351,11 +351,13 @@ const VUO_STORE = {
       directAsin: (data.directAsin || '').trim().toUpperCase(),
       icon: icon,
       accentColor: accent,
+      image: (data.image || '').trim(),
       isCustom: true,
       createdAt: Date.now()
     };
     custom.unshift(newProd);
     localStorage.setItem('vuo_custom_products', JSON.stringify(custom));
+    this.syncStoreToCloud();
     this.renderStore();
     return newProd;
   },
@@ -373,7 +375,47 @@ const VUO_STORE = {
       deleted.push(id);
       localStorage.setItem('vuo_deleted_products', JSON.stringify(deleted));
     }
+    // Permanent synchronization to Firebase Cloud (Never returns across updates/devices)
+    this.syncStoreToCloud();
     this.renderStore();
+  },
+
+  syncStoreToCloud() {
+    try {
+      if (typeof VUO_DB !== 'undefined' && VUO_DB.db) {
+        VUO_DB.db.collection('vuo_settings').doc('store_catalog').set({
+          customProducts: this.getCustomProducts(),
+          deletedProductIds: this.getDeletedProductIds(),
+          updatedAt: Date.now()
+        }, { merge: true }).catch(() => {});
+      }
+    } catch (_) {}
+  },
+
+  async loadStoreFromCloud() {
+    try {
+      if (typeof VUO_DB !== 'undefined' && VUO_DB.db) {
+        const doc = await VUO_DB.db.collection('vuo_settings').doc('store_catalog').get();
+        if (doc.exists) {
+          const data = doc.data();
+          if (data) {
+            if (Array.isArray(data.deletedProductIds) && data.deletedProductIds.length > 0) {
+              const currentDeleted = new Set(this.getDeletedProductIds());
+              data.deletedProductIds.forEach(id => currentDeleted.add(id));
+              localStorage.setItem('vuo_deleted_products', JSON.stringify(Array.from(currentDeleted)));
+            }
+            if (Array.isArray(data.customProducts) && data.customProducts.length > 0) {
+              const localCustom = this.getCustomProducts();
+              const map = new Map();
+              localCustom.forEach(p => map.set(p.id, p));
+              data.customProducts.forEach(p => map.set(p.id, p));
+              localStorage.setItem('vuo_custom_products', JSON.stringify(Array.from(map.values())));
+            }
+            this.renderStore();
+          }
+        }
+      }
+    } catch (_) {}
   },
 
   resetDefaultProducts() {
@@ -527,6 +569,12 @@ const VUO_STORE = {
                 <span class="text-[10px] text-slate-400">(${p.reviews})</span>
               </span>
             </div>
+
+            <!-- Product Photo (if available) -->
+            ${(p.image || p.imageUrl) ? `
+            <div class="w-full h-44 mb-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden p-2 group-hover:scale-[1.02] transition-transform">
+              <img src="${p.image || p.imageUrl}" alt="${p.title}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+            </div>` : ''}
 
             <!-- Title & Tagline -->
             <h3 class="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors leading-snug">

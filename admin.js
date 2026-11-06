@@ -3270,6 +3270,209 @@ const VUO_ADMIN = {
     this.renderStoreProductsAdmin();
   },
 
+  previewProductImage(url) {
+    const preview = document.getElementById('adminProductImagePreview');
+    if (!preview) return;
+    if (url && url.trim()) {
+      preview.innerHTML = `<img src="${url.trim()}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid fa-triangle-exclamation text-amber-500 text-xs\'></i>';" />`;
+    } else {
+      preview.innerHTML = `<i class="fa-solid fa-image text-slate-300 text-sm"></i>`;
+    }
+  },
+
+  handleProductUrlPaste(url) {
+    const directInput = document.getElementById('adminProductDirectUrl');
+    if (directInput && !directInput.value.trim() && url) {
+      directInput.value = url.trim();
+    }
+  },
+
+  parseProductDetailsFromUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    const url = rawUrl.trim();
+    let platform = 'custom';
+    let asin = '';
+    let titleSlug = '';
+    let category = 'accessories';
+    let priceApprox = '₹999';
+    let badge = 'Featured Deal';
+    let tagline = 'Quality VLE Equipment';
+    let desc = 'Recommended equipment for CSC VLEs & Cyber Cafes across Odisha.';
+    let image = '';
+
+    // 1. Detect Platform & Clean Slugs
+    const lower = url.toLowerCase();
+    if (lower.includes('amazon.') || lower.includes('amzn.to') || lower.includes('amzn.in')) {
+      platform = 'amazon';
+      badge = 'Amazon Choice';
+      const asinMatch = url.match(/(?:\/dp\/|\/gp\/product\/|\/asin\/|\/d\/)([A-Z0-9]{10})/i);
+      if (asinMatch) asin = asinMatch[1].toUpperCase();
+
+      const slugMatch = url.match(/amazon\.[a-z.]+\/([^/]+)\/(?:dp|gp\/product)/i);
+      if (slugMatch && slugMatch[1]) {
+        titleSlug = slugMatch[1].replace(/[-_+]/g, ' ');
+      }
+    } else if (lower.includes('flipkart.') || lower.includes('fkrt.it')) {
+      platform = 'flipkart';
+      badge = 'Flipkart Deal';
+      const fkMatch = url.match(/flipkart\.com\/([^/]+)\/p\//i);
+      if (fkMatch && fkMatch[1]) {
+        titleSlug = fkMatch[1].replace(/[-_+]/g, ' ');
+      }
+    } else if (lower.includes('meesho.')) {
+      platform = 'meesho';
+      badge = 'Meesho Best Price';
+      const mMatch = url.match(/meesho\.com\/([^/]+)\/p\//i);
+      if (mMatch && mMatch[1]) {
+        titleSlug = mMatch[1].replace(/[-_+]/g, ' ');
+      }
+    }
+
+    let cleanTitle = titleSlug ? titleSlug.replace(/\b\w/g, c => c.toUpperCase()).trim() : '';
+
+    // 2. Intelligent Category Detection
+    const textToCheck = (cleanTitle + ' ' + url).toLowerCase();
+    if (textToCheck.match(/mantra|morpho|biometric|fingerprint|scanner|iris|rd\s*service|startek|cogent|secugen/)) {
+      category = 'biometric';
+      tagline = 'UIDAI & STQC Approved RD Service Ready';
+      badge = platform === 'meesho' ? 'Meesho Biometric Deal' : 'CSC Essential';
+      priceApprox = '₹2,499';
+      desc = 'AEPS Cash Withdrawal, PM-KISAN eKYC, Subhadra Yojana, aur Ayushman Bharat citizen biometric authentication ke liye best.';
+      image = 'https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&w=600&q=80';
+    } else if (textToCheck.match(/printer|epson|canon|hp|ink\s*tank|tray|pvc\s*tray|thermal|pos|receipt|l3210|l805/)) {
+      category = 'printers';
+      tagline = 'High Yield Low Cost Printing Solution';
+      badge = 'Cyber Cafe Top Pick';
+      priceApprox = '₹12,499';
+      desc = 'CSC VLE Daily certificate print, Ayushman card color print, aur citizen bill receipt nikaalne ke liye bharosemand.';
+      image = 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=600&q=80';
+    } else if (textToCheck.match(/lamination|laminat|pouch|paper|glossy|pvc\s*card|blank\s*card|photo\s*paper|210\s*gsm/)) {
+      category = 'paper';
+      tagline = 'Heavy Duty Premium Consumable Pack';
+      badge = 'Essential Supply';
+      priceApprox = '₹499';
+      desc = 'Waterproof lamination sheets, high quality photo paper aur durable blank PVC cards citizen printing ke liye.';
+      image = 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80';
+    } else {
+      category = 'accessories';
+      tagline = 'Essential Cyber Cafe Hardware';
+      priceApprox = '₹899';
+    }
+
+    if (!cleanTitle) {
+      cleanTitle = category === 'biometric' ? 'High Speed Biometric Fingerprint Scanner' :
+                   category === 'printers' ? 'All-in-One High Speed Color Tank Printer' :
+                   category === 'paper' ? 'A4 Premium Lamination & Photo Paper Pack' :
+                   'CSC Cyber Cafe Hardware Accessory';
+    }
+
+    return {
+      platform,
+      asin,
+      title: cleanTitle,
+      category,
+      priceApprox,
+      badge,
+      tagline,
+      desc,
+      directUrl: url,
+      image
+    };
+  },
+
+  async autoFillProductFormFromLink() {
+    const input = document.getElementById('adminAutoFillProductUrl') || document.getElementById('adminProductDirectUrl');
+    const btn = document.getElementById('adminAutoFillProductBtn');
+    const raw = input ? input.value.trim() : '';
+
+    if (!raw) {
+      if (typeof showToast === 'function') showToast('Kripya pehle product ka affiliate link paste karein!', 'warning');
+      if (input) input.focus();
+      return;
+    }
+
+    let origBtnHtml = '';
+    if (btn) {
+      origBtnHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> <span>Fetching Details...</span>`;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('🔄 Product photo aur details fetch ho rahe hain...', 'info');
+    }
+
+    // 1. Instant intelligent extraction from URL
+    let product = this.parseProductDetailsFromUrl(raw);
+
+    // 2. Live metadata scraper via Microlink API
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 4500);
+      const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(raw)}`;
+      const res = await fetch(apiUrl, { signal: ctrl.signal });
+      clearTimeout(tid);
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.status === 'success' && json.data) {
+          const d = json.data;
+          if (d.title && d.title.length > 5 && !d.title.toLowerCase().includes('page not found') && !d.title.toLowerCase().includes('access denied')) {
+            product.title = d.title.replace(/\s*[:|-]\s*(Amazon\.in|Flipkart\.com|Meesho).*$/i, '').trim();
+          }
+          if (d.image && d.image.url && !d.image.url.includes('logo') && !d.image.url.includes('favicon')) {
+            product.image = d.image.url;
+          }
+          if (d.description && d.description.length > 15) {
+            product.desc = d.description.slice(0, 220);
+          }
+        }
+      }
+    } catch (apiErr) {
+      console.warn("Live scraper fallback to URL parser:", apiErr.message);
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origBtnHtml || `<i class="fa-solid fa-bolt"></i> <span>Auto-Fill Details &amp; Photo</span>`;
+    }
+
+    // 3. Fill Form Inputs
+    const platEl = document.getElementById('adminProductPlatform');
+    const titleEl = document.getElementById('adminProductTitle');
+    const directUrlEl = document.getElementById('adminProductDirectUrl');
+    const catEl = document.getElementById('adminProductCategory');
+    const priceEl = document.getElementById('adminProductPrice');
+    const asinEl = document.getElementById('adminProductAsin');
+    const searchEl = document.getElementById('adminProductSearch');
+    const badgeEl = document.getElementById('adminProductBadge');
+    const taglineEl = document.getElementById('adminProductTagline');
+    const descEl = document.getElementById('adminProductDesc');
+    const imageEl = document.getElementById('adminProductImage');
+
+    if (platEl) {
+      platEl.value = product.platform;
+      this.handlePlatformChange(product.platform);
+    }
+    if (titleEl) titleEl.value = product.title;
+    if (directUrlEl) directUrlEl.value = product.directUrl;
+    if (catEl) catEl.value = product.category;
+    if (priceEl) priceEl.value = product.priceApprox;
+    if (asinEl) asinEl.value = product.asin || '';
+    if (searchEl) searchEl.value = product.title;
+    if (badgeEl) badgeEl.value = product.badge;
+    if (taglineEl) taglineEl.value = product.tagline;
+    if (descEl) descEl.value = product.desc;
+    if (imageEl) {
+      imageEl.value = product.image || '';
+      this.previewProductImage(product.image || '');
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('✨ Product photo aur details automatically bhar gaye! Ab bas "Add Product" click karein.', 'success');
+    }
+  },
+
   handlePlatformChange(plat) {
     const directUrlBox = document.getElementById('adminProductDirectUrlWrapper');
     const asinBox = document.getElementById('adminProductAsinWrapper');
@@ -3321,8 +3524,8 @@ const VUO_ADMIN = {
           <td class="py-3 px-3 text-xs font-mono text-slate-400 font-bold">${idx + 1}</td>
           <td class="py-3 px-3">
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0 text-sm">
-                <i class="fa-solid ${p.icon || 'fa-box'}"></i>
+              <div class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                ${(p.image || p.imageUrl) ? `<img src="${p.image || p.imageUrl}" alt="${p.title}" class="max-w-full max-h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fa-solid ${p.icon || 'fa-box'}\' text-slate-400></i>';" />` : `<i class="fa-solid ${p.icon || 'fa-box'} text-slate-500"></i>`}
               </div>
               <div class="min-w-0">
                 <div class="text-xs font-black text-slate-900 truncate max-w-xs flex items-center gap-1.5 flex-wrap">
@@ -3373,6 +3576,7 @@ const VUO_ADMIN = {
     const badgeInput = document.getElementById('adminProductBadge');
     const taglineInput = document.getElementById('adminProductTagline');
     const descInput = document.getElementById('adminProductDesc');
+    const imageInput = document.getElementById('adminProductImage');
 
     const title = titleInput ? titleInput.value.trim() : '';
     if (!title) {
@@ -3390,6 +3594,8 @@ const VUO_ADMIN = {
     const tagline = taglineInput && taglineInput.value.trim() ? taglineInput.value.trim() : 'Quality Hardware';
     const desc = descInput && descInput.value.trim() ? descInput.value.trim() : '';
 
+    const image = imageInput ? imageInput.value.trim() : '';
+
     const newProd = VUO_STORE.addProduct({
       title,
       platform,
@@ -3400,7 +3606,8 @@ const VUO_ADMIN = {
       amazonSearchQuery,
       badge,
       tagline,
-      desc
+      desc,
+      image
     });
 
     if (newProd) {
@@ -3412,6 +3619,12 @@ const VUO_ADMIN = {
       if (badgeInput) badgeInput.value = '';
       if (taglineInput) taglineInput.value = '';
       if (descInput) descInput.value = '';
+      if (imageInput) {
+        imageInput.value = '';
+        this.previewProductImage('');
+      }
+      const autoFillInput = document.getElementById('adminAutoFillProductUrl');
+      if (autoFillInput) autoFillInput.value = '';
 
       this.renderStoreProductsAdmin();
       if (typeof showToast === 'function') {
@@ -3423,7 +3636,7 @@ const VUO_ADMIN = {
 
   deleteStoreProduct(id) {
     if (!id || typeof VUO_STORE === 'undefined') return;
-    if (!confirm('Kya aap sach me is product ko Deals store se hatana chahte hain?')) return;
+    if (!confirm('Kya aap sach me is product ko Deals store se PERMANENTLY hatana chahte hain? Yeh product aage updates me bhi kabhi wapas nahi aayega.')) return;
 
     VUO_STORE.deleteProduct(id);
     this.renderStoreProductsAdmin();
