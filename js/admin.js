@@ -3399,37 +3399,67 @@ const VUO_ADMIN = {
     }
 
     if (typeof showToast === 'function') {
-      showToast('🔄 Product photo aur details fetch ho rahe hain...', 'info');
+      showToast("Product photo aur details fetch ho rahe hain...", "info");
     }
 
-    // 1. Instant intelligent extraction from URL
+    // 1. Instant intelligent extraction from URL as baseline
     let product = this.parseProductDetailsFromUrl(raw);
 
-    // 2. Live metadata scraper via Microlink API
+    // 2. Try high-precision server scraper endpoint first
+    let serverSuccess = false;
     try {
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 4500);
-      const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(raw)}`;
-      const res = await fetch(apiUrl, { signal: ctrl.signal });
+      const tid = setTimeout(() => ctrl.abort(), 7000);
+      const res = await fetch(`/api/extract-product-details?url=${encodeURIComponent(raw)}`, { signal: ctrl.signal });
       clearTimeout(tid);
 
       if (res.ok) {
         const json = await res.json();
-        if (json && json.status === 'success' && json.data) {
-          const d = json.data;
-          if (d.title && d.title.length > 5 && !d.title.toLowerCase().includes('page not found') && !d.title.toLowerCase().includes('access denied')) {
-            product.title = d.title.replace(/\s*[:|-]\s*(Amazon\.in|Flipkart\.com|Meesho).*$/i, '').trim();
-          }
-          if (d.image && d.image.url && !d.image.url.includes('logo') && !d.image.url.includes('favicon')) {
-            product.image = d.image.url;
-          }
-          if (d.description && d.description.length > 15) {
-            product.desc = d.description.slice(0, 220);
-          }
+        if (json && json.status === 'success' && json.product) {
+          const p = json.product;
+          if (p.title) product.title = p.title;
+          if (p.price) product.priceApprox = p.price;
+          if (p.image) product.image = p.image;
+          if (p.category) product.category = p.category;
+          if (p.platform) product.platform = p.platform;
+          if (p.directUrl) product.directUrl = p.directUrl;
+          if (p.tagline) product.tagline = p.tagline;
+          if (p.badge) product.badge = p.badge;
+          if (p.desc) product.desc = p.desc;
+          serverSuccess = true;
         }
       }
-    } catch (apiErr) {
-      console.warn("Live scraper fallback to URL parser:", apiErr.message);
+    } catch (sErr) {
+      console.warn("Backend product scraper unavailable, falling back:", sErr.message);
+    }
+
+    // 3. Fallback to public Open Graph proxy if backend was not reached
+    if (!serverSuccess) {
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 4500);
+        const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(raw)}`;
+        const res = await fetch(apiUrl, { signal: ctrl.signal });
+        clearTimeout(tid);
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.status === 'success' && json.data) {
+            const d = json.data;
+            if (d.title && d.title.length > 5 && !d.title.toLowerCase().includes('page not found') && !d.title.toLowerCase().includes('access denied')) {
+              product.title = d.title.replace(/\s*[:|-]\s*(Amazon\.in|Flipkart\.com|Meesho).*$/i, '').trim();
+            }
+            if (d.image && d.image.url && !d.image.url.includes('logo') && !d.image.url.includes('favicon')) {
+              product.image = d.image.url;
+            }
+            if (d.description && d.description.length > 15) {
+              product.desc = d.description.slice(0, 220);
+            }
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Microlink fallback error:", apiErr.message);
+      }
     }
 
     if (btn) {
@@ -3469,7 +3499,7 @@ const VUO_ADMIN = {
     }
 
     if (typeof showToast === 'function') {
-      showToast('✨ Product photo aur details automatically bhar gaye! Ab bas "Add Product" click karein.', 'success');
+      showToast("Product photo aur details automatically bhar gaye! Ab bas Add Product click karein.", "success");
     }
   },
 
@@ -3560,6 +3590,106 @@ const VUO_ADMIN = {
     }
   },
 
+  async syncProductLiveRate(id) {
+    if (!id || typeof VUO_STORE === 'undefined') return;
+    const p = VUO_STORE.getProductById(id);
+    if (!p) return;
+
+    const targetUrl = p.directUrl || VUO_STORE.getProductUrl(p);
+    if (!targetUrl) return;
+
+    if (typeof showToast === 'function') {
+      showToast(`Checking live market price for "${p.title.slice(0, 25)}..."`, "info");
+    }
+
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 7000);
+      const res = await fetch(`/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`, { signal: ctrl.signal });
+      clearTimeout(tid);
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.status === 'success' && json.product) {
+          const newPrice = json.product.price;
+          const newImage = json.product.image;
+          const oldPrice = p.priceApprox;
+
+          const updatePayload = {};
+          if (newPrice) updatePayload.priceApprox = newPrice;
+          if (newImage && (!p.image || p.image.includes('placeholder'))) updatePayload.image = newImage;
+
+          if (Object.keys(updatePayload).length > 0) {
+            VUO_STORE.updateProduct(id, updatePayload);
+            this.renderStoreProductsAdmin();
+            if (typeof showToast === 'function') {
+              if (oldPrice !== newPrice) {
+                showToast(`Live Rate Updated: ${oldPrice} -> ${newPrice}!`, "success");
+              } else {
+                showToast(`Rate verified! Currently active live deal: ${newPrice}`, "success");
+              }
+            }
+            return;
+          }
+        }
+      }
+      if (typeof showToast === 'function') {
+        showToast('Live rate verify karne ke liye product page open kiya ja raha hai.', 'info');
+      }
+      window.open(targetUrl, '_blank');
+    } catch (e) {
+      console.warn("Rate sync error:", e);
+      window.open(targetUrl, '_blank');
+    }
+  },
+
+  async syncAllProductLiveRates() {
+    if (typeof VUO_STORE === 'undefined') return;
+    const products = VUO_STORE.getAllProducts();
+    if (!products || products.length === 0) return;
+
+    const btn = document.getElementById('adminSyncAllRatesBtn');
+    let origHtml = '';
+    if (btn) {
+      origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing Rates...`;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Syncing live market rates for ${products.length} products...`, "info");
+    }
+
+    let updatedCount = 0;
+    for (const p of products.slice(0, 10)) {
+      const targetUrl = p.directUrl || VUO_STORE.getProductUrl(p);
+      if (!targetUrl) continue;
+      try {
+        const res = await fetch(`/api/extract-product-details?url=${encodeURIComponent(targetUrl)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.status === 'success' && json.product && json.product.price) {
+            if (json.product.price !== p.priceApprox) {
+              VUO_STORE.updateProduct(p.id, { priceApprox: json.product.price, image: p.image || json.product.image });
+              updatedCount++;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml || `<i class="fa-solid fa-arrows-rotate mr-1"></i> Sync Live Rates`;
+    }
+
+    this.renderStoreProductsAdmin();
+    if (typeof showToast === 'function') {
+      showToast(`✅ Sync Complete! ${updatedCount} products ka live rate update hua.`, 'success');
+    }
+  },
+
+
   handlePlatformChange(plat) {
     const directUrlBox = document.getElementById('adminProductDirectUrlWrapper');
     const asinBox = document.getElementById('adminProductAsinWrapper');
@@ -3636,6 +3766,9 @@ const VUO_ADMIN = {
           </td>
           <td class="py-3 px-3 text-right">
             <div class="flex items-center justify-end gap-1.5">
+              <button onclick="VUO_ADMIN.syncProductLiveRate('${p.id}')" class="p-1.5 text-sky-600 hover:text-sky-800 hover:bg-sky-50 rounded-lg text-xs cursor-pointer transition-colors" title="Check &amp; Update Live Market Rate">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
               <button onclick="VUO_ADMIN.openEditStoreProductModal('${p.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all" title="Edit Photo, Rate &amp; Details">
                 <i class="fa-solid fa-pen-to-square text-amber-600"></i>
                 <span>Edit</span>

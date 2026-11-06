@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import urllib.request
+from urllib.parse import urlparse, parse_qs
 import re
 import mimetypes
 import html
@@ -17,7 +18,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
-PORT = 3000
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get('PORT', 8080))
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 # Ensure common MIME types are properly recognized
@@ -357,6 +358,135 @@ def get_job_sources():
         except Exception as e:
             print(f"[Job Sources] Error loading: {e}")
     return []
+
+
+def parse_product_affiliate_link(raw_url):
+    """
+    Intelligently extracts product title, live market price, high-resolution photo,
+    category, and affiliate URL from Amazon, Flipkart, Meesho, or direct shopping links.
+    """
+    if not raw_url or not isinstance(raw_url, str):
+        return None
+    url = raw_url.strip()
+    if not (url.startswith('http://') or url.startswith('https://')):
+        url = 'https://' + url
+
+    platform = "amazon" if ("amazon." in url or "amzn.to" in url or "amzn.in" in url) else \
+               "flipkart" if ("flipkart." in url or "fkrt.it" in url) else \
+               "meesho" if ("meesho." in url) else "custom"
+
+    asin = ""
+    asin_m = re.search(r'(?:/dp/|/gp/product/|/asin/|/d/)([A-Z0-9]{10})', url, re.I)
+    if asin_m:
+        asin = asin_m.group(1).upper()
+
+    clean_url = url
+    if asin and platform == "amazon":
+        tag_m = re.search(r'[?&]tag=([^&]+)', url)
+        aff_tag = tag_m.group(1) if tag_m else "vuohelp-21"
+        clean_url = f"https://www.amazon.in/dp/{asin}?tag={aff_tag}"
+
+    title = ""
+    price = ""
+    image = ""
+    desc = ""
+
+    # Live scrape product page with browser headers
+    fetch_url = f"https://www.amazon.in/dp/{asin}" if (asin and platform == "amazon") else url
+    req = urllib.request.Request(fetch_url, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-IN,en-GB,en;q=0.9,hi;q=0.8',
+        'Referer': 'https://www.google.com/'
+    })
+
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            html_doc = resp.read().decode('utf-8', errors='ignore')
+
+            # 1. Product Title
+            t_m = re.search(r'<span id="productTitle"[^>]*>([^<]+)<', html_doc)
+            if not t_m:
+                t_m = re.search(r'<span class="VU-ZEz"[^>]*>([^<]+)<', html_doc)
+            if not t_m:
+                t_m = re.search(r'<title>([^<]+)</title>', html_doc)
+            if t_m:
+                raw_t = t_m.group(1).strip()
+                raw_t = re.sub(r'^\s*Amazon\.in\s*:\s*Buy\s*', '', raw_t, flags=re.I)
+                raw_t = re.sub(r'\s*\|\s*(Amazon\.in|Flipkart\.com|Meesho).*$', '', raw_t, flags=re.I).strip()
+                title = html.unescape(raw_t)
+
+            # 2. Live Market Price
+            p_m = re.search(r'class="a-price-whole">([^<]+)<', html_doc)
+            if not p_m:
+                p_m = re.search(r'class="a-offscreen">([^<]+)<', html_doc)
+            if not p_m:
+                p_m = re.search(r'class="Nx9bqj CxhGGd">([^<]+)<', html_doc)
+            if not p_m:
+                p_m = re.search(r'₹\s*([0-9,]+)', html_doc)
+            if p_m:
+                raw_p = p_m.group(1).strip().replace('.00', '').replace(',', '')
+                try:
+                    num = int(re.sub(r'[^\d]', '', raw_p))
+                    price = f"₹{num:,}"
+                except Exception:
+                    price = f"₹{p_m.group(1).strip()}"
+
+            # 3. High-Resolution Product Image
+            img_m = re.search(r'data-old-hires="([^"]+)"', html_doc)
+            if not img_m or not img_m.group(1).startswith('http'):
+                img_m = re.search(r'id="landingImage"[^>]+src="([^"]+)"', html_doc)
+            if not img_m or not img_m.group(1).startswith('http'):
+                img_m = re.search(r'"large":"([^"]+)"', html_doc)
+            if not img_m or not img_m.group(1).startswith('http'):
+                img_m = re.search(r'<meta\s+property="og:image"\s+content="([^"]+)"', html_doc, re.I)
+            if img_m and img_m.group(1).startswith('http') and 'logo' not in img_m.group(1).lower():
+                image = img_m.group(1).strip()
+
+            # 4. Description
+            desc_m = re.search(r'<meta\s+name="description"\s+content="([^"]+)"', html_doc, re.I)
+            if desc_m:
+                desc = html.unescape(desc_m.group(1).strip())
+    except Exception as e:
+        print(f"[Product Scraper] Live fetch error for {url}: {e}")
+
+    # Fallback title from slug if empty
+    if not title:
+        slug = url.split('/')[-1].split('?')[0].replace('.html', '')
+        slug_clean = re.sub(r'[-_+]', ' ', slug).strip()
+        title = slug_clean.title() if slug_clean else "CSC Cyber Cafe Equipment"
+
+    # Intelligent Category Detection
+    full_text = (title + " " + url).lower()
+    if any(k in full_text for k in ['laminat', 'pouch', 'paper', 'glossy', 'pvc card', 'blank card', 'photo paper', 'microns', 'cutter']):
+        category = 'paper'
+        tagline = 'Heavy Duty A4/A3 Lamination & Photo Finishing'
+        badge = 'CSC Essential'
+    elif any(k in full_text for k in ['mantra', 'morpho', 'biometric', 'fingerprint', 'scanner', 'iris', 'rd service', 'startek', 'cogent']):
+        category = 'biometric'
+        tagline = 'UIDAI & STQC Approved RD Service Ready'
+        badge = 'CSC Essential'
+    elif any(k in full_text for k in ['printer', 'epson', 'canon', 'hp', 'ink tank', 'tray', 'pvc tray', 'thermal', 'pos', 'receipt', 'l3210', 'l805']):
+        category = 'printers'
+        tagline = 'High Yield Low Cost Printing Solution'
+        badge = 'Cyber Cafe Top Pick'
+    else:
+        category = 'accessories'
+        tagline = 'Quality Cyber Cafe Hardware'
+        badge = 'Featured Deal'
+
+    return {
+        "title": title,
+        "price": price if price else "₹999",
+        "image": image,
+        "platform": platform,
+        "category": category,
+        "directUrl": clean_url,
+        "asin": asin,
+        "tagline": tagline,
+        "badge": badge,
+        "desc": desc[:250] if desc else "High quality hardware equipment for CSC VLE centers across Odisha."
+    }
 
 def parse_recruitment_link(raw_url):
     """
@@ -841,6 +971,26 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(resp)
                 return
 
+            # Endpoint: /api/extract-product-details
+            if self.path.startswith('/api/extract-product-details'):
+                try:
+                    payload = json.loads(body.decode('utf-8'))
+                    target_url = payload.get('url', '').strip()
+                    product_data = parse_product_affiliate_link(target_url) if target_url else None
+                    if product_data:
+                        resp = json.dumps({"status": "success", "product": product_data}, ensure_ascii=False).encode('utf-8')
+                    else:
+                        resp = json.dumps({"status": "error", "message": "Failed to extract product details"}).encode('utf-8')
+                except Exception as e:
+                    resp = json.dumps({"status": "error", "message": str(e)}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_cors_headers()
+                self.send_header('Content-Length', str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+
             # Endpoint: /api/extract-job-details
             if self.path.startswith('/api/extract-job-details'):
                 try:
@@ -1017,11 +1167,28 @@ class VuoHttpHandler(SimpleHTTPRequestHandler):
             self.wfile.write(resp)
             return
 
+        # API: /api/extract-product-details
+        if self.path.startswith('/api/extract-product-details'):
+            parsed_q = urlparse(self.path)
+            q_params = parse_qs(parsed_q.query)
+            target_url = q_params.get('url', [''])[0].strip()
+            product_data = parse_product_affiliate_link(target_url) if target_url else None
+            if product_data:
+                resp = json.dumps({"status": "success", "product": product_data}, ensure_ascii=False).encode('utf-8')
+            else:
+                resp = json.dumps({"status": "error", "message": "Could not extract product details"}).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_cors_headers()
+            self.send_header('Content-Length', str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+
         # API: /api/extract-job-details
         if self.path.startswith('/api/extract-job-details'):
-            import urllib.parse
-            parsed = urllib.parse.urlparse(self.path)
-            params = urllib.parse.parse_qs(parsed.query)
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
             target_url = params.get('url', [''])[0]
             job_data = parse_recruitment_link(target_url) if target_url else None
             if job_data:
