@@ -1629,7 +1629,7 @@ body {
 
     <!-- Main Navigation Bar -->
 
-    <div class="w-full max-w-[1440px] mx-auto px-2 sm:px-3 lg:px-2 xl:px-6">
+    <div class="w-full max-w-[1440px] mx-auto px-2 sm:px-3 lg:px-2 xl:px-3 2xl:px-6">
 
       <div class="flex justify-between items-center h-16 sm:h-20 lg:h-16 xl:h-20 py-1 gap-2 lg:gap-3 xl:gap-4 flex-nowrap w-full">
 
@@ -1653,7 +1653,7 @@ body {
 
         <!-- Desktop Navigation Links (Unified Deep Slate Navy theme: Home, Image Tools, PDF Tools, Office & CSC Tools, CSC Services, Contact) -->
 
-        <nav class="vuo-header-nav flex items-center gap-1 xl:gap-1.5 2xl:gap-2 text-[10.5px] lg:text-[11px] xl:text-[11.5px] 2xl:text-xs font-bold shrink-0">
+        <nav class="vuo-header-nav flex items-center gap-1 xl:gap-1 2xl:gap-1.5 text-[10px] xl:text-[11px] 2xl:text-xs font-bold shrink-0">
 
           <a href="#home" class="nav-link px-2 py-1.5 xl:px-3 xl:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-sm border border-slate-700/80 transition-all whitespace-nowrap">
 
@@ -1985,7 +1985,7 @@ body {
 
               <i class="fa-solid fa-briefcase text-emerald-400 text-xs"></i>
 
-              <span>Office &amp; CSC Tools</span>
+              <span class="hidden 2xl:inline">Office &amp; CSC Tools</span><span class="2xl:hidden">Office Tools</span>
 
               <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-emerald-500 text-slate-950 shadow-2xs">9</span>
 
@@ -2255,7 +2255,7 @@ body {
 
               <span>CSC Services</span>
 
-              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs">5 Core Desks</span>
+              <span class="px-1.5 py-0.2 text-[9px] font-black rounded-full bg-amber-500 text-slate-950 shadow-2xs"><span class="hidden xl:inline">5 Core Desks</span><span class="xl:hidden">5</span></span>
 
               <i id="navServicesChevron" class="fa-solid fa-chevron-down text-[9px] text-slate-400 nav-chevron transition-transform duration-200"></i>
 
@@ -2431,7 +2431,7 @@ body {
 
         <!-- Right Side Actions: Login / Dashboard & Join External Link -->
 
-        <div class="vuo-header-cta flex items-center gap-1.5 xl:gap-2 shrink-0">
+        <div class="vuo-header-cta flex items-center gap-1 xl:gap-1.5 shrink-0">
 
           <!-- When NOT Logged In: Login / Signup Button -->
 
@@ -2465,7 +2465,7 @@ body {
 
           <a id="headerWhatsappBtn" href="https://chat.whatsapp.com/DaaKvtlF2NN3baGvdRnfiE" target="_blank" rel="noopener noreferrer" 
 
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 text-[11px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-950/20 border border-emerald-400/40 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 xl:px-3 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-950/20 border border-emerald-400/40 transition-all transform hover:-translate-y-0.5 cursor-pointer shrink-0"
 
             title="Join Odisha CSC VLE WhatsApp Community">
 
@@ -2481,7 +2481,7 @@ body {
 
           <a href="https://vleunionodisha.in" target="_blank" rel="noopener noreferrer" 
 
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-4 xl:py-2 text-[11px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-500/20 border border-emerald-400/40 transition-all transform hover:scale-105 whitespace-nowrap">
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 xl:px-3 xl:py-2 text-[10.5px] xl:text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md shadow-emerald-500/20 border border-emerald-400/40 transition-all whitespace-nowrap shrink-0">
 
             <i class="fa-solid fa-arrow-up-right-from-square text-emerald-200 text-xs"></i>
 
@@ -29606,10 +29606,10 @@ window.vuoResolveDriveFormUrl = function(form) {
 
   <script src="js/csctools.js?v=30.0"></script>
 
-  <script src="js/admin.js?v=31.6"></script>
+  <script src="js/admin.js?v=31.7"></script>
 
   <script src="js/jobalert.js?v=31.4"></script>
-  <script src="js/vlestore.js?v=31.6"></script>
+  <script src="js/vlestore.js?v=31.7"></script>
 
   <script src="js/app.js?v=31.4"></script>
 
